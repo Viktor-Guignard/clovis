@@ -24,5 +24,22 @@ et qui garde le dépôt léger malgré un fichier source de 81 Mo.
 - `patch.js` — le calque de modifications (seul fichier réécrit à chaque enregistrement)
 - `cj-apply.js` — applique le calque au chargement
 - `bake.py` — fabrique `presentation-soutenance.html` : un fichier unique et autonome, hors ligne
+- `atelier.applescript` — source de l'app « CHONG JI — Atelier »
+
+## L'atelier (l'app à deux fenêtres)
+
+Ouvre d'un clic les deux fenêtres Safari côte à côte sur l'écran principal :
+l'éditeur à gauche (58 %), Claude à droite (42 %). Dock et barre de menus pris
+en compte ; sur plusieurs écrans, seul l'écran principal est utilisé.
+
+Pour l'installer sur un Mac :
+
+```sh
+osacompile -o "CHONG JI — Atelier.app" atelier.applescript
+```
+
+Puis glisser l'app dans le Dock. Au premier lancement, macOS demande
+l'autorisation de piloter Safari — c'est normal, il faut l'accorder.
+Le partage gauche/droite se règle avec `partEditeur` en haut du script.
 
 Viktor Guignard — M2 DADG · ESDAC Paris

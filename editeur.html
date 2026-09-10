@@ -771,7 +771,20 @@ async function versClaudeCode(){
     ? "Demande copiée avec le contexte de la slide. Claude Code s'ouvre dans un nouvel onglet — colle-la (⌘V) et laisse-le travailler. Pense à Enregistrer ici avant, s'il te reste des modifications."
     : "Copie automatique refusée par le navigateur. Sélectionne le texte ci-dessous et copie-le à la main :");
   if (!copie) bubble('u', texte);
-  window.open('https://claude.ai/code', '_blank', 'noopener');
+  ouvrirClaude();
+}
+/* claude.ai interdit l'iframe (x-frame-options: SAMEORIGIN). Au plus près :
+   une fenêtre étroite calée à droite de l'écran, nommée pour être réutilisée
+   à chaque clic au lieu d'empiler les onglets. */
+let fenClaude = null;
+function ouvrirClaude(){
+  const L = Math.max(0, screen.availWidth - 560);
+  try {
+    if (fenClaude && !fenClaude.closed) { fenClaude.focus(); return; }
+    fenClaude = window.open('https://claude.ai/code', 'chongji-claude',
+      'width=540,height=' + (screen.availHeight - 40) + ',left=' + L + ',top=0,noopener');
+  } catch(_) {}
+  if (!fenClaude) window.open('https://claude.ai/code', '_blank', 'noopener');  // bloqueur de fenêtres
 }
 $('#btnCC').onclick = versClaudeCode;
 

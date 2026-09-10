@@ -20,26 +20,29 @@ enregistrées dans `patch.js`, que `cj-apply.js` applique au chargement du deck.
 C'est ce qui permet à Viktor et à Claude d'éditer le même deck sans se marcher dessus,
 et qui garde le dépôt léger malgré un fichier source de 81 Mo.
 
-- `editeur.html` — l'éditeur (textes, images, ajout/suppression/ordre des slides) + panneau Claude
+- `editeur.html` — l'éditeur (textes, images, ajout/suppression/ordre des slides)
 - `patch.js` — le calque de modifications (seul fichier réécrit à chaque enregistrement)
 - `cj-apply.js` — applique le calque au chargement
 - `bake.py` — fabrique `presentation-soutenance.html` : un fichier unique et autonome, hors ligne
-- `atelier.applescript` — source de l'app « CHONG JI — Atelier »
+- `clovis-project.applescript` — source de l'app « Clovis Project »
 
-## L'atelier (l'app à deux fenêtres)
+## Clovis Project (l'app à deux fenêtres)
 
 Ouvre d'un clic les deux fenêtres Safari côte à côte sur l'écran principal :
-l'éditeur à gauche (58 %), Claude à droite (42 %). Dock et barre de menus pris
-en compte ; sur plusieurs écrans, seul l'écran principal est utilisé.
+l'éditeur du deck à gauche, Claude à droite. Dock et barre de menus pris en
+compte ; sur plusieurs écrans, seul l'écran principal est utilisé. Le partage
+s'adapte à la taille de l'écran — 63/37 sous 1500 pt (MacBook Air 13"),
+58/42 au-delà — parce que le rail de slides occupe une largeur fixe alors que
+Claude se resserre sans gêne.
 
 Pour l'installer sur un Mac :
 
 ```sh
-osacompile -o "CHONG JI — Atelier.app" atelier.applescript
+osacompile -o "Clovis Project.app" clovis-project.applescript
 ```
 
 Puis glisser l'app dans le Dock. Au premier lancement, macOS demande
 l'autorisation de piloter Safari — c'est normal, il faut l'accorder.
-Le partage gauche/droite se règle avec `partEditeur` en haut du script.
+Le partage se règle avec `partEditeur` en haut du script.
 
 Viktor Guignard — M2 DADG · ESDAC Paris

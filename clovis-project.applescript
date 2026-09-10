@@ -1,9 +1,9 @@
--- CHONG JI — Atelier
--- Ouvre l'établi de travail : l'éditeur du deck à gauche, Claude à droite,
--- deux vraies fenêtres Safari calées chacune sur sa moitié de l'écran principal.
+-- Clovis Project
+-- Ouvre l'établi : l'éditeur du deck à gauche, Claude à droite,
+-- deux vraies fenêtres Safari calées sur l'écran principal.
 --
 -- Recompiler après modification :
---   osacompile -o "CHONG JI — Atelier.app" atelier.applescript
+--   osacompile -o "Clovis Project.app" clovis-project.applescript
 
 use framework "Foundation"
 use framework "AppKit"
@@ -12,10 +12,7 @@ use scripting additions
 set editeurURL to "https://viktor-guignard.github.io/clovis/editeur.html"
 set claudeURL to "https://claude.ai/code"
 
--- part de l'écran donnée à l'éditeur (0.58 = 58 %) : c'est lui qui affiche les slides
-set partEditeur to 0.58
-
--- Géométrie de l'ÉCRAN PRINCIPAL uniquement (pas l'étendue de tous les écrans),
+-- Géométrie de l'ÉCRAN PRINCIPAL seulement (pas l'étendue de tous les écrans),
 -- zone utile : sous la barre de menus, hors Dock.
 set ecran to current application's NSScreen's mainScreen()
 set cadre to ecran's frame()
@@ -25,6 +22,15 @@ set xU to item 1 of item 1 of utile
 set yU to item 2 of item 1 of utile
 set wU to item 1 of item 2 of utile
 set hU to item 2 of item 2 of utile
+
+-- Part donnée à l'éditeur. Sur un petit écran (MacBook Air 13"), il lui en faut
+-- davantage : son rail de slides occupe une largeur fixe, alors que Claude,
+-- qui n'est qu'une colonne de texte, se resserre sans gêne.
+if wU < 1500 then
+	set partEditeur to 0.63
+else
+	set partEditeur to 0.58
+end if
 
 -- Cocoa compte depuis le bas, AppleScript depuis le haut : on convertit.
 set bordGauche to xU as integer

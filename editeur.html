@@ -772,6 +772,21 @@ async function versClaudeCode(){
     : "Copie automatique refusée par le navigateur. Sélectionne le texte ci-dessous et copie-le à la main :");
   if (!copie) bubble('u', texte);
   ouvrirClaude();
+  lienSecours();
+}
+/* Si le navigateur bloque l'ouverture par script, ce lien-là part d'un vrai clic :
+   il passe toujours. */
+function lienSecours(){
+  const d = document.createElement('div');
+  d.className = 'msg sys';
+  d.append('Rien ne s\'est ouvert ? ');
+  const a = document.createElement('a');
+  a.href = 'https://claude.ai/code'; a.target = 'chongji-claude'; a.rel = 'noopener';
+  a.textContent = 'ouvrir Claude Code';
+  a.style.color = 'var(--red)';
+  d.appendChild(a);
+  d.append(' — ta demande est déjà dans le presse-papier.');
+  msgs.appendChild(d); msgs.scrollTop = 1e9;
 }
 /* claude.ai interdit l'iframe (x-frame-options: SAMEORIGIN) : ça reste une page à part.
    On l'ouvre comme Viktor le ferait à la main — un vrai onglet, avec sa barre d'adresse —

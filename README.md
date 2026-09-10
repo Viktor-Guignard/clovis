@@ -3,7 +3,7 @@
 Menu d'accès : **la présentation** (deck complet de soutenance) et **l'appli iPad du jury**
 (compagnon de soutenance).
 
-Ouvrir : https://viktor-guignard.github.io/chongji-hub/
+Ouvrir : https://viktor-guignard.github.io/clovis/chongji-hub/
 
 - `index.html` — menu d'accueil (2 cartes)
 - `presentation.html` — deck complet (mémoire, projet, système graphique)
@@ -13,7 +13,7 @@ Ouvrir : https://viktor-guignard.github.io/chongji-hub/
 ## Éditer le deck
 
 `editeur.html` — éditeur type Google Slides pour `presentation.html`, avec Claude intégré.
-Ouvrir : https://viktor-guignard.github.io/chongji-hub/editeur.html
+Ouvrir : https://viktor-guignard.github.io/clovis/editeur.html
 
 `presentation.html` n'est jamais réécrit. Toutes les modifications sont des « ops »
 enregistrées dans `patch.js`, que `cj-apply.js` applique au chargement du deck.

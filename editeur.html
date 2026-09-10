@@ -758,7 +758,8 @@ function contexte(){
   L.push("Contexte — deck de soutenance CHONG JI, dépôt Viktor-Guignard/clovis (cloné dans ~/chongji-hub).");
   L.push("Les modifications sont des ops dans patch.js, appliquées par cj-apply.js. Ne réécris jamais presentation.html (81 Mo).");
   if (sec) L.push('Je suis sur la slide ' + (S.cur+1) + '/' + ss.length + ' : « ' + (sec.dataset.lbl||'') + ' » (' + (sec.dataset.chapter||'') + ').');
-  if (dirty()) L.push('Attention : j\'ai ' + S.ops.length + " modification(s) non enregistrée(s) dans l'éditeur — je les enregistre avant que tu touches au dépôt.");
+  if (dirty()) { const k = S.ops.length;
+    L.push("Attention : j'ai " + k + ' modification' + (k>1?'s':'') + ' non enregistrée' + (k>1?'s':'') + " dans l'éditeur — je les enregistre avant que tu touches au dépôt."); }
   return L.join('\n');
 }
 async function versClaudeCode(){

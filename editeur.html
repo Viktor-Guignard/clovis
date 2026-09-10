@@ -598,9 +598,18 @@ $('#btnCfg').onclick = openCfg;
 $('#cfgClose').onclick = () => $('#cfg').close();
 $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); cfg.ai = $('#aiKey').value.trim(); $('#cfg').close(); refreshStatus();
   if (window.CJ_MAJ_IA) window.CJ_MAJ_IA(); };
-$('#btnChat').onclick = () => $('#main').classList.toggle('nochat');
+$('#btnChat').onclick = () => {
+  const replie = $('#main').classList.toggle('nochat');
+  try { localStorage.setItem('cj_volet', replie ? 'off' : 'on'); } catch(e){}
+  $('#btnChat').classList.toggle('prim', !replie);
+  fitFrame();   // l'aperçu reprend la largeur libérée
+};
 
-if (innerWidth <= 1080) $('#main').classList.add('nochat');   // le panneau Claude s'ouvre à la demande
+// volet Claude : on respecte le dernier choix, sinon replié sur les fenêtres étroites
+const voletMem = (() => { try { return localStorage.getItem('cj_volet'); } catch(e){ return null; } })();
+if (voletMem === 'off' || (voletMem === null && innerWidth <= 1080)) $('#main').classList.add('nochat');
+$('#btnChat').classList.toggle('prim', !$('#main').classList.contains('nochat'));
+$('#btnChat').title = 'Afficher ou replier le volet Claude — replie-le pour utiliser l\'éditeur sur un demi-écran';
 refreshStatus();
 loadDeck();
 </script>

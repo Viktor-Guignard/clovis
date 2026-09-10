@@ -867,6 +867,7 @@ async function send(){
 /* pont de débogage : permet d'inspecter les outils depuis la console */
 window.CJ_DEBUG = { TOOLS, strip, expand, MED, get hist(){ return hist; } };
 window.CJ_MAJ_IA = majModeIA;
+window.CJ_DEBUG.contexte = contexte;
 
 $('#btnSend').onclick = send;
 $('#ask').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); cfg.ai ? send() : versClaudeCode(); } });

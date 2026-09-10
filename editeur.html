@@ -773,18 +773,18 @@ async function versClaudeCode(){
   if (!copie) bubble('u', texte);
   ouvrirClaude();
 }
-/* claude.ai interdit l'iframe (x-frame-options: SAMEORIGIN). Au plus près :
-   une fenêtre étroite calée à droite de l'écran, nommée pour être réutilisée
-   à chaque clic au lieu d'empiler les onglets. */
-let fenClaude = null;
+/* claude.ai interdit l'iframe (x-frame-options: SAMEORIGIN) : ça reste une page à part.
+   On l'ouvre comme Viktor le ferait à la main — un vrai onglet, avec sa barre d'adresse —
+   mais sur une cible nommée, pour réutiliser le même onglet au lieu d'en empiler dix.
+   L'ancre porte rel=noopener : la page ouverte n'a aucune prise sur l'éditeur. */
 function ouvrirClaude(){
-  const L = Math.max(0, screen.availWidth - 560);
-  try {
-    if (fenClaude && !fenClaude.closed) { fenClaude.focus(); return; }
-    fenClaude = window.open('https://claude.ai/code', 'chongji-claude',
-      'width=540,height=' + (screen.availHeight - 40) + ',left=' + L + ',top=0,noopener');
-  } catch(_) {}
-  if (!fenClaude) window.open('https://claude.ai/code', '_blank', 'noopener');  // bloqueur de fenêtres
+  const a = document.createElement('a');
+  a.href = 'https://claude.ai/code';
+  a.target = 'chongji-claude';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 $('#btnCC').onclick = versClaudeCode;
 

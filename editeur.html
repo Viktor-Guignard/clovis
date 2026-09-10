@@ -171,8 +171,9 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <div id="composer">
       <textarea id="ask" placeholder="ex. « Sur la slide Ouvertures, réécris les 3 points en plus percutant » ou « ajoute une slide de remerciements au jury après Merci »"></textarea>
       <div class="crow">
-        <span class="grey" id="aiHint">Entrée = envoyer · Maj+Entrée = retour ligne</span>
-        <button class="btn prim" id="btnSend">Envoyer</button>
+        <span class="grey" id="aiHint">Rédige ta demande, puis ouvre Claude Code</span>
+        <button class="btn" id="btnSend" hidden>Envoyer</button>
+        <button class="btn prim" id="btnCC" title="Copie ta demande avec le contexte de la slide, puis ouvre Claude Code">Claude Code ↗</button>
       </div>
     </div>
   </section>
@@ -186,11 +187,11 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <input id="ghTok" type="password" placeholder="github_pat_…" autocomplete="off">
   <div class="help">À créer sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → fine-grained token</a> : accès <b>uniquement au dépôt chongji-hub</b>, permission <b>Contents : Read and write</b>. Rien d'autre.</div>
 
-  <label>Clé API Anthropic — pour Claude dans la page</label>
+  <label>Clé API Anthropic — facultatif</label>
   <input id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off">
-  <div class="help">À créer sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Facturée à l'usage, séparément de ton abonnement Claude.</div>
+  <div class="help">Laisse ce champ vide : le bouton <b>Claude Code ↗</b> passe par ton abonnement, sans rien payer de plus. Ne remplis ceci que si tu veux le panneau de discussion intégré — il est alors facturé à l'usage sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, séparément de ton abonnement.</div>
 
-  <div class="warn"><b>À savoir :</b> une clé API vaut de l'argent. Ne la colle que sur ta propre machine, jamais sur un ordinateur partagé, et révoque-la depuis la console si tu as un doute.</div>
+  <div class="warn"><b>Si tu remplis la clé API :</b> elle vaut de l'argent. Ne la colle que sur ta propre machine, jamais sur un ordinateur partagé, et révoque-la depuis la console si tu as un doute.</div>
 
   <div class="row">
     <button class="btn" id="cfgClose">Fermer</button>
@@ -595,7 +596,8 @@ $('#btnSave').onclick = save;
 function openCfg(){ $('#ghTok').value = cfg.gh; $('#aiKey').value = cfg.ai; $('#cfg').showModal(); }
 $('#btnCfg').onclick = openCfg;
 $('#cfgClose').onclick = () => $('#cfg').close();
-$('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); cfg.ai = $('#aiKey').value.trim(); $('#cfg').close(); refreshStatus(); };
+$('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); cfg.ai = $('#aiKey').value.trim(); $('#cfg').close(); refreshStatus();
+  if (window.CJ_MAJ_IA) window.CJ_MAJ_IA(); };
 $('#btnChat').onclick = () => $('#main').classList.toggle('nochat');
 
 if (innerWidth <= 1080) $('#main').classList.add('nochat');   // le panneau Claude s'ouvre à la demande
@@ -749,7 +751,41 @@ const msgs = $('#msgs');
 function bubble(cls, txt){ const d = document.createElement('div'); d.className = 'msg '+cls; d.textContent = txt||''; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
 function line(cls, txt){ const d = document.createElement('div'); d.className = 'tool '+cls; d.textContent = txt; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
 
-bubble('sys', "Claude peut lire et modifier le deck directement. Ex. « harmonise le ton des 3 slides du chapitre 05 », « ajoute une slide de plan après Déroulé », « la slide Naming est trop chargée, allège-la ».");
+/* ---------- passerelle vers Claude Code (abonnement, pas de clé) ---------- */
+function contexte(){
+  const ss = sections(), sec = ss[S.cur];
+  const L = [];
+  L.push("Contexte — deck de soutenance CHONG JI, dépôt Viktor-Guignard/clovis (cloné dans ~/chongji-hub).");
+  L.push("Les modifications sont des ops dans patch.js, appliquées par cj-apply.js. Ne réécris jamais presentation.html (81 Mo).");
+  if (sec) L.push('Je suis sur la slide ' + (S.cur+1) + '/' + ss.length + ' : « ' + (sec.dataset.lbl||'') + ' » (' + (sec.dataset.chapter||'') + ').');
+  if (dirty()) L.push('Attention : j\'ai ' + S.ops.length + " modification(s) non enregistrée(s) dans l'éditeur — je les enregistre avant que tu touches au dépôt.");
+  return L.join('\n');
+}
+async function versClaudeCode(){
+  const q = $('#ask').value.trim();
+  const texte = contexte() + '\n\nMa demande :\n' + (q || '(à compléter)');
+  let copie = false;
+  try { await navigator.clipboard.writeText(texte); copie = true; } catch(_){}
+  bubble('sys', copie
+    ? "Demande copiée avec le contexte de la slide. Claude Code s'ouvre dans un nouvel onglet — colle-la (⌘V) et laisse-le travailler. Pense à Enregistrer ici avant, s'il te reste des modifications."
+    : "Copie automatique refusée par le navigateur. Sélectionne le texte ci-dessous et copie-le à la main :");
+  if (!copie) bubble('u', texte);
+  window.open('https://claude.ai/code', '_blank', 'noopener');
+}
+$('#btnCC').onclick = versClaudeCode;
+
+/* le panneau de discussion intégré n'apparaît que si une clé API est renseignée */
+function majModeIA(){
+  const avecCle = !!cfg.ai;
+  $('#btnSend').hidden = !avecCle;
+  $('#aiHint').textContent = avecCle
+    ? 'Entrée = envoyer dans la page · bouton = Claude Code'
+    : 'Rédige ta demande, puis ouvre Claude Code';
+}
+majModeIA();
+bubble('sys', cfg.ai
+  ? "Deux voies : Envoyer (dans la page, facturé à ta clé API) ou Claude Code (ton abonnement, accès à tout le dépôt)."
+  : "Écris ta demande ici, puis clique Claude Code ↗ : elle part avec le contexte de la slide courante, et Claude travaille sur ton abonnement — rien à payer en plus.\n\nEx. « harmonise le ton des 3 slides du chapitre 05 », « ajoute une slide de plan après Déroulé », « la slide Naming est trop chargée, allège-la ».");
 
 async function send(){
   const q = $('#ask').value.trim();
@@ -830,9 +866,10 @@ async function send(){
 }
 /* pont de débogage : permet d'inspecter les outils depuis la console */
 window.CJ_DEBUG = { TOOLS, strip, expand, MED, get hist(){ return hist; } };
+window.CJ_MAJ_IA = majModeIA;
 
 $('#btnSend').onclick = send;
-$('#ask').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+$('#ask').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); cfg.ai ? send() : versClaudeCode(); } });
 $('#btnClear').onclick = () => { hist = []; msgs.innerHTML = ''; bubble('sys','Conversation effacée. Le deck n\'a pas changé.'); };
 </script>
 </body>

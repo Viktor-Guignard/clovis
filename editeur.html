@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CHONG JI — Éditeur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F2EFE6; --ink:#0D0D0D; --red:#E30613; --grey:#8C877C;
+  --panel:#151515; --panel2:#1E1E1E; --line:#2C2C2C;
+  --display:'Anton','Arial Narrow',sans-serif;
+  --body:'Jost','Helvetica Neue',Arial,sans-serif;
+  --rail:280px; --chat:380px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--body);background:var(--ink);color:var(--bone);font-size:14px;display:flex;flex-direction:column}
+
+/* ---------- barre du haut ---------- */
+header{display:flex;align-items:center;gap:14px;padding:0 14px;height:52px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+.brand{font-family:var(--display);font-size:19px;letter-spacing:.5px;line-height:1}
+.brand span{color:var(--red)}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{background:none;border:0;color:var(--grey);font-family:var(--body);font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer}
+.seg button.on{background:var(--red);color:#fff}
+.spacer{flex:1}
+button.btn{background:var(--panel2);border:1px solid var(--line);color:var(--bone);font-family:var(--body);font-weight:600;font-size:12.5px;padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap}
+button.btn:hover{border-color:var(--grey)}
+button.btn.prim{background:var(--red);border-color:var(--red);color:#fff}
+button.btn.prim:disabled{opacity:.4;cursor:default}
+button.btn:disabled{opacity:.4;cursor:default}
+.status{font-size:12px;color:var(--grey);min-width:150px;text-align:right}
+.status.dirty{color:#E8B33A}
+.status.ok{color:#5BBF7A}
+.status.err{color:var(--red)}
+
+/* ---------- corps ---------- */
+main{flex:1;display:grid;grid-template-columns:var(--rail) 1fr var(--chat);min-height:0}
+main.nochat{grid-template-columns:var(--rail) 1fr 0}
+section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
+
+/* ---------- rail des slides ---------- */
+#rail{background:var(--panel);border-right:1px solid var(--line)}
+.railhead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex:none}
+.railhead h2{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);font-weight:600;flex:1}
+.iconbtn{background:none;border:1px solid var(--line);color:var(--grey);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:15px;line-height:1;display:grid;place-items:center}
+.iconbtn:hover{color:var(--bone);border-color:var(--grey)}
+#list{flex:1;overflow-y:auto;padding:6px}
+.chap{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);padding:12px 8px 5px;font-weight:600}
+.item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:5px;cursor:pointer;user-select:none;border:1px solid transparent}
+.item:hover{background:var(--panel2)}
+.item.cur{background:var(--panel2);border-color:var(--red)}
+.item.hidden .nm{opacity:.4;text-decoration:line-through}
+.item.drop{border-top:2px solid var(--red)}
+.num{font-size:10.5px;color:var(--grey);width:20px;flex:none;font-variant-numeric:tabular-nums}
+.nm{flex:1;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .act{opacity:0;background:none;border:0;color:var(--grey);cursor:pointer;font-size:13px;padding:2px 3px;line-height:1}
+.item:hover .act,.item.cur .act{opacity:1}
+.item .act:hover{color:var(--red)}
+.badge{font-size:9px;background:var(--red);color:#fff;padding:1px 5px;border-radius:8px;font-weight:600}
+
+/* ---------- scène ---------- */
+#stage{background:#0A0A0A;position:relative}
+.stagebar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex:none;font-size:12px}
+.stagebar .lbl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stagebar .hint{color:var(--grey);font-size:11.5px}
+#frameWrap{flex:1;position:relative;overflow:hidden}
+#frameBox{position:absolute;left:50%;top:50%;background:var(--bone);box-shadow:0 18px 60px rgba(0,0,0,.6);transform-origin:center center}
+#deck{border:0;display:block;width:100%;height:100%}
+#veil{position:absolute;inset:0;display:grid;place-items:center;background:#0A0A0A;color:var(--grey);font-size:13px;text-align:center;padding:30px;z-index:5;gap:10px;line-height:1.6}
+#veil.gone{display:none}
+.bar{width:180px;height:2px;background:var(--line);margin:12px auto 0;overflow:hidden}
+.bar i{display:block;height:100%;width:35%;background:var(--red);animation:sl 1.1s ease-in-out infinite}
+@keyframes sl{0%{transform:translateX(-100%)}100%{transform:translateX(390%)}}
+
+/* ---------- chat ---------- */
+#chat{background:var(--panel);border-left:1px solid var(--line)}
+main.nochat #chat{display:none}
+.chathead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex:none}
+.chathead h2{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);font-weight:600;flex:1}
+#msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+.msg{font-size:13px;line-height:1.62}
+.msg.u{background:var(--panel2);border-left:2px solid var(--red);padding:9px 11px;border-radius:0 5px 5px 0;white-space:pre-wrap}
+.msg.a{color:#DCD8CE;white-space:pre-wrap}
+.msg.sys{color:var(--grey);font-size:12px;font-style:italic}
+.tool{font-size:11.5px;color:var(--grey);border-left:2px solid var(--line);padding:3px 0 3px 9px;font-family:ui-monospace,Menlo,monospace}
+.tool.ok{color:#5BBF7A;border-color:#5BBF7A}
+.tool.ko{color:var(--red);border-color:var(--red)}
+.think{font-size:11.5px;color:var(--grey);font-style:italic;border-left:2px dashed var(--line);padding-left:9px;white-space:pre-wrap}
+#composer{border-top:1px solid var(--line);padding:10px;flex:none;display:flex;flex-direction:column;gap:8px}
+#ask{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--bone);border-radius:6px;padding:9px 10px;font-family:var(--body);font-size:13px;resize:none;min-height:62px;max-height:180px}
+#ask:focus{outline:none;border-color:var(--red)}
+.crow{display:flex;gap:8px;align-items:center}
+.crow .grey{font-size:11px;color:var(--grey);flex:1}
+
+/* ---------- réglages ---------- */
+dialog{border:1px solid var(--line);background:var(--panel);color:var(--bone);border-radius:10px;padding:0;max-width:560px;width:92vw}
+dialog::backdrop{background:rgba(0,0,0,.72)}
+.dlg{padding:22px}
+.dlg h3{font-family:var(--display);font-size:22px;margin-bottom:4px;letter-spacing:.5px}
+.dlg p{font-size:12.5px;color:var(--grey);line-height:1.65;margin-bottom:16px}
+.dlg label{display:block;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);font-weight:600;margin:14px 0 5px}
+.dlg input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--bone);border-radius:6px;padding:9px 10px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.dlg input:focus{outline:none;border-color:var(--red)}
+.dlg .help{font-size:11.5px;color:var(--grey);margin-top:5px;line-height:1.55}
+.dlg .help a{color:var(--red)}
+.dlg .row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.warn{background:rgba(227,6,19,.08);border:1px solid rgba(227,6,19,.35);border-radius:6px;padding:10px 12px;font-size:11.5px;line-height:1.6;color:#E5B8B8;margin-top:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">CHONG JI <span>冲击</span></div>
+  <div class="seg">
+    <button id="mEdit" class="on">Édition</button>
+    <button id="mView">Aperçu</button>
+  </div>
+  <div class="spacer"></div>
+  <span class="status" id="status">—</span>
+  <button class="btn" id="btnUndo" title="Annuler la dernière modification">↶ Annuler</button>
+  <button class="btn" id="btnChat">Claude</button>
+  <button class="btn" id="btnCfg">Réglages</button>
+  <button class="btn prim" id="btnSave" disabled>Enregistrer</button>
+</header>
+
+<main id="main">
+  <section class="col" id="rail">
+    <div class="railhead">
+      <h2>Slides</h2>
+      <button class="iconbtn" id="btnAdd" title="Ajouter une slide après la slide courante">+</button>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <section class="col" id="stage">
+    <div class="stagebar">
+      <span class="lbl" id="curLbl">—</span>
+      <span class="spacer" style="flex:1"></span>
+      <span class="hint" id="hint">Clique un texte pour l'éditer · clique une image pour la remplacer</span>
+    </div>
+    <div id="frameWrap">
+      <div id="frameBox"><iframe id="deck"></iframe></div>
+      <div id="veil">
+        <div>
+          <div style="font-family:var(--display);font-size:26px;color:var(--bone);letter-spacing:.5px">CHARGEMENT DU DECK</div>
+          <div style="margin-top:8px">81 Mo — la première ouverture prend un moment.<br>Les suivantes sortent du cache du navigateur.</div>
+          <div class="bar"><i></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="col" id="chat">
+    <div class="chathead">
+      <h2>Claude — tâches complexes</h2>
+      <button class="iconbtn" id="btnClear" title="Effacer la conversation">⌫</button>
+    </div>
+    <div id="msgs"></div>
+    <div id="composer">
+      <textarea id="ask" placeholder="ex. « Sur la slide Ouvertures, réécris les 3 points en plus percutant » ou « ajoute une slide de remerciements au jury après Merci »"></textarea>
+      <div class="crow">
+        <span class="grey" id="aiHint">Entrée = envoyer · Maj+Entrée = retour ligne</span>
+        <button class="btn prim" id="btnSend">Envoyer</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="cfg"><div class="dlg">
+  <h3>RÉGLAGES</h3>
+  <p>Les deux clés restent dans <b>ce navigateur uniquement</b> (localStorage). Elles ne partent jamais ailleurs que vers GitHub et Anthropic, et personne d'autre ne peut les lire depuis la page publique.</p>
+
+  <label>Jeton GitHub — pour enregistrer</label>
+  <input id="ghTok" type="password" placeholder="github_pat_…" autocomplete="off">
+  <div class="help">À créer sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → fine-grained token</a> : accès <b>uniquement au dépôt chongji-hub</b>, permission <b>Contents : Read and write</b>. Rien d'autre.</div>
+
+  <label>Clé API Anthropic — pour Claude dans la page</label>
+  <input id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off">
+  <div class="help">À créer sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Facturée à l'usage, séparément de ton abonnement Claude.</div>
+
+  <div class="warn"><b>À savoir :</b> une clé API vaut de l'argent. Ne la colle que sur ta propre machine, jamais sur un ordinateur partagé, et révoque-la depuis la console si tu as un doute.</div>
+
+  <div class="row">
+    <button class="btn" id="cfgClose">Fermer</button>
+    <button class="btn prim" id="cfgSave">Enregistrer</button>
+  </div>
+</div></dialog>
+
+<input type="file" id="filePick" accept="image/*" hidden>
+
+<script src="patch.js"></script>
+<script>
+/* ============================================================
+   CHONG JI — Éditeur de deck
+   Modèle : le deck (presentation.html) n'est jamais réécrit.
+   Toutes les modifications — les tiennes et celles de Claude —
+   sont des "ops" dans patch.js, appliquées au chargement.
+   ============================================================ */
+const REPO = 'Viktor-Guignard/chongji-hub';
+const FILE = 'patch.js';
+const $ = s => document.querySelector(s);
+
+/* ---------- état ---------- */
+const S = {
+  ops:  (window.CJ_PATCH && window.CJ_PATCH.ops) ? JSON.parse(JSON.stringify(window.CJ_PATCH.ops)) : [],
+  base: JSON.stringify((window.CJ_PATCH && window.CJ_PATCH.ops) || []),
+  undo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false
+};
+const cfg = {
+  get gh(){ return localStorage.getItem('cj_gh') || ''; },  set gh(v){ localStorage.setItem('cj_gh', v); },
+  get ai(){ return localStorage.getItem('cj_ai') || ''; },  set ai(v){ localStorage.setItem('cj_ai', v); }
+};
+
+const dirty = () => JSON.stringify(S.ops) !== S.base;
+function status(txt, cls){ const e=$('#status'); e.textContent=txt; e.className='status '+(cls||''); }
+function refreshStatus(){
+  if (S.busy) return;
+  const n = S.ops.length;
+  if (dirty()) status(n+' modif. non enregistrée'+(n>1?'s':''), 'dirty');
+  else status(n ? n+' modification'+(n>1?'s':'')+' enregistrée'+(n>1?'s':'') : 'aucune modification');
+  $('#btnSave').disabled = !dirty();
+  $('#btnUndo').disabled = !S.undo.length;
+}
+function snapshot(){ S.undo.push(JSON.stringify(S.ops)); if (S.undo.length>40) S.undo.shift(); }
+
+/* ---------- ops ---------- */
+const KEYED = { text:1, attr:1, img:1, lbl:1, skip:1 };
+function keyOf(o){ return [o.t, o.slide, o.path||'', o.name||''].join('\u0001'); }
+function setOp(op, quiet){
+  if (!quiet) snapshot();
+  if (KEYED[op.t]) { const k = keyOf(op); const i = S.ops.findIndex(o => keyOf(o)===k); if (i>=0) S.ops.splice(i,1); }
+  S.ops.push(op);
+  refreshStatus();
+}
+
+/* ---------- application des ops à un document ---------- */
+function esc(s){ return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g,'\\$&'); }
+function slideOf(doc, lbl){ return doc.querySelector('section.slide[data-lbl="'+esc(lbl)+'"]'); }
+function nodeAt(root, path){
+  if (!root) return null; if (!path) return root;
+  let n = root; for (const p of String(path).split('-')) { n = n.children[+p]; if (!n) return null; }
+  return n;
+}
+function pathOf(el, sec){
+  const p = []; let n = el;
+  while (n && n !== sec) { p.unshift([].indexOf.call(n.parentNode.children, n)); n = n.parentNode; }
+  return p.join('-');
+}
+function applyOps(doc, ops){
+  const main = doc.querySelector('main') || doc.body;
+  const H = {
+    text: o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.innerHTML = o.html; },
+    attr: o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.setAttribute(o.name, o.value); },
+    img:  o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.setAttribute('src', o.src); },
+    lbl:  o => { const s = slideOf(doc,o.slide); if (s) s.dataset.lbl = o.value; },
+    skip: o => { const s = slideOf(doc,o.slide); if (s) s.classList.toggle('skip', !!o.on); },
+    del:  o => { const s = slideOf(doc,o.slide); if (s) s.remove(); },
+    add:  o => { const t = doc.createElement('template'); t.innerHTML = o.html.trim();
+                 const s = t.content.firstElementChild; if (!s) return;
+                 const ref = o.after ? slideOf(doc,o.after) : null; ref ? ref.after(s) : main.appendChild(s); },
+    order:o => { o.slides.forEach(l => { const s = slideOf(doc,l); if (s) main.appendChild(s); }); }
+  };
+  ops.forEach(o => { try { H[o.t] && H[o.t](o); } catch(e){ console.warn('op ignorée', o, e); } });
+}
+
+/* ---------- CSS injecté en mode édition ---------- */
+const EDIT_CSS = `
+  .slide.skip[data-cj-cur]{display:flex!important}
+  .slide[data-cj-cur]{opacity:1!important;visibility:visible!important;pointer-events:auto!important;z-index:3!important}
+  .slide[data-cj-cur] .r,.slide[data-cj-cur] *{animation:none!important;transition:none!important}
+  #footer,#loader,#som-menu{display:none!important}
+  [data-cj-ed]{outline:1px dashed transparent;outline-offset:3px;border-radius:2px}
+  [data-cj-ed]:hover{outline-color:#E30613;cursor:text}
+  [data-cj-ed]:focus{outline:2px solid #E30613;background:rgba(227,6,19,.05)}
+  img[data-cj-img]{cursor:pointer}
+  img[data-cj-img]:hover{outline:3px solid #E30613;outline-offset:2px}
+`;
+
+/* ---------- pilotage du deck ---------- */
+const frame = $('#deck');
+const DECK_URL = 'presentation.html?preview=1';
+function loadDeck(){
+  $('#veil').classList.remove('gone');
+  // le deck lit cet état AVANT d'initialiser sa navigation : pas de désynchro
+  try { sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops)); } catch(e){ console.warn(e); }
+  // même URL = on relit le cache du navigateur au lieu de retélécharger 81 Mo
+  if (frame.getAttribute('src') === DECK_URL && frame.contentWindow) frame.contentWindow.location.reload();
+  else frame.setAttribute('src', DECK_URL);
+}
+frame.addEventListener('load', () => {
+  S.doc = frame.contentDocument;   // les ops ont déjà été appliquées par cj-apply.js
+  if (S.mode === 'edit') setupEdit();
+  buildRail();
+  showSlide(Math.min(S.cur, sections().length-1));
+  fitFrame();
+  $('#veil').classList.add('gone');
+  refreshStatus();
+});
+
+const sections = () => S.doc ? [...S.doc.querySelectorAll('section.slide')] : [];
+const curSec   = () => sections()[S.cur];
+
+function setupEdit(){
+  const st = S.doc.createElement('style'); st.id = 'cj-edit-css'; st.textContent = EDIT_CSS;
+  S.doc.head.appendChild(st);
+  let tmr = null;
+  S.doc.addEventListener('input', e => {
+    const el = e.target.closest && e.target.closest('[data-cj-ed]'); if (!el) return;
+    clearTimeout(tmr);
+    tmr = setTimeout(() => {
+      const sec = el.closest('section.slide');
+      setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: el.innerHTML });
+    }, 450);
+  });
+  S.doc.addEventListener('click', e => {
+    const im = e.target.closest && e.target.closest('img[data-cj-img]');
+    if (im) { e.preventDefault(); e.stopPropagation(); pickImage(im); }
+  }, true);
+}
+
+const INLINE = new Set(['SPAN','EM','B','I','STRONG','BR','A','SMALL','SUP','SUB','U','MARK','ABBR']);
+function armEditables(sec){
+  if (!sec || sec.dataset.cjArmed) return;
+  sec.dataset.cjArmed = '1';
+  sec.querySelectorAll('*').forEach(el => {
+    if (el.closest('svg,canvas,video,iframe,button,input,textarea,select')) return;
+    if (el.parentElement && el.parentElement.closest('[data-cj-ed]')) return;   // déjà couvert par un bloc parent
+    let hasText = false, block = false;
+    el.childNodes.forEach(n => {
+      if (n.nodeType === 3 && n.textContent.trim()) hasText = true;
+      else if (n.nodeType === 1 && !INLINE.has(n.tagName)) block = true;
+    });
+    if (hasText && !block) { el.setAttribute('data-cj-ed',''); el.contentEditable = 'true'; }
+  });
+  sec.querySelectorAll('img').forEach(im => im.setAttribute('data-cj-img',''));
+}
+
+function showSlide(i){
+  const ss = sections(); if (!ss.length) return;
+  S.cur = Math.max(0, Math.min(ss.length-1, i));
+  const sec0 = ss[S.cur];
+  if (S.mode === 'view') {
+    // le deck a sa propre nav (goSlide indexe les slides non masquées) : on la laisse faire
+    const vis = ss.filter(s => !s.classList.contains('skip'));
+    const j = vis.indexOf(sec0);
+    try { if (j >= 0 && frame.contentWindow.goSlide) frame.contentWindow.goSlide(j); } catch(_){}
+    $('#curLbl').textContent = (S.cur+1) + ' / ' + ss.length + ' · ' + (sec0.dataset.chapter||'') + ' — ' + (sec0.dataset.lbl||'sans titre')
+      + (j < 0 ? '  (masquée : invisible en aperçu)' : '');
+    [...$('#list').querySelectorAll('.item')].forEach(el => el.classList.toggle('cur', +el.dataset.i === S.cur));
+    return;
+  }
+  ss.forEach((s,k) => {
+    s.classList.toggle('active', k === S.cur);
+    if (k === S.cur) s.setAttribute('data-cj-cur',''); else s.removeAttribute('data-cj-cur');
+  });
+  const sec = ss[S.cur];
+  if (S.mode === 'edit') armEditables(sec);
+  sec.scrollTop = 0;
+  $('#curLbl').textContent = (S.cur+1) + ' / ' + ss.length + ' · ' + (sec.dataset.chapter||'') + ' — ' + (sec.dataset.lbl||'sans titre');
+  [...$('#list').querySelectorAll('.item')].forEach(el => el.classList.toggle('cur', +el.dataset.i === S.cur));
+  const cu = $('#list').querySelector('.item.cur'); if (cu) cu.scrollIntoView({block:'nearest'});
+}
+
+/* le deck est dessiné pour un viewport plein écran : on le rend à taille réelle puis on met à l'échelle */
+function fitFrame(){
+  const w = $('#frameWrap'), box = $('#frameBox');
+  const W = 1600, H = 1000;
+  box.style.width = W+'px'; box.style.height = H+'px';
+  const k = Math.min((w.clientWidth-28)/W, (w.clientHeight-28)/H);
+  box.style.transform = 'translate(-50%,-50%) scale('+k+')';
+}
+addEventListener('resize', fitFrame);
+</script>
+<script>
+/* ---------- rail des slides ---------- */
+function buildRail(){
+  const list = $('#list'); list.innerHTML = '';
+  let chap = null;
+  sections().forEach((s,i) => {
+    const c = s.dataset.chapter || '';
+    if (c !== chap) { chap = c; const h = document.createElement('div'); h.className='chap'; h.textContent = c || '—'; list.appendChild(h); }
+    const it = document.createElement('div');
+    it.className = 'item' + (s.classList.contains('skip') ? ' hidden' : '');
+    it.dataset.i = i; it.draggable = true;
+    it.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span>
+      <span class="nm" title="Double-clic pour renommer">${(s.dataset.lbl||'sans titre').replace(/</g,'&lt;')}</span>
+      <button class="act" data-a="skip" title="Masquer / afficher dans la présentation">${s.classList.contains('skip')?'◌':'◉'}</button>
+      <button class="act" data-a="dup"  title="Dupliquer">⧉</button>
+      <button class="act" data-a="del"  title="Supprimer">✕</button>`;
+    list.appendChild(it);
+  });
+}
+$('#list').addEventListener('click', e => {
+  const it = e.target.closest('.item'); if (!it) return;
+  const i = +it.dataset.i, sec = sections()[i], a = e.target.dataset.a;
+  if (!a) { showSlide(i); return; }
+  if (a === 'skip') { const on = !sec.classList.contains('skip'); setOp({t:'skip', slide:sec.dataset.lbl, on}); sec.classList.toggle('skip', on); buildRail(); showSlide(i); }
+  if (a === 'dup')  dupSlide(sec);
+  if (a === 'del')  delSlide(sec);
+});
+$('#list').addEventListener('dblclick', e => {
+  const nm = e.target.closest('.nm'); if (!nm) return;
+  const i = +nm.closest('.item').dataset.i, sec = sections()[i];
+  const old = sec.dataset.lbl || '', v = prompt('Nom de la slide :', old);
+  if (v === null || v === old || !v.trim()) return;
+  renameSlide(sec, v.trim());
+});
+
+/* glisser-déposer pour réordonner */
+let dragI = null;
+$('#list').addEventListener('dragstart', e => { const it = e.target.closest('.item'); if (it) { dragI = +it.dataset.i; e.dataTransfer.effectAllowed='move'; } });
+$('#list').addEventListener('dragover',  e => { const it = e.target.closest('.item'); if (it && dragI !== null) { e.preventDefault(); [...$('#list').querySelectorAll('.item')].forEach(x=>x.classList.remove('drop')); it.classList.add('drop'); } });
+$('#list').addEventListener('dragleave', e => { const it = e.target.closest('.item'); if (it) it.classList.remove('drop'); });
+$('#list').addEventListener('drop', e => {
+  const it = e.target.closest('.item'); if (!it || dragI === null) return;
+  e.preventDefault(); it.classList.remove('drop');
+  const to = +it.dataset.i; if (to === dragI) { dragI = null; return; }
+  const labels = sections().map(s => s.dataset.lbl);
+  const [m] = labels.splice(dragI, 1); labels.splice(to, 0, m);
+  const main = S.doc.querySelector('main');
+  labels.forEach(l => { const s = slideOf(S.doc, l); if (s) main.appendChild(s); });
+  setOp({ t:'order', slides: labels });
+  dragI = null; buildRail(); showSlide(to);
+});
+
+/* ---------- opérations sur les slides ---------- */
+function uniqLbl(base){
+  const taken = new Set(sections().map(s => s.dataset.lbl));
+  if (!taken.has(base)) return base;
+  let n = 2; while (taken.has(base+' ('+n+')')) n++;
+  return base+' ('+n+')';
+}
+function renameSlide(sec, v){
+  const old = sec.dataset.lbl; const nv = uniqLbl(v);
+  snapshot();
+  S.ops.forEach(o => { if (o.slide === old) o.slide = nv; if (o.after === old) o.after = nv;
+                       if (o.t === 'order') o.slides = o.slides.map(l => l === old ? nv : l); });
+  setOp({ t:'lbl', slide: old, value: nv }, true);
+  sec.dataset.lbl = nv; buildRail(); showSlide(S.cur);
+}
+function delSlide(sec){
+  if (!confirm('Supprimer la slide « '+(sec.dataset.lbl||'')+' » ?\n\nTu peux annuler juste après avec ↶.')) return;
+  setOp({ t:'del', slide: sec.dataset.lbl });
+  sec.remove(); buildRail(); showSlide(Math.min(S.cur, sections().length-1));
+}
+function dupSlide(sec){
+  const lbl = uniqLbl((sec.dataset.lbl||'slide') + ' (copie)');
+  const clone = sec.cloneNode(true);
+  clone.dataset.lbl = lbl; delete clone.dataset.cjArmed; clone.removeAttribute('data-cj-armed');
+  clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));   // pas de doublon d'id
+  clone.classList.remove('active'); clone.removeAttribute('data-cj-cur');
+  setOp({ t:'add', after: sec.dataset.lbl, html: clone.outerHTML });
+  sec.after(clone);
+  buildRail(); showSlide(sections().indexOf(clone));
+}
+const TPL = (lbl, chap) => `<section class="slide" data-chapter="${chap}" data-lbl="${lbl}">
+  <span class="eyebrow r"><span class="dot"></span>${chap}</span>
+  <h2 class="title r d1">NOUVELLE SLIDE</h2>
+  <p class="note r d2">Clique ce texte pour l'écrire. Demande à Claude si tu veux une mise en page particulière.</p>
+</section>`;
+$('#btnAdd').onclick = () => {
+  const sec = curSec(); if (!sec) return;
+  const lbl = uniqLbl('Nouvelle slide');
+  const html = TPL(lbl, sec.dataset.chapter || '');
+  setOp({ t:'add', after: sec.dataset.lbl, html });
+  const t = S.doc.createElement('template'); t.innerHTML = html.trim();
+  const nu = t.content.firstElementChild; sec.after(nu);
+  buildRail(); showSlide(sections().indexOf(nu));
+};
+
+/* ---------- remplacement d'image ---------- */
+let pending = null;
+function pickImage(im){ pending = im; $('#filePick').value=''; $('#filePick').click(); }
+$('#filePick').onchange = async e => {
+  const f = e.target.files[0]; if (!f || !pending) return;
+  status('conversion de l\'image…');
+  try {
+    const src = await toDataURL(f);
+    const sec = pending.closest('section.slide');
+    setOp({ t:'img', slide: sec.dataset.lbl, path: pathOf(pending, sec), src });
+    pending.src = src; pending = null;
+    const ko = Math.round(src.length/1365);
+    status('image remplacée (' + (ko>1024 ? (ko/1024).toFixed(1)+' Mo' : ko+' Ko') + ')', 'dirty');
+    setTimeout(refreshStatus, 2500);
+  } catch(err){ status('image illisible', 'err'); console.error(err); }
+};
+function toDataURL(file){
+  return new Promise((res, rej) => {
+    const rd = new FileReader();
+    rd.onerror = rej;
+    rd.onload = () => {
+      // au-delà de 800 Ko on redimensionne : patch.js doit rester raisonnable
+      if (file.size < 800*1024) return res(rd.result);
+      const img = new Image();
+      img.onload = () => {
+        const M = 2200, k = Math.min(1, M/Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => res(rd.result);
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+
+/* ---------- modes ---------- */
+function setMode(m){
+  if (m === S.mode) return;
+  if (m === 'view' && dirty() && !confirm('L\'aperçu recharge le deck.\nTes modifications non enregistrées sont conservées en mémoire et réappliquées. Continuer ?')) return;
+  S.mode = m;
+  $('#mEdit').classList.toggle('on', m === 'edit');
+  $('#mView').classList.toggle('on', m === 'view');
+  $('#hint').textContent = m === 'edit'
+    ? "Clique un texte pour l'éditer · clique une image pour la remplacer"
+    : "Aperçu réel — flèches, sommaire et animations fonctionnent";
+  loadDeck();
+}
+$('#mEdit').onclick = () => setMode('edit');
+$('#mView').onclick = () => setMode('view');
+
+$('#btnUndo').onclick = () => {
+  if (!S.undo.length) return;
+  S.ops = JSON.parse(S.undo.pop());
+  refreshStatus(); loadDeck();
+};
+addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue=''; } });
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('textarea,input')) return;
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); showSlide(S.cur+1); }
+  if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); showSlide(S.cur-1); }
+  if ((e.metaKey||e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
+});
+
+/* ---------- enregistrement sur GitHub ---------- */
+function patchFile(){
+  return '/* CHONG JI — calque de modifications\n'
+       + '   Écrit par l\'éditeur (editeur.html) et par Claude. Appliqué au chargement du deck.\n'
+       + '   Ne pas éditer à la main sauf si tu sais ce que tu fais. */\n'
+       + 'window.CJ_PATCH = ' + JSON.stringify({ version:1, updated:new Date().toISOString(), ops:S.ops }, null, 1) + ';\n';
+}
+function b64(str){
+  const b = new TextEncoder().encode(str);
+  let out = '';
+  for (let i = 0; i < b.length; i += 0x8000) out += String.fromCharCode.apply(null, b.subarray(i, i+0x8000));
+  return btoa(out);
+}
+async function gh(path, opt){
+  const r = await fetch('https://api.github.com/repos/'+REPO+'/'+path, {
+    ...opt, headers: { Authorization:'Bearer '+cfg.gh, Accept:'application/vnd.github+json', ...(opt&&opt.headers) }
+  });
+  if (!r.ok) throw new Error('GitHub ' + r.status + ' — ' + (await r.text()).slice(0,200));
+  return r.json();
+}
+async function save(){
+  if (!dirty() || S.busy) return;
+  if (!cfg.gh) { alert('Il manque le jeton GitHub. Ouvre Réglages.'); return openCfg(); }
+  S.busy = true; $('#btnSave').disabled = true; status('enregistrement…');
+  try {
+    let sha = S.sha;
+    if (!sha) { try { sha = (await gh('contents/'+FILE)).sha; } catch(_){ sha = null; } }
+    const body = {
+      message: 'Deck : ' + S.ops.length + ' modification(s) — via éditeur',
+      content: b64(patchFile()),
+      ...(sha ? { sha } : {})
+    };
+    const res = await gh('contents/'+FILE, { method:'PUT', body: JSON.stringify(body) });
+    S.sha = res.content.sha; S.base = JSON.stringify(S.ops);
+    S.busy = false; status('enregistré — en ligne dans ~1 min', 'ok');
+    setTimeout(refreshStatus, 6000);
+  } catch(err){
+    S.busy = false; status('échec de l\'enregistrement', 'err');
+    alert('Enregistrement impossible :\n\n' + err.message + '\n\nVérifie le jeton dans Réglages (permission Contents : Read and write sur chongji-hub).');
+    refreshStatus();
+  }
+}
+$('#btnSave').onclick = save;
+
+/* ---------- réglages ---------- */
+function openCfg(){ $('#ghTok').value = cfg.gh; $('#aiKey').value = cfg.ai; $('#cfg').showModal(); }
+$('#btnCfg').onclick = openCfg;
+$('#cfgClose').onclick = () => $('#cfg').close();
+$('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); cfg.ai = $('#aiKey').value.trim(); $('#cfg').close(); refreshStatus(); };
+$('#btnChat').onclick = () => $('#main').classList.toggle('nochat');
+
+refreshStatus();
+loadDeck();
+</script>
+<script type="module">
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.124.0';
+
+/* ---------- médias : on ne fait jamais transiter le base64 ---------- */
+const MED = { list: [], idx: new Map() };
+function tok(v){ let i = MED.idx.get(v); if (i === undefined) { i = MED.list.push(v)-1; MED.idx.set(v, i); } return '«MEDIA'+i+'»'; }
+function strip(html){
+  return html
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, m => m.length > 1200 ? tok(m) : m)
+    .replace(/(data:[a-z0-9.+\/-]+;base64,)([A-Za-z0-9+\/=]{60,})/gi, m => tok(m));
+}
+function expand(html){ return String(html).replace(/«MEDIA(\d+)»/g, (m,i) => MED.list[+i] ?? m); }
+
+/* ---------- outils confiés à Claude ---------- */
+const secByLbl = l => slideOf(S.doc, l);
+function need(l){ const s = secByLbl(l); if (!s) throw new Error('Slide « '+l+' » introuvable. Utilise lister_slides.'); return s; }
+function redraw(keep){ buildRail(); showSlide(keep !== undefined ? keep : S.cur); }
+
+const TOOLS = {
+  lister_slides: {
+    d: "Liste toutes les slides du deck dans l'ordre : numéro, chapitre, titre (data-lbl), et si elle est masquée.",
+    s: { type:'object', properties:{}, required:[], additionalProperties:false },
+    run: () => sections().map((s,i) =>
+      `${i+1}. [${s.dataset.chapter||'—'}] ${s.dataset.lbl||'sans titre'}${s.classList.contains('skip')?' (MASQUÉE)':''}`).join('\n')
+  },
+  lire_slide: {
+    d: "Renvoie le HTML d'une slide. Les images, vidéos et gros SVG sont remplacés par des jetons «MEDIAn» : recopie-les tels quels si tu réécris la slide, ils seront réinjectés. Renvoie aussi le chemin (path) de chaque bloc de texte modifiable, à utiliser avec ecrire_texte.",
+    s: { type:'object', properties:{ lbl:{type:'string',description:"Titre exact de la slide (data-lbl)"} }, required:['lbl'], additionalProperties:false },
+    run: a => {
+      const s = need(a.lbl);
+      const leaves = [...s.querySelectorAll('[data-cj-ed]')].map(el => `  ${pathOf(el,s)} → ${el.tagName.toLowerCase()}.${(el.className||'').toString().split(' ')[0]} : ${el.textContent.trim().slice(0,110)}`);
+      let h = strip(s.outerHTML);
+      if (h.length > 14000) h = h.slice(0,14000) + '\n… (tronqué)';
+      return 'HTML :\n' + h + (leaves.length ? '\n\nBlocs de texte modifiables (path → contenu) :\n' + leaves.join('\n') : '\n\n(Ouvre la slide dans l\'éditeur pour indexer ses blocs de texte.)');
+    }
+  },
+  ecrire_texte: {
+    d: "Remplace le contenu HTML d'UN bloc de texte, repéré par son path (donné par lire_slide). À privilégier : c'est la modification la plus sûre, elle ne touche pas la mise en page.",
+    s: { type:'object', properties:{ lbl:{type:'string'}, path:{type:'string',description:"ex. « 2-0-1 »"}, html:{type:'string',description:"HTML interne du bloc (balises inline autorisées : <em>, <b>, <span class=\"red\">…)"} }, required:['lbl','path','html'], additionalProperties:false },
+    run: a => {
+      const s = need(a.lbl), n = nodeAt(s, a.path);
+      if (!n) throw new Error('path « '+a.path+' » introuvable dans « '+a.lbl+' »');
+      const html = expand(a.html);
+      setOp({ t:'text', slide:a.lbl, path:a.path, html });
+      n.innerHTML = html; return 'OK — bloc '+a.path+' réécrit.';
+    }
+  },
+  remplacer_slide: {
+    d: "Remplace tout le contenu intérieur d'une slide. Puissant mais risqué : n'utilise ça que si ecrire_texte ne suffit pas. Reprends les classes existantes du deck (title, eyebrow, note, r, d1, d2…) et recopie les jetons «MEDIAn» à l'identique.",
+    s: { type:'object', properties:{ lbl:{type:'string'}, html:{type:'string',description:"nouveau HTML intérieur de la <section>"} }, required:['lbl','html'], additionalProperties:false },
+    run: a => {
+      const s = need(a.lbl), html = expand(a.html);
+      setOp({ t:'text', slide:a.lbl, path:'', html });
+      s.innerHTML = html; delete s.dataset.cjArmed; redraw(); return 'OK — slide « '+a.lbl+' » reconstruite.';
+    }
+  },
+  ajouter_slide: {
+    d: "Insère une nouvelle slide après une slide existante.",
+    s: { type:'object', properties:{ apres:{type:'string',description:"titre de la slide après laquelle insérer"}, titre:{type:'string'}, chapitre:{type:'string',description:"ex. « 04 · Le projet »"}, html:{type:'string',description:"contenu intérieur de la section"} }, required:['apres','titre','html'], additionalProperties:false },
+    run: a => {
+      const ref = need(a.apres);
+      const lbl = uniqLbl(a.titre), chap = a.chapitre || ref.dataset.chapter || '';
+      const full = `<section class="slide" data-chapter="${chap}" data-lbl="${lbl}">${expand(a.html)}</section>`;
+      setOp({ t:'add', after:a.apres, html: full });
+      const t = S.doc.createElement('template'); t.innerHTML = full.trim();
+      const nu = t.content.firstElementChild; ref.after(nu);
+      redraw(sections().indexOf(nu)); return 'OK — slide « '+lbl+' » ajoutée après « '+a.apres+' ».';
+    }
+  },
+  supprimer_slide: {
+    d: "Supprime une slide. Préfère masquer_slide si Viktor veut juste la retirer de la présentation.",
+    s: { type:'object', properties:{ lbl:{type:'string'} }, required:['lbl'], additionalProperties:false },
+    run: a => { const s = need(a.lbl); setOp({t:'del',slide:a.lbl}); s.remove(); redraw(Math.min(S.cur, sections().length-1)); return 'OK — « '+a.lbl+' » supprimée.'; }
+  },
+  masquer_slide: {
+    d: "Masque (ou réaffiche) une slide : elle reste dans le fichier mais sort de la présentation.",
+    s: { type:'object', properties:{ lbl:{type:'string'}, masquer:{type:'boolean'} }, required:['lbl','masquer'], additionalProperties:false },
+    run: a => { const s = need(a.lbl); setOp({t:'skip',slide:a.lbl,on:!!a.masquer}); s.classList.toggle('skip', !!a.masquer); redraw(); return 'OK — « '+a.lbl+' » '+(a.masquer?'masquée':'réaffichée')+'.'; }
+  },
+  deplacer_slide: {
+    d: "Déplace une slide juste après une autre.",
+    s: { type:'object', properties:{ lbl:{type:'string'}, apres:{type:'string',description:"titre de la slide qui doit la précéder ; « début » pour la placer en premier"} }, required:['lbl','apres'], additionalProperties:false },
+    run: a => {
+      const s = need(a.lbl), main = S.doc.querySelector('main');
+      if (a.apres === 'début') main.prepend(s); else need(a.apres).after(s);
+      const labels = sections().map(x => x.dataset.lbl);
+      setOp({ t:'order', slides: labels }); redraw(labels.indexOf(a.lbl));
+      return 'OK — « '+a.lbl+' » déplacée.';
+    }
+  },
+  renommer_slide: {
+    d: "Change le titre (data-lbl) d'une slide — c'est le nom affiché dans le sommaire et le pied de page.",
+    s: { type:'object', properties:{ lbl:{type:'string'}, nouveau:{type:'string'} }, required:['lbl','nouveau'], additionalProperties:false },
+    run: a => { renameSlide(need(a.lbl), a.nouveau); return 'OK — renommée en « '+a.nouveau+' ».'; }
+  },
+  styles_disponibles: {
+    d: "Liste les classes CSS réellement utilisées dans le deck, avec leur fréquence. À consulter avant d'écrire du HTML, pour rester dans la charte au lieu d'inventer du style.",
+    s: { type:'object', properties:{}, required:[], additionalProperties:false },
+    run: () => {
+      const c = {};
+      sections().forEach(s => s.querySelectorAll('*').forEach(e => (e.className||'').toString().split(/\s+/).forEach(x => { if (x) c[x] = (c[x]||0)+1; })));
+      return Object.entries(c).sort((a,b) => b[1]-a[1]).slice(0,70).map(([k,v]) => k+' ('+v+')').join(', ');
+    }
+  }
+};
+const TOOLDEFS = Object.entries(TOOLS).map(([name,t]) => ({ name, description:t.d, input_schema:t.s }));
+
+const SYS = `Tu es l'assistant d'édition intégré au deck de soutenance de Viktor Guignard (CHONG JI 冲击, M2 DADG, ESDAC Paris). Tu réponds en français, brièvement.
+
+Le deck est une présentation HTML sur mesure de ~49 slides. Chaque slide est une <section class="slide"> avec data-chapter et data-lbl. Viktor édite lui-même les textes et les images directement dans l'éditeur ; il s'adresse à toi pour ce qui est plus lourd : réécrire un bloc, restructurer une slide, en créer une, réordonner, harmoniser le ton.
+
+Règles :
+- Appelle lister_slides avant toute chose si tu ne connais pas encore la structure.
+- Lis une slide avant de la modifier. Ne devine jamais un path.
+- Préfère ecrire_texte (chirurgical) à remplacer_slide (risqué).
+- Les jetons «MEDIAn» remplacent images, vidéos et SVG : recopie-les EXACTEMENT, ne les invente pas, n'en fabrique pas de nouveaux.
+- Réutilise les classes existantes du deck (styles_disponibles). N'écris pas de <style>, n'invente pas de CSS : la charte est déjà faite.
+- Les classes r / d1 / d2 / d3 pilotent l'animation d'apparition — garde-les sur les blocs de premier niveau.
+- Charte : fond os #F2EFE6, encre #0D0D0D, rouge #E30613, titres Anton en capitales, texte Jost. <span class="red"> pour accentuer en rouge.
+- Tes modifications sont appliquées en direct sous les yeux de Viktor mais ne sont PAS enregistrées : c'est lui qui clique Enregistrer. Dis-le si c'est utile.
+- Si une demande est ambiguë ou risquée (supprimer plusieurs slides, refondre une maquette), demande confirmation avant d'agir.`;
+
+/* ---------- boucle de conversation ---------- */
+let client = null, hist = [], running = false, useFallback = true;
+const msgs = $('#msgs');
+function bubble(cls, txt){ const d = document.createElement('div'); d.className = 'msg '+cls; d.textContent = txt||''; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
+function line(cls, txt){ const d = document.createElement('div'); d.className = 'tool '+cls; d.textContent = txt; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
+
+bubble('sys', "Claude peut lire et modifier le deck directement. Ex. « harmonise le ton des 3 slides du chapitre 05 », « ajoute une slide de plan après Déroulé », « la slide Naming est trop chargée, allège-la ».");
+
+async function send(){
+  const q = $('#ask').value.trim();
+  if (!q || running) return;
+  if (!cfg.ai) { alert("Il manque la clé API Anthropic. Ouvre Réglages."); return openCfg(); }
+  if (!S.doc) { alert('Attends la fin du chargement du deck.'); return; }
+  if (!client) client = new Anthropic({ apiKey: cfg.ai, dangerouslyAllowBrowser: true });
+
+  $('#ask').value = ''; bubble('u', q);
+  hist.push({ role:'user', content:q });
+  running = true; $('#btnSend').disabled = true; $('#aiHint').textContent = 'Claude travaille…';
+
+  try {
+    for (let turn = 0; turn < 12; turn++) {
+      const req = {
+        model: 'claude-opus-5', max_tokens: 16000,
+        thinking: { type:'adaptive', display:'summarized' },
+        system: SYS, tools: TOOLDEFS, messages: hist,
+        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default'
+      };
+      if (!useFallback) { delete req.betas; delete req.fallbacks; }
+      let stream = client.beta.messages.stream(req);
+
+      let tb = null, ab = null;
+      stream.on('streamEvent', ev => {
+        if (ev.type === 'content_block_delta') {
+          if (ev.delta.type === 'thinking_delta') { (tb ||= bubble('think','')).textContent += ev.delta.thinking; msgs.scrollTop = 1e9; }
+          if (ev.delta.type === 'text_delta')     { (ab ||= bubble('a','')).textContent += ev.delta.text;      msgs.scrollTop = 1e9; }
+        }
+        if (ev.type === 'content_block_start' && ev.content_block.type === 'text') ab = null;
+      });
+
+      const m = await stream.finalMessage();
+      hist.push({ role:'assistant', content:m.content });
+
+      if (m.stop_reason === 'refusal') { bubble('sys', "Claude a décliné cette demande."); break; }
+
+      const uses = m.content.filter(b => b.type === 'tool_use');
+      if (!uses.length) break;
+
+      const results = uses.map(u => {
+        try {
+          const out = TOOLS[u.name].run(u.input || {});
+          line('ok', '✓ ' + u.name + (u.input && u.input.lbl ? ' — ' + u.input.lbl : ''));
+          return { type:'tool_result', tool_use_id:u.id, content: String(out) };
+        } catch(err){
+          line('ko', '✕ ' + u.name + ' — ' + err.message);
+          return { type:'tool_result', tool_use_id:u.id, content: 'Erreur : ' + err.message, is_error:true };
+        }
+      });
+      hist.push({ role:'user', content: results });
+    }
+  } catch(err){
+    console.error(err);
+    const s = err && err.status;
+    if (s === 400 && useFallback && /fallback|beta/i.test(err.message||'')) {
+      useFallback = false;
+      bubble('sys', "Repli automatique désactivé (non disponible sur ce compte) — je réessaie.");
+      running = false; $('#btnSend').disabled = false;
+      $('#ask').value = q; return send();
+    }
+    bubble('sys', s === 401 ? "Clé API refusée — vérifie-la dans Réglages."
+                 : s === 429 ? "Limite de débit atteinte, réessaie dans un instant."
+                 : "Erreur : " + (err.message || err));
+  }
+  running = false; $('#btnSend').disabled = false; $('#aiHint').textContent = 'Entrée = envoyer · Maj+Entrée = retour ligne';
+  refreshStatus();
+}
+/* pont de débogage : permet d'inspecter les outils depuis la console */
+window.CJ_DEBUG = { TOOLS, strip, expand, MED, get hist(){ return hist; } };
+
+$('#btnSend').onclick = send;
+$('#ask').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+$('#btnClear').onclick = () => { hist = []; msgs.innerHTML = ''; bubble('sys','Conversation effacée. Le deck n\'a pas changé.'); };
+</script>
+</body>
+</html>

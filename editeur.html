@@ -38,8 +38,16 @@ button.btn:disabled{opacity:.4;cursor:default}
 .status.err{color:var(--red)}
 
 /* ---------- corps ---------- */
-main{flex:1;display:grid;grid-template-columns:var(--rail) 1fr var(--chat);min-height:0}
+main{flex:1;display:grid;grid-template-columns:var(--rail) 1fr var(--chat);min-height:0;position:relative}
 main.nochat{grid-template-columns:var(--rail) 1fr 0}
+/* fenêtres étroites : on rétrécit, puis le panneau Claude passe en surcouche */
+@media (max-width:1320px){ :root{--rail:230px;--chat:330px} }
+@media (max-width:1080px){
+  main,main.nochat{grid-template-columns:var(--rail) 1fr 0}
+  #chat{position:absolute;right:0;top:0;bottom:0;width:min(360px,86vw);z-index:20;box-shadow:-16px 0 44px rgba(0,0,0,.55)}
+  main:not(.nochat) #chat{display:flex}
+}
+@media (max-width:780px){ :root{--rail:168px} .stagebar .hint{display:none} }
 section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 
 /* ---------- rail des slides ---------- */
@@ -370,7 +378,8 @@ function fitFrame(){
   const w = $('#frameWrap'), box = $('#frameBox');
   const W = 1600, H = 1000;
   box.style.width = W+'px'; box.style.height = H+'px';
-  const k = Math.min((w.clientWidth-28)/W, (w.clientHeight-28)/H);
+  // jamais d'échelle nulle ou négative si la colonne est écrasée
+  const k = Math.max(0.05, Math.min((w.clientWidth-28)/W, (w.clientHeight-28)/H));
   box.style.transform = 'translate(-50%,-50%) scale('+k+')';
 }
 addEventListener('resize', fitFrame);
@@ -589,6 +598,7 @@ $('#cfgClose').onclick = () => $('#cfg').close();
 $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); cfg.ai = $('#aiKey').value.trim(); $('#cfg').close(); refreshStatus(); };
 $('#btnChat').onclick = () => $('#main').classList.toggle('nochat');
 
+if (innerWidth <= 1080) $('#main').classList.add('nochat');   // le panneau Claude s'ouvre à la demande
 refreshStatus();
 loadDeck();
 </script>

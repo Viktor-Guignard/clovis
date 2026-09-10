@@ -725,7 +725,26 @@ Règles :
 - Si une demande est ambiguë ou risquée (supprimer plusieurs slides, refondre une maquette), demande confirmation avant d'agir.`;
 
 /* ---------- boucle de conversation ---------- */
-let client = null, hist = [], running = false, useFallback = true;
+let client = null, hist = [], running = false, useFallback = true, depense = 0;
+
+/* Le préambule et les 10 outils (~1 700 tokens) sont identiques à chaque requête :
+   on les met en cache. On marque aussi le dernier bloc de l'historique, qui grossit
+   à chaque aller-retour d'outil — c'est là que se trouve le gros des tokens. */
+function marquerCache(messages){
+  messages.forEach(m => { if (Array.isArray(m.content)) m.content.forEach(b => { if (b && b.cache_control) delete b.cache_control; }); });
+  const last = messages[messages.length-1];
+  if (last && Array.isArray(last.content) && last.content.length) {
+    const b = last.content[last.content.length-1];
+    if (b && typeof b === 'object') b.cache_control = { type:'ephemeral' };
+  }
+  return messages;
+}
+/* tarifs Claude Opus 5, en dollars par million de tokens */
+function coutUSD(u){
+  if (!u) return 0;
+  return ((u.input_tokens||0)*5 + (u.cache_creation_input_tokens||0)*6.25
+        + (u.cache_read_input_tokens||0)*0.5 + (u.output_tokens||0)*25) / 1e6;
+}
 const msgs = $('#msgs');
 function bubble(cls, txt){ const d = document.createElement('div'); d.className = 'msg '+cls; d.textContent = txt||''; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
 function line(cls, txt){ const d = document.createElement('div'); d.className = 'tool '+cls; d.textContent = txt; msgs.appendChild(d); msgs.scrollTop = 1e9; return d; }
@@ -742,13 +761,15 @@ async function send(){
   $('#ask').value = ''; bubble('u', q);
   hist.push({ role:'user', content:q });
   running = true; $('#btnSend').disabled = true; $('#aiHint').textContent = 'Claude travaille…';
+  let tour = 0, cacheInfo = '';
 
   try {
     for (let turn = 0; turn < 12; turn++) {
       const req = {
         model: 'claude-opus-5', max_tokens: 16000,
         thinking: { type:'adaptive', display:'summarized' },
-        system: SYS, tools: TOOLDEFS, messages: hist,
+        system: [{ type:'text', text: SYS, cache_control:{ type:'ephemeral' } }],
+        tools: TOOLDEFS, messages: marquerCache(hist),
         betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default'
       };
       if (!useFallback) { delete req.betas; delete req.fallbacks; }
@@ -765,6 +786,11 @@ async function send(){
 
       const m = await stream.finalMessage();
       hist.push({ role:'assistant', content:m.content });
+      tour += coutUSD(m.usage);
+      const u = m.usage || {};
+      const enCache = (u.cache_read_input_tokens||0);
+      const entree  = enCache + (u.input_tokens||0) + (u.cache_creation_input_tokens||0);
+      if (entree) cacheInfo = Math.round(100*enCache/entree) + '\u00a0% en cache';
 
       if (m.stop_reason === 'refusal') { bubble('sys', "Claude a décliné cette demande."); break; }
 
@@ -796,6 +822,9 @@ async function send(){
                  : s === 429 ? "Limite de débit atteinte, réessaie dans un instant."
                  : "Erreur : " + (err.message || err));
   }
+  depense += tour;
+  if (tour) line('', 'coût : ' + tour.toFixed(3).replace('.',',') + ' $'
+    + (cacheInfo ? ' · ' + cacheInfo : '') + '   —   total de la session : ' + depense.toFixed(2).replace('.',',') + ' $');
   running = false; $('#btnSend').disabled = false; $('#aiHint').textContent = 'Entrée = envoyer · Maj+Entrée = retour ligne';
   refreshStatus();
 }

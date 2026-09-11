@@ -468,7 +468,9 @@ function loadDeck(){
   $('#veil').classList.remove('gone');
   // le deck lit cet état AVANT d'initialiser sa navigation : pas de désynchro
   try {
-    sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops));
+    const etat = JSON.stringify(S.ops);
+    sessionStorage.setItem('cj_preview_ops', etat);   // l'aperçu, dans l'iframe
+    localStorage.setItem('cj_preview_ops', etat);     // le diaporama, dans son propre onglet
   } catch(e){
     // sessionStorage plafonne vers 5 Mo : des images non enregistrées peuvent le saturer.
     // Le silence ferait disparaître le travail de l'écran sans explication.
@@ -1387,7 +1389,18 @@ addEventListener('resize', placerPanneau);
    on passe par sessionStorage, comme l'aperçu. Un onglet nommé, pour ne pas
    en empiler un à chaque clic. */
 $('#btnDiapo').onclick = () => {
-  try { sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops)); } catch(e){ console.warn(e); }
+  // localStorage et non sessionStorage : un onglet ouvert avec noopener
+  // n'hérite pas du second, et le diaporama affichait alors le deck d'origine.
+  try {
+    const etat = JSON.stringify(S.ops);
+    sessionStorage.setItem('cj_preview_ops', etat);
+    localStorage.setItem('cj_preview_ops', etat);
+  } catch(e){
+    console.warn(e);
+    alert("Tes modifications sont trop lourdes pour être transmises au diaporama "
+        + "— des images remplacées, probablement.\n\nEnregistre d'abord : le diaporama "
+        + "lira alors la version publiée.");
+  }
   const a = document.createElement('a');
   a.href = 'contre-champ.html?preview=1&plein=1';
   a.target = 'cc-diaporama'; a.rel = 'noopener';

@@ -257,7 +257,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <h3>RÉGLAGES</h3>
   <p>Le jeton reste dans <b>ce navigateur uniquement</b> (localStorage). Il ne part jamais ailleurs que vers GitHub, et personne ne peut le lire depuis la page publique.</p>
 
-  <label>Jeton GitHub — pour enregistrer</label>
+  <label for="ghTok">Jeton GitHub — pour enregistrer</label>
   <input id="ghTok" type="password" placeholder="github_pat_…" autocomplete="off">
   <div class="help">À créer sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → fine-grained token</a> : accès <b>uniquement au dépôt chongji-hub</b>, permission <b>Contents : Read and write</b>. Rien d'autre.</div>
 
@@ -361,9 +361,9 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <dialog id="dlgRR"><div class="dlg">
   <h3>RECHERCHER & REMPLACER</h3>
   <p>Dans le texte de toutes les slides. Les images et le code ne sont jamais touchés.</p>
-  <label>Rechercher</label>
+  <label for="rrQ">Rechercher</label>
   <input id="rrQ" class="champ" autocomplete="off" placeholder="ex. Zénith">
-  <label>Remplacer par</label>
+  <label for="rrR">Remplacer par</label>
   <input id="rrR" class="champ" autocomplete="off" placeholder="laisse vide pour supprimer">
   <div class="res" id="rrRes"></div>
   <div class="row">
@@ -375,14 +375,14 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <dialog id="dlgCode"><div class="dlg">
   <h3>CODE DE LA SLIDE</h3>
   <p>Le HTML de la slide courante. Les images et vidéos sont remplacées par des jetons <b>«MÉDIA n»</b> — laisse-les tels quels, ils seront réinjectés. Échappatoire pour ce que l'éditeur ne sait pas faire.</p>
-  <textarea id="codeTxt" class="champ" spellcheck="false"></textarea>
+  <textarea id="codeTxt" class="champ" spellcheck="false" aria-label="HTML de la slide courante"></textarea>
   <div class="row">
     <button class="btn" id="codeClose">Annuler</button>
     <button class="btn prim" id="codeGo">Appliquer</button>
   </div>
 </div></dialog>
 
-<input type="file" id="filePick" accept="image/*" hidden>
+<input type="file" id="filePick" accept="image/*" hidden aria-label="Choisir une image">
 
 <script src="patch.js"></script>
 <script>
@@ -577,8 +577,8 @@ function showSlide(i){
     const vis = ss.filter(s => !s.classList.contains('skip'));
     const j = vis.indexOf(sec0);
     try { if (j >= 0 && frame.contentWindow.goSlide) frame.contentWindow.goSlide(j); } catch(_){}
-    $('#curLbl').textContent = (S.cur+1) + ' / ' + ss.length + ' · ' + (sec0.dataset.chapter||'') + ' — ' + (sec0.dataset.lbl||'sans titre')
-      + (j < 0 ? '  (masquée : invisible en aperçu)' : '');
+    $('#curLbl').textContent = (j >= 0 ? (j+1) + ' / ' + vis.length : 'masquée')
+      + ' · ' + (sec0.dataset.chapter||'') + ' — ' + (sec0.dataset.lbl||'sans titre');
     [...$('#list').querySelectorAll('.item')].forEach(el => el.classList.toggle('cur', +el.dataset.i === S.cur));
     return;
   }
@@ -589,7 +589,10 @@ function showSlide(i){
   const sec = ss[S.cur];
   if (S.mode === 'edit') armEditables(sec);
   sec.scrollTop = 0;
-  $('#curLbl').textContent = (S.cur+1) + ' / ' + ss.length + ' · ' + (sec.dataset.chapter||'') + ' — ' + (sec.dataset.lbl||'sans titre');
+  const visibles = ss.filter(x => !x.classList.contains('skip'));
+  const rang = visibles.indexOf(sec);
+  $('#curLbl').textContent = (rang >= 0 ? (rang+1) + ' / ' + visibles.length : 'masquée — hors présentation')
+    + ' · ' + (sec.dataset.chapter||'') + ' — ' + (sec.dataset.lbl||'sans titre');
   [...$('#list').querySelectorAll('.item')].forEach(el => el.classList.toggle('cur', +el.dataset.i === S.cur));
   const cu = $('#list').querySelector('.item.cur'); if (cu) cu.scrollIntoView({block:'nearest'});
   const tp = $('#typo'); if (tp) tp.hidden = true;
@@ -611,10 +614,13 @@ addEventListener('resize', fitFrame);
 </script>
 <script>
 /* ---------- rail des slides ---------- */
+/* Numérotation de PRÉSENTATION : une slide masquée ne porte pas de folio,
+   et ne décale pas celui des suivantes. Sans quoi l'éditeur et le diaporama
+   annonçaient deux numéros différents pour la même slide. */
 function buildRail(){
   const list = $('#list'); list.innerHTML = '';
   list.setAttribute('role','listbox');
-  let chap = null;
+  let chap = null, folio = 0;
   sections().forEach((s,i) => {
     const c = s.dataset.chapter || '';
     if (c !== chap) { chap = c; const h = document.createElement('div'); h.className='chap'; h.textContent = c || '—'; list.appendChild(h); }
@@ -623,8 +629,11 @@ function buildRail(){
     it.className = 'item' + (masquee ? ' hidden' : '');
     it.dataset.i = i; it.draggable = true; it.tabIndex = 0; it.setAttribute('role','option');
 
+    if (!masquee) folio++;
     const num = document.createElement('span');
-    num.className = 'num'; num.textContent = String(i+1).padStart(2,'0');
+    num.className = 'num';
+    num.textContent = masquee ? '—' : String(folio).padStart(2,'0');
+    num.title = masquee ? 'Masquée : hors présentation' : 'Folio ' + folio;
     const nm = document.createElement('span');
     nm.className = 'nm'; nm.title = 'Double-clic pour renommer';
     nm.textContent = s.dataset.lbl || 'sans titre';   // textContent : aucun échappement à faire
@@ -877,7 +886,21 @@ $('#btnRedo').onclick = () => {
   refreshStatus(); loadDeck();
 };
 addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue=''; } });
+/* Échap ferme le dialogue ouvert. C'est censé être le comportement natif de
+   <dialog>, mais il ne s'est pas déclenché lors des essais : plutôt que de
+   parier sur le navigateur pour quelque chose d'aussi basique, on le fait. */
 addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const d = document.querySelector('dialog[open]');
+  if (d) { e.preventDefault(); e.stopPropagation(); d.close(); return; }
+  const tp = $('#typo');
+  if (tp && !tp.hidden) { e.preventDefault(); tp.hidden = true; }
+}, true);
+
+addEventListener('keydown', e => {
+  // un dialogue ouvert capte tout : les flèches ne doivent pas faire défiler
+  // les slides derrière lui, ni ⌘S enregistrer à l'insu de l'utilisateur
+  if (document.querySelector('dialog[open]')) return;
   if (e.target.closest && e.target.closest('textarea,input')) return;
   if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); showSlide(S.cur+1); }
   if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); showSlide(S.cur-1); }

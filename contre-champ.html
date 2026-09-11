@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="patch.js"></script>
+<script src="cj-early.js"></script>
+<title>CONTRE-CHAMP — Présentation du projet</title>
+<meta name="theme-color" content="#0E0E0E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2EEE4; --ink:#121212; --or:#B9893F; --gris:#8B8578; --trait:#DAD4C6;
+  --display:'Oswald','Arial Narrow',sans-serif;
+  --serif:'Spectral',Georgia,serif;
+  --snap:cubic-bezier(.2,.8,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--ink)}
+body{font-family:var(--serif);color:var(--ink)}
+
+/* grain de pellicule */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.045;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:180px 180px}
+
+main#stage{position:relative;height:100vh;height:100dvh;overflow:hidden}
+/* « safe center » : centré verticalement, mais bascule en haut dès que le
+   contenu dépasse — sinon les slides denses seraient rognées des deux côtés. */
+section.slide{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;justify-content:safe center;
+  padding:clamp(44px,7vh,84px) clamp(28px,6vw,96px) clamp(56px,8vh,90px);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .6s var(--snap),visibility .6s;
+  overflow-y:auto;overflow-x:hidden;background:var(--paper);scrollbar-width:none}
+section.slide::-webkit-scrollbar{display:none}
+section.slide.active{opacity:1;visibility:visible;pointer-events:auto;z-index:2}
+section.slide.skip{display:none!important}
+section.slide.sombre{background:var(--ink);color:var(--paper)}
+section.slide.sombre .eyebrow{color:var(--or)}
+section.slide.sombre .note,section.slide.sombre .lead{color:#BDB6A6}
+
+/* apparition */
+@keyframes monte{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.active .r{animation:monte .7s var(--snap) both}
+.r.d1{animation-delay:.08s}.r.d2{animation-delay:.16s}.r.d3{animation-delay:.24s}.r.d4{animation-delay:.32s}
+
+/* éléments de base */
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:600;
+  font-size:clamp(10px,1.05vw,12px);letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin-bottom:clamp(12px,2vh,22px)}
+.eyebrow .dot{width:6px;height:6px;background:var(--or);border-radius:50%;flex:none}
+h1.titre{font-family:var(--display);font-weight:700;line-height:.9;letter-spacing:-.01em;
+  font-size:clamp(46px,8.4vw,118px);text-transform:uppercase}
+h2.titre{font-family:var(--display);font-weight:700;line-height:.95;letter-spacing:-.005em;
+  font-size:clamp(30px,4.6vw,62px);text-transform:uppercase;margin-bottom:clamp(14px,2.4vh,26px)}
+h3{font-family:var(--display);font-weight:600;font-size:clamp(13px,1.35vw,16px);letter-spacing:.13em;
+  text-transform:uppercase;margin-bottom:8px}
+.lead{font-size:clamp(16px,1.7vw,22px);line-height:1.5;max-width:62ch;font-weight:300}
+.note{font-size:clamp(12.5px,1.2vw,15px);line-height:1.6;color:#4A463E;max-width:70ch}
+p+p{margin-top:.7em}
+em{font-style:italic;color:var(--or)}
+strong,b{font-weight:600}
+.or{color:var(--or)}
+
+/* grilles */
+.cols{display:grid;gap:clamp(18px,2.6vw,42px);margin-top:clamp(16px,2.6vh,30px)}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:820px){.c3,.c4{grid-template-columns:repeat(2,minmax(0,1fr))}.c2{grid-template-columns:1fr}}
+.bloc{border-top:2px solid var(--ink);padding-top:12px}
+.sombre .bloc{border-top-color:var(--or)}
+.num{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.2vw,44px);color:var(--or);line-height:1}
+
+/* listes et tableaux */
+.liste{list-style:none;margin-top:clamp(14px,2.2vh,24px)}
+.liste li{display:flex;gap:16px;padding:11px 0;border-bottom:1px solid var(--trait);font-size:clamp(13px,1.25vw,16px);line-height:1.45}
+.sombre .liste li{border-bottom-color:#2C2A26}
+.liste li .k{font-family:var(--display);font-weight:600;color:var(--or);flex:none;width:2.6em;letter-spacing:.06em}
+.liste li .v{flex:1}
+.liste li .t{color:var(--gris);font-size:.86em;white-space:nowrap}
+table.fiche{width:100%;border-collapse:collapse;margin-top:clamp(14px,2.2vh,24px);font-size:clamp(12.5px,1.2vw,15px)}
+table.fiche td{padding:10px 6px;border-bottom:1px solid var(--trait);vertical-align:top;line-height:1.45}
+.sombre table.fiche td{border-bottom-color:#2C2A26}
+table.fiche td:first-child{width:34%;font-family:var(--display);font-weight:600;font-size:.86em;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+table.fiche tr:last-child td{border-bottom:0}
+
+/* figures */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:clamp(12px,1.8vw,26px);margin-top:clamp(16px,2.4vh,28px)}
+.fig{border-top:2px solid var(--or);padding-top:10px}
+.fig .nom{font-family:var(--display);font-weight:600;font-size:clamp(14px,1.5vw,19px);text-transform:uppercase;line-height:1.05}
+.fig .an{color:var(--gris);font-size:11.5px;letter-spacing:.08em;margin:3px 0 6px;font-family:var(--display)}
+.fig p{font-size:12.5px;line-height:1.5;color:#4A463E}
+.sombre .fig p{color:#BDB6A6}
+
+/* étiquettes */
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:clamp(14px,2vh,22px)}
+.tag{font-family:var(--display);font-weight:400;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+  border:1px solid var(--ink);padding:5px 11px;border-radius:2px}
+.sombre .tag{border-color:var(--or);color:var(--or)}
+.tag.plein{background:var(--ink);color:var(--paper)}
+
+/* couverture */
+.cover{flex:1;display:flex;flex-direction:column;justify-content:center}
+.regle{width:clamp(60px,9vw,132px);height:4px;background:var(--or);margin:clamp(16px,2.6vh,30px) 0}
+.pellicule{position:absolute;right:0;top:0;bottom:0;width:clamp(46px,5vw,78px);
+  background:repeating-linear-gradient(to bottom,var(--ink) 0 18px,transparent 18px 40px);
+  opacity:.07;pointer-events:none}
+.sombre .pellicule{background:repeating-linear-gradient(to bottom,var(--paper) 0 18px,transparent 18px 40px);opacity:.12}
+
+/* pied de page */
+footer{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:14px;
+  padding:0 clamp(18px,3vw,42px);font-family:var(--display);font-size:11px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--gris);z-index:20;pointer-events:none}
+body.chrome-sombre footer{color:#7C7669}
+.prog{display:flex;gap:3px;flex:none;pointer-events:auto}
+.prog i{width:13px;height:3px;background:var(--trait);cursor:pointer;transition:background .2s}
+.prog i.on{background:var(--or)}
+body.chrome-sombre .prog i{background:#33302B}
+body.chrome-sombre .prog i.on{background:var(--or)}
+footer .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer .cnt{font-variant-numeric:tabular-nums}
+.nav{position:fixed;bottom:8px;right:clamp(14px,3vw,38px);display:flex;gap:6px;z-index:21}
+.nav button{width:30px;height:30px;border:1px solid var(--trait);background:transparent;color:inherit;
+  border-radius:3px;cursor:pointer;font-size:15px;line-height:1;font-family:var(--serif)}
+.nav button:hover{border-color:var(--or);color:var(--or)}
+body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
+@media print{footer,.nav{display:none}}
+</style>
+</head>
+<body>
+<main id="stage">
+
+<!-- 01 ============================================================ -->
+<section class="slide active" data-chapter="Ouverture" data-lbl="Couverture">
+  <div class="pellicule" aria-hidden="true"></div>
+  <div class="cover">
+    <span class="eyebrow r"><span class="dot"></span>Projet professionnel · TS2 · 2026 — 2027</span>
+    <h1 class="titre r d1">CONTRE<br>CHAMP</h1>
+    <div class="regle r d2"></div>
+    <p class="lead r d2">Arts martiaux et cinéma :<br>un siècle d’<em>influences croisées</em>.</p>
+    <p class="note r d3" style="margin-top:clamp(18px,3vh,34px)">Essai illustré · 208 pages · Clovis</p>
+  </div>
+</section>
+
+<!-- 02 ============================================================ -->
+<section class="slide" data-chapter="Ouverture" data-lbl="Le projet en une phrase">
+  <span class="eyebrow r"><span class="dot"></span>Synopsis</span>
+  <h2 class="titre r d1">LE PROJET<br>EN UNE PHRASE</h2>
+  <p class="lead r d2" style="font-size:clamp(19px,2.3vw,30px);line-height:1.35;max-width:24ch">
+    Un livre qui raconte comment les arts martiaux ont appris à <em>se filmer</em> — et comment le cinéma, en retour, a changé la façon de <em>se battre</em>.
+  </p>
+  <p class="note r d3" style="margin-top:clamp(20px,3vh,36px)">
+    Ni encyclopédie de films, ni biographie d’acteur : une histoire visuelle de l’aller-retour entre une pratique et son image, racontée à travers les figures qui l’ont fait basculer.
+  </p>
+  <div class="tags r d4">
+    <span class="tag plein">Essai illustré</span><span class="tag">Cinéma</span><span class="tag">Arts martiaux</span><span class="tag">Culture visuelle</span>
+  </div>
+</section>
+
+<!-- 03 ============================================================ -->
+<section class="slide" data-chapter="Ouverture" data-lbl="Note d’intention">
+  <span class="eyebrow r"><span class="dot"></span>Note d’intention</span>
+  <h2 class="titre r d1">POURQUOI<br>CE LIVRE</h2>
+  <div class="cols c3 r d2">
+    <div class="bloc"><div class="num">01</div><h3>Un angle vacant</h3>
+      <p class="note">Les rayons offrent des monographies d’acteurs et des encyclopédies de films. Presque rien sur le <strong>va-et-vient</strong> : ce que la pratique a donné à l’écran, ce que l’écran a rendu à la pratique.</p></div>
+    <div class="bloc"><div class="num">02</div><h3>Une double légitimité</h3>
+      <p class="note">Une pratique du kung-fu depuis l’enfance — le combat connu de l’intérieur — et un œil de designer, habitué à démonter les images plutôt qu’à les subir.</p></div>
+    <div class="bloc"><div class="num">03</div><h3>Un sujet qui se voit</h3>
+      <p class="note">Le combat filmé est fait de <em>trajectoires</em>, de <em>ruptures</em> et de <em>temps d’arrêt</em>. Un sujet qui appelle la page : découpages, planches, séquences.</p></div>
+  </div>
+  <p class="note r d3" style="margin-top:clamp(18px,2.6vh,30px)">
+    Le livre prolonge un mémoire de fin d’études sur les codes visuels du combat, et l’élargit à un siècle et à trois continents.
+  </p>
+</section>
+
+<!-- 04 ============================================================ -->
+<section class="slide sombre" data-chapter="Le sujet" data-lbl="L’aller-retour">
+  <div class="pellicule" aria-hidden="true"></div>
+  <span class="eyebrow r"><span class="dot"></span>Le sujet</span>
+  <h2 class="titre r d1">DEUX ARTS QUI<br>SE RÉPONDENT</h2>
+  <div class="cols c2 r d2">
+    <div>
+      <h3 class="or">Ce que le dojo a donné au cinéma</h3>
+      <ul class="liste">
+        <li><span class="k">A</span><span class="v">La chorégraphie — l’opéra de Pékin forme les premiers cascadeurs de Hong Kong</span></li>
+        <li><span class="k">B</span><span class="v">Les formes — le <em>tao</em>, séquence codifiée, se filme comme une phrase</span></li>
+        <li><span class="k">C</span><span class="v">Le rituel — salut, garde, distance : une grammaire de plans toute prête</span></li>
+        <li><span class="k">D</span><span class="v">Le maître et l’élève — une structure narrative avant d’être un scénario</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="or">Ce que le cinéma a rendu au dojo</h3>
+      <ul class="liste">
+        <li><span class="k">A</span><span class="v">L’exportation — le kung-fu devient mondial par l’écran, pas par l’école</span></li>
+        <li><span class="k">B</span><span class="v">Des styles nés pour la caméra, pratiqués ensuite pour de vrai</span></li>
+        <li><span class="k">C</span><span class="v">Le wushu moderne, sportif et spectaculaire, calibré pour être vu</span></li>
+        <li><span class="k">D</span><span class="v">Le MMA télévisuel — le combat réel rattrapé par sa mise en scène</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ============================================================ -->
+<section class="slide" data-chapter="Le sujet" data-lbl="Les trois âges">
+  <span class="eyebrow r"><span class="dot"></span>Structure</span>
+  <h2 class="titre r d1">TROIS ÂGES</h2>
+  <div class="cols c3 r d2">
+    <div class="bloc"><div class="num">I</div><h3>La démonstration</h3>
+      <p class="note"><strong>1920 — 1970.</strong> De l’opéra de Pékin au <em>chambara</em> japonais, le corps se montre plus qu’il ne combat. Kurosawa invente le montage du duel ; la Shaw Brothers industrialise le geste.</p>
+      <p class="note" style="margin-top:10px;color:var(--gris)">Les Sept Samouraïs (1954) · A Touch of Zen (1971)</p></div>
+    <div class="bloc"><div class="num">II</div><h3>L’icône</h3>
+      <p class="note"><strong>1970 — 1990.</strong> Bruce Lee fait tenir un art dans une posture. Hong Kong exporte, la cassette vidéo diffuse, l’affiche fixe une iconographie qui survit à ses films.</p>
+      <p class="note" style="margin-top:10px;color:var(--gris)">La Fureur de vaincre (1972) · Le Maître chinois (1978)</p></div>
+    <div class="bloc"><div class="num">III</div><h3>La grammaire</h3>
+      <p class="note"><strong>1990 — aujourd’hui.</strong> Les chorégraphes hongkongais passent à Hollywood. Le numérique, le jeu vidéo et le MMA héritent d’une syntaxe née au dojo.</p>
+      <p class="note" style="margin-top:10px;color:var(--gris)">Matrix (1999) · Tigre et Dragon (2000) · The Raid (2011)</p></div>
+  </div>
+</section>
+
+<!-- 06 ============================================================ -->
+<section class="slide" data-chapter="Le sujet" data-lbl="Les figures">
+  <span class="eyebrow r"><span class="dot"></span>Les figures</span>
+  <h2 class="titre r d1">CEUX QUI ONT<br>FAIT BASCULER</h2>
+  <div class="figs r d2">
+    <div class="fig"><div class="nom">Bruce Lee</div><div class="an">1940 — 1973</div>
+      <p>Fait tenir un art martial dans une image fixe. Fonde l’iconographie.</p></div>
+    <div class="fig"><div class="nom">Jackie Chan</div><div class="an">1954 —</div>
+      <p>Ajoute la séquence, le rythme et le burlesque. Le combat devient récit.</p></div>
+    <div class="fig"><div class="nom">Yuen Woo-ping</div><div class="an">1945 —</div>
+      <p>Chorégraphe passeur : de Hong Kong à Matrix, il exporte la grammaire.</p></div>
+    <div class="fig"><div class="nom">Michelle Yeoh</div><div class="an">1962 —</div>
+      <p>Déplace la figure : le corps martial cesse d’être exclusivement masculin.</p></div>
+    <div class="fig"><div class="nom">Toshiro Mifune</div><div class="an">1920 — 1997</div>
+      <p>Le duel comme montage. La tension avant le geste, chez Kurosawa.</p></div>
+    <div class="fig"><div class="nom">Lau Kar-leung</div><div class="an">1934 — 2013</div>
+      <p>Héritier d’une lignée réelle. Filme la transmission, pas le spectacle.</p></div>
+    <div class="fig"><div class="nom">Donnie Yen</div><div class="an">1963 —</div>
+      <p>Réinstalle le maître au centre, à l’heure du numérique.</p></div>
+    <div class="fig"><div class="nom">Tony Jaa</div><div class="an">1976 —</div>
+      <p>Le refus du câble et du trucage comme argument de mise en scène.</p></div>
+  </div>
+  <p class="note r d3" style="margin-top:clamp(16px,2.4vh,26px)">
+    Et les invisibles : cascadeurs, maîtres d’armes, chorégraphes — un chapitre entier leur revient.
+  </p>
+</section>
+
+<!-- 07 ============================================================ -->
+<section class="slide" data-chapter="Le livre" data-lbl="Sommaire">
+  <span class="eyebrow r"><span class="dot"></span>Sommaire général</span>
+  <h2 class="titre r d1">CE QU’IL Y A<br>DEDANS</h2>
+  <ul class="liste r d2">
+    <li><span class="k">00</span><span class="v"><strong>Préface</strong> — par un chorégraphe de combat en exercice</span><span class="t">6 p.</span></li>
+    <li><span class="k">01</span><span class="v"><strong>Avant l’image</strong> — opéra, démonstration, transmission orale</span><span class="t">24 p.</span></li>
+    <li><span class="k">02</span><span class="v"><strong>La caméra entre dans le dojo</strong> — chambara, Shaw Brothers, l’usine du geste</span><span class="t">32 p.</span></li>
+    <li><span class="k">03</span><span class="v"><strong>L’icône</strong> — Bruce Lee, la pose qui suffit</span><span class="t">28 p.</span></li>
+    <li><span class="k">04</span><span class="v"><strong>La séquence</strong> — Jackie Chan, le rythme et la chute</span><span class="t">28 p.</span></li>
+    <li><span class="k">05</span><span class="v"><strong>Les passeurs</strong> — chorégraphes, cascadeurs, les noms qu’on ne lit pas</span><span class="t">24 p.</span></li>
+    <li><span class="k">06</span><span class="v"><strong>Le retour</strong> — wushu, jeu vidéo, MMA : quand l’écran redessine la pratique</span><span class="t">28 p.</span></li>
+    <li><span class="k">07</span><span class="v"><strong>Lexique visuel</strong> — 40 plans qui ont fait école, décomposés</span><span class="t">24 p.</span></li>
+    <li><span class="k">08</span><span class="v"><strong>Annexes</strong> — chronologie, filmographie, index, crédits</span><span class="t">14 p.</span></li>
+  </ul>
+</section>
+
+<!-- 08 ============================================================ -->
+<section class="slide" data-chapter="Le livre" data-lbl="Positionnement">
+  <span class="eyebrow r"><span class="dot"></span>Positionnement</span>
+  <h2 class="titre r d1">CE QUE CE LIVRE<br>N’EST PAS</h2>
+  <div class="cols c3 r d2">
+    <div class="bloc"><h3 style="color:var(--gris)">Pas une encyclopédie</h3>
+      <p class="note">On ne couvre pas tout. On suit une thèse : l’influence circule dans les deux sens. Les films cités servent la démonstration.</p></div>
+    <div class="bloc"><h3 style="color:var(--gris)">Pas une biographie</h3>
+      <p class="note">Les figures sont des points de bascule, pas des destins. Bruce Lee occupe 28 pages parce qu’il change l’image, pas parce qu’il fascine.</p></div>
+    <div class="bloc"><h3 style="color:var(--gris)">Pas un manuel</h3>
+      <p class="note">Aucune technique enseignée. Le lecteur n’a pas besoin de pratiquer — il a besoin de savoir regarder.</p></div>
+  </div>
+  <div class="cols c2 r d3" style="margin-top:clamp(20px,3vh,34px)">
+    <div class="bloc" style="border-top-color:var(--or)"><h3 class="or">C’est un essai illustré</h3>
+      <p class="note">Une thèse tenue sur 208 pages, portée autant par le texte que par le découpage des images. Rapport texte/image : <strong>45 / 55</strong>.</p></div>
+    <div class="bloc" style="border-top-color:var(--or)"><h3 class="or">C’est un objet graphique</h3>
+      <p class="note">La maquette rejoue ce qu’elle décrit : séquences en bande, temps d’arrêt en pleine page, ruptures d’échelle. La forme argumente.</p></div>
+  </div>
+</section>
+
+<!-- 09 ============================================================ -->
+<section class="slide" data-chapter="Marché" data-lbl="Le marché">
+  <span class="eyebrow r"><span class="dot"></span>Étude de marché · segment</span>
+  <h2 class="titre r d1">OÙ IL SE RANGE</h2>
+  <div class="cols c2 r d2">
+    <div>
+      <h3>Le segment</h3>
+      <p class="note">Beau livre et essai illustré <strong>cinéma</strong>, en librairie généraliste et spécialisée, rayon « cinéma » et « arts ». Prix moyen constaté du segment : <strong>29 à 45 €</strong>. Tirage courant : <strong>2 500 à 5 000</strong> exemplaires.</p>
+      <p class="note">Un segment porté par la nostalgie des années 1970-1990, la vague asiatique, et le succès public des rétrospectives et des éditions vidéo restaurées.</p>
+    </div>
+    <div>
+      <h3>Les acteurs du segment</h3>
+      <div class="tags" style="margin-top:10px">
+        <span class="tag">Carlotta</span><span class="tag">Capricci</span><span class="tag">Rouge Profond</span>
+        <span class="tag">Huginn &amp; Muninn</span><span class="tag">Ynnis</span><span class="tag">Third Éditions</span>
+        <span class="tag">La Martinière</span><span class="tag">Taschen</span><span class="tag">Actes Sud</span>
+      </div>
+      <p class="note" style="margin-top:14px">Deux familles : les <strong>éditeurs de cinéma</strong> (texte dense, iconographie sobre) et les <strong>éditeurs d’objet</strong> (grand format, image reine). Le projet vise l’espace laissé vacant entre les deux.</p>
+    </div>
+  </div>
+  <p class="note r d3" style="margin-top:clamp(16px,2.4vh,28px);color:var(--gris)">
+    Chiffres à consolider auprès de Livres Hebdo / GfK — hypothèses de travail à ce stade.
+  </p>
+</section>
+
+<!-- 10 ============================================================ -->
+<section class="slide" data-chapter="Marché" data-lbl="La concurrence">
+  <span class="eyebrow r"><span class="dot"></span>Étude de concurrence</span>
+  <h2 class="titre r d1">CE QUI EXISTE DÉJÀ</h2>
+  <table class="fiche r d2">
+    <tr><td>Concurrence directe</td><td><strong>Aucun titre français</strong> ne traite l’influence réciproque pratique ↔ cinéma. C’est l’espace visé.</td></tr>
+    <tr><td>Concurrence proche</td><td>Monographies d’acteurs (Bruce Lee, Jackie Chan) — nombreuses, souvent traduites, centrées sur l’homme et non sur l’image.</td></tr>
+    <tr><td>Concurrence élargie</td><td>Histoires du cinéma de Hong Kong et du cinéma asiatique — érudites, peu illustrées, rarement grand public.</td></tr>
+    <tr><td>Concurrence indirecte</td><td>Beaux livres « arts martiaux » — photographies de pratique, sans lecture cinématographique.</td></tr>
+    <tr><td>Ce qui nous distingue</td><td>La <strong>thèse</strong> (l’influence circule dans les deux sens), le <strong>point de vue</strong> (un pratiquant qui est aussi graphiste) et la <strong>maquette</strong> qui démontre au lieu d’illustrer.</td></tr>
+  </table>
+  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px);color:var(--gris)">
+    Tableau ordonné et commenté à compléter par niveau, avec prix, tirage et date de parution de chaque titre retenu.
+  </p>
+</section>
+
+<!-- 11 ============================================================ -->
+<section class="slide" data-chapter="Marché" data-lbl="La cible">
+  <span class="eyebrow r"><span class="dot"></span>Cible</span>
+  <h2 class="titre r d1">POUR QUI</h2>
+  <div class="cols c3 r d2">
+    <div class="bloc"><h3 class="or">Cœur de cible</h3>
+      <p class="note"><strong>25 — 45 ans</strong>, cinéphile, achète des éditions vidéo soignées, suit les rétrospectives. Connaît les films, n’a jamais lu l’analyse de ce qu’il regarde.</p></div>
+    <div class="bloc"><h3 class="or">Cible élargie</h3>
+      <p class="note"><strong>Pratiquants</strong> d’arts martiaux et leurs clubs. Un public rarement adressé par le beau livre, et prescripteur entre soi.</p></div>
+    <div class="bloc"><h3 class="or">Cible d’estime</h3>
+      <p class="note"><strong>Étudiants</strong> en cinéma, en design graphique, en culture visuelle. Assure la vie longue du titre et les prescriptions scolaires.</p></div>
+  </div>
+  <div class="cols c2 r d3" style="margin-top:clamp(20px,3vh,32px)">
+    <div class="bloc"><h3>Persona · Camille, 31 ans</h3>
+      <p class="note">Monteuse. A vu <em>Tigre et Dragon</em> à 12 ans. « Je veux comprendre pourquoi ces plans tiennent, alors que les scènes d’action actuelles me laissent froide. »</p></div>
+    <div class="bloc"><h3>Persona · Malik, 38 ans</h3>
+      <p class="note">Professeur de wing-chun. « Mes élèves arrivent à cause d’un film. Je voudrais un livre qui prenne ça au sérieux au lieu d’en rire. »</p></div>
+  </div>
+</section>
+
+<!-- 12 ============================================================ -->
+<section class="slide sombre" data-chapter="Fabrication" data-lbl="Descriptif technique">
+  <div class="pellicule" aria-hidden="true"></div>
+  <span class="eyebrow r"><span class="dot"></span>Descriptif technique de base</span>
+  <h2 class="titre r d1">L’OBJET</h2>
+  <div class="cols c2 r d2">
+    <table class="fiche">
+      <tr><td>Format</td><td><strong>210 × 280 mm</strong> à la française — assez grand pour la séquence, assez tenu pour la lecture suivie</td></tr>
+      <tr><td>Pagination</td><td><strong>208 pages</strong> + couverture (13 cahiers de 16 p.)</td></tr>
+      <tr><td>Calibrage</td><td>≈ <strong>340 000 signes</strong> · ≈ <strong>240 visuels</strong></td></tr>
+      <tr><td>Rapport texte/image</td><td>45 / 55</td></tr>
+    </table>
+    <table class="fiche">
+      <tr><td>Impression</td><td>Quadrichromie + <strong>1 Pantone or</strong> sur les ouvertures de partie</td></tr>
+      <tr><td>Papier intérieur</td><td>Munken Print Cream 115 g — mat, chaud, tenue du noir</td></tr>
+      <tr><td>Couverture</td><td>Carte 300 g, <strong>dos toilé noir</strong>, marquage à chaud or</td></tr>
+      <tr><td>Façonnage</td><td>Cousu collé, dos carré, <strong>ouverture à plat</strong> — indispensable aux séquences en double page</td></tr>
+    </table>
+  </div>
+  <p class="note r d3" style="margin-top:clamp(16px,2.4vh,26px)">
+    L’ouverture à plat n’est pas un luxe : elle conditionne la lecture d’un enchaînement étalé sur deux pages. C’est le seul poste sur lequel le projet ne transige pas.
+  </p>
+</section>
+
+<!-- 13 ============================================================ -->
+<section class="slide" data-chapter="Fabrication" data-lbl="Iconographie & droits">
+  <span class="eyebrow r"><span class="dot"></span>Visuels · droits</span>
+  <h2 class="titre r d1">LE NERF<br>DE LA GUERRE</h2>
+  <div class="cols c2 r d2">
+    <div>
+      <h3>Typologie des visuels</h3>
+      <ul class="liste">
+        <li><span class="k">01</span><span class="v">Photogrammes de films — décomposés en bandes</span><span class="t">≈ 120</span></li>
+        <li><span class="k">02</span><span class="v">Photographies de plateau et de tournage</span><span class="t">≈ 45</span></li>
+        <li><span class="k">03</span><span class="v">Affiches et matériel promotionnel d’époque</span><span class="t">≈ 35</span></li>
+        <li><span class="k">04</span><span class="v">Schémas de trajectoires — création originale</span><span class="t">≈ 40</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="or">Le risque juridique, assumé de front</h3>
+      <p class="note">Les photogrammes de films relèvent des <strong>ayants droit</strong> des studios : Golden Harvest, Shaw Brothers, Toho, Miramax. Négociation lourde, coût réel, délais longs.</p>
+      <p class="note">Deux parades prévues : le recours au <strong>droit de courte citation</strong> à visée d’analyse, argumenté au cas par cas ; et une part importante de <strong>schémas originaux</strong> qui disent le mouvement sans reproduire l’image.</p>
+      <p class="note">Un budget iconographique dédié et un iconographe missionné dès janvier.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 14 ============================================================ -->
+<section class="slide" data-chapter="Édition" data-lbl="L’éditeur visé">
+  <span class="eyebrow r"><span class="dot"></span>Éditeur</span>
+  <h2 class="titre r d1">CHEZ QUI</h2>
+  <div class="cols c3 r d2">
+    <div class="bloc"><h3 class="or">Premier choix · Capricci</h3>
+      <p class="note">Catalogue de cinéma exigeant, format d’essai illustré maîtrisé, diffusion Harmonia Mundi. Sait défendre une thèse d’auteur sans la diluer.</p></div>
+    <div class="bloc"><h3>Alternative · Carlotta</h3>
+      <p class="note">Éditeur vidéo devenu éditeur de livres, public déjà acquis sur le cinéma asiatique restauré. Synergie évidente avec les rééditions.</p></div>
+    <div class="bloc"><h3>Alternative · Huginn &amp; Muninn</h3>
+      <p class="note">Plus grand public, fort sur l’objet et la culture de l’image. Tirage supérieur, exigence éditoriale moindre.</p></div>
+  </div>
+  <p class="note r d3" style="margin-top:clamp(18px,2.8vh,32px)">
+    <strong>Justification à développer :</strong> analyse du catalogue, positionnement prix, force de diffusion, et adéquation entre la ligne de l’éditeur et une maquette qui prend des risques.
+  </p>
+</section>
+
+<!-- 15 ============================================================ -->
+<section class="slide" data-chapter="Économie" data-lbl="Économie">
+  <span class="eyebrow r"><span class="dot"></span>Données commerciales · hypothèses</span>
+  <h2 class="titre r d1">LES CHIFFRES</h2>
+  <div class="cols c4 r d2">
+    <div class="bloc"><div class="num">35 €</div><h3>Prix public</h3><p class="note">Haut du segment essai, bas du segment beau livre.</p></div>
+    <div class="bloc"><div class="num">3 000</div><h3>Tirage</h3><p class="note">Premier tirage, réimpression envisagée à 1 500.</p></div>
+    <div class="bloc"><div class="num">208</div><h3>Pages</h3><p class="note">13 cahiers de 16 pages, sans page perdue.</p></div>
+    <div class="bloc"><div class="num">oct.</div><h3>Sortie</h3><p class="note">Octobre — avant les fêtes, après la rentrée littéraire.</p></div>
+  </div>
+  <table class="fiche r d3">
+    <tr><td>Prix de revient unitaire</td><td>À établir : frais éditoriaux + création + prépresse + fabrication ÷ tirage</td></tr>
+    <tr><td>Droits d’auteur</td><td>Proportionnels, à-valoir à définir et à justifier au compte d’exploitation</td></tr>
+    <tr><td>Seuil de rentabilité</td><td>À calculer sur 3 ans, en nombre d’exemplaires — <strong>pièce maîtresse du CEP</strong></td></tr>
+    <tr><td>Poste le plus lourd</td><td>L’iconographie. C’est lui qui décidera si le projet tient ou non son prix.</td></tr>
+  </table>
+</section>
+
+<!-- 16 ============================================================ -->
+<section class="slide" data-chapter="Économie" data-lbl="Le planning">
+  <span class="eyebrow r"><span class="dot"></span>Rétroplanning</span>
+  <h2 class="titre r d1">L’ANNÉE</h2>
+  <ul class="liste r d2">
+    <li><span class="k">S-O</span><span class="v">Étude de marché et de concurrence · cahier des charges éditorial · descriptif technique</span><span class="t">fait / en cours</span></li>
+    <li><span class="k">OCT</span><span class="v">Sommaire détaillé · choix de l’éditeur · recherches graphiques exploratoires</span><span class="t">à venir</span></li>
+    <li><span class="k">NOV</span><span class="v">Chemin de fer folioté · brief graphique · recherches typographiques</span><span class="t">à venir</span></li>
+    <li><span class="k">DÉC</span><span class="v">Maquette intérieure — 4 doubles pages types · maquette de couverture</span><span class="t">à venir</span></li>
+    <li><span class="k">JANV</span><span class="v">Iconographie · devis textes et visuels · organigramme de production</span><span class="t">à venir</span></li>
+    <li><span class="k">FÉV</span><span class="v">Devis exé, photogravure et impression · analyse et choix des fournisseurs</span><span class="t">à venir</span></li>
+    <li><span class="k">MARS</span><span class="v">Façonnage et embellissements · compte d’exploitation prévisionnel</span><span class="t">à venir</span></li>
+    <li><span class="k">AVR</span><span class="v">Diffusion, promotion, argumentaire libraire · plan média</span><span class="t">à venir</span></li>
+  </ul>
+</section>
+
+<!-- 17 ============================================================ -->
+<section class="slide sombre" data-chapter="Conclusion" data-lbl="4e de couverture">
+  <div class="pellicule" aria-hidden="true"></div>
+  <span class="eyebrow r"><span class="dot"></span>4<sup>e</sup> de couverture</span>
+  <h2 class="titre r d1">LE TEXTE<br>QUI VEND</h2>
+  <p class="lead r d2" style="max-width:52ch">
+    En 1973, un homme torse nu s’arrête net face à la caméra. Le plan dure deux secondes. Il fera entrer les arts martiaux dans tous les foyers du monde.
+  </p>
+  <p class="note r d3" style="max-width:60ch;margin-top:clamp(16px,2.4vh,26px);font-size:clamp(13.5px,1.3vw,16px)">
+    Ce livre raconte un siècle d’allers-retours entre le tapis et l’écran. Comment l’opéra de Pékin a formé les cascadeurs de Hong Kong. Comment Bruce Lee a fait tenir un art dans une posture, et Jackie Chan dans une chute. Comment les chorégraphes hongkongais ont réécrit l’action hollywoodienne. Et comment, en retour, des gestes inventés pour la caméra se pratiquent aujourd’hui pour de vrai, dans des salles du monde entier.
+  </p>
+  <p class="note r d3" style="max-width:60ch;margin-top:14px;font-size:clamp(13.5px,1.3vw,16px)">
+    Une histoire visuelle du combat filmé, par un pratiquant qui est aussi graphiste — et qui a passé des années à démonter les images qui l’ont fait commencer.
+  </p>
+  <div class="tags r d4"><span class="tag">208 pages</span><span class="tag">240 visuels</span><span class="tag">35 €</span></div>
+</section>
+
+<!-- 18 ============================================================ -->
+<section class="slide sombre" data-chapter="Conclusion" data-lbl="Fin">
+  <div class="pellicule" aria-hidden="true"></div>
+  <div class="cover">
+    <span class="eyebrow r"><span class="dot"></span>Merci</span>
+    <h1 class="titre r d1" style="font-size:clamp(40px,7vw,96px)">DES QUESTIONS<br>?</h1>
+    <div class="regle r d2"></div>
+    <p class="lead r d3" style="max-width:44ch">
+      Prochaine étape : le <em>chemin de fer folioté</em> et les premières doubles pages types.
+    </p>
+    <p class="note r d4" style="margin-top:clamp(20px,3vh,36px)">CONTRE-CHAMP · Projet professionnel TS2 · Clovis · 2026 — 2027</p>
+  </div>
+</section>
+
+</main>
+
+<footer id="pied">
+  <div class="prog" id="prog"></div>
+  <div class="lbl" id="pied-lbl">Couverture</div>
+  <div class="cnt"><span id="cnt-cur">01</span> / <span id="cnt-tot">18</span></div>
+</footer>
+<div class="nav">
+  <button id="prev" aria-label="Slide précédente">‹</button>
+  <button id="next" aria-label="Slide suivante">›</button>
+</div>
+
+<!-- Clovis Project : calque de modifications + typographie française.
+     Doit précéder le script de navigation : sinon une suppression ou un
+     réordonnancement de slides désynchronise le sommaire et le compteur. -->
+<script src="cj-apply.js"></script>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const slides = [...document.querySelectorAll('.slide:not(.skip)')];
+  const prog = $('#prog'), lbl = $('#pied-lbl'), cur = $('#cnt-cur'), tot = $('#cnt-tot');
+  let i = 0;
+
+  tot.textContent = String(slides.length).padStart(2,'0');
+  slides.forEach((s,k) => {
+    const b = document.createElement('i');
+    if (!k) b.classList.add('on');
+    b.title = s.dataset.lbl || '';
+    b.addEventListener('click', () => goSlide(k));
+    prog.appendChild(b);
+  });
+
+  // exposée : l'éditeur s'en sert pour piloter l'aperçu
+  window.goSlide = function(n){
+    n = Math.max(0, Math.min(slides.length-1, n));
+    if (n === i && slides[i].classList.contains('active')) return;
+    slides[i].classList.remove('active');
+    slides[n].classList.add('active');
+    slides[n].scrollTop = 0;
+    [...prog.children].forEach((b,k) => b.classList.toggle('on', k === n));
+    lbl.textContent = slides[n].dataset.lbl || '';
+    cur.textContent = String(n+1).padStart(2,'0');
+    document.body.classList.toggle('chrome-sombre', slides[n].classList.contains('sombre'));
+    i = n;
+  };
+
+  $('#prev').onclick = () => goSlide(i-1);
+  $('#next').onclick = () => goSlide(i+1);
+  addEventListener('keydown', e => {
+    if (e.target.isContentEditable) return;          // ne pas voler les flèches à l'éditeur
+    if (['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)) { e.preventDefault(); goSlide(i+1); }
+    if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key))          { e.preventDefault(); goSlide(i-1); }
+    if (e.key === 'Home') { e.preventDefault(); goSlide(0); }
+    if (e.key === 'End')  { e.preventDefault(); goSlide(slides.length-1); }
+  });
+
+  // balayage tactile, pour l'iPad
+  let x0 = null;
+  addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, {passive:true});
+  addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const d = e.changedTouches[0].clientX - x0;
+    if (Math.abs(d) > 60) goSlide(i + (d < 0 ? 1 : -1));
+    x0 = null;
+  }, {passive:true});
+
+  goSlide(0);
+})();
+</script>
+</body>
+</html>

@@ -2,131 +2,68 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>CHONG JI 冲击 — Menu</title>
-<meta name="theme-color" content="#0D0D0D">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230D0D0D'/%3E%3Ctext x='32' y='46' font-size='40' font-family='sans-serif' font-weight='900' fill='%23E30613' text-anchor='middle'%3E冲%3C/text%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CONTRE-CHAMP — Projet professionnel</title>
+<meta name="theme-color" content="#0E0E0E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Spectral:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Jost:wght@400;500;600;700;800&display=swap');
-:root{
-  --bone:#F2EFE6; --ink:#0D0D0D; --red:#E30613; --grey:#8C877C;
-  --display:'Anton','Arial Narrow',sans-serif;
-  --body:'Jost','Helvetica Neue',Arial,sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--ink);overflow:hidden}
-body{
-  font-family:var(--body);color:var(--bone);
-  display:flex;flex-direction:column;
-  min-height:100vh;min-height:100dvh;
-  position:relative;
-}
-/* grain */
-body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size:160px 160px;
-}
-/* 冲击 watermark géant en fond */
-.wm{position:fixed;right:-4vw;bottom:-6vh;font-size:min(60vw,60vh);font-weight:900;color:#fff;opacity:.035;line-height:.75;pointer-events:none;z-index:0;font-family:'Noto Sans SC','PingFang SC',sans-serif;letter-spacing:-.05em}
-
-header{position:relative;z-index:2;padding:clamp(20px,4vh,44px) clamp(20px,4vw,48px) clamp(10px,2vh,18px);text-align:center}
-.brand-logo{width:min(46vw,300px);margin:0 auto}
-.baseline{font-size:clamp(10px,1.3vw,12.5px);color:var(--grey);letter-spacing:1.6px;text-transform:uppercase;margin-top:6px}
-
-main{
-  position:relative;z-index:2;flex:1;
-  display:flex;align-items:center;justify-content:center;
-  padding:clamp(10px,2vh,20px) clamp(16px,4vw,48px) clamp(24px,5vh,56px);
-}
-.grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2.4vw,30px);
-  width:100%;max-width:1180px;
-}
-@media (max-width:720px), (orientation:portrait) and (max-width:900px){
-  .grid{grid-template-columns:1fr;max-width:520px}
-}
-.card{
-  position:relative;aspect-ratio:1/1;border-radius:6px;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:clamp(18px,3vw,34px);
-  text-decoration:none;color:inherit;
-  overflow:hidden;
-  border:1px solid rgba(242,239,230,.14);
-  transition:transform .25s cubic-bezier(.2,.7,.3,1), border-color .25s;
-}
-@media (max-width:720px), (orientation:portrait) and (max-width:900px){
-  .card{aspect-ratio:16/10}
-}
-.card:active{transform:scale(.978)}
-@media (hover:hover){
-  .card:hover{transform:translateY(-4px);border-color:rgba(227,6,19,.5)}
-  .card:hover .arrow{transform:translateX(6px)}
-  .card:hover .card-tag{color:var(--red)}
-}
-.card-bg{position:absolute;inset:0;z-index:0}
-.card-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.88) 100%)}
-.card-num{position:absolute;top:clamp(14px,2.4vw,26px);left:clamp(18px,3vw,34px);z-index:2;font-family:var(--display);font-size:clamp(13px,1.6vw,16px);color:rgba(242,239,230,.5)}
-.card-tag{position:relative;z-index:2;font-size:clamp(10px,1.3vw,12px);font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--red);margin-bottom:.5em;transition:color .25s}
-.card-title{position:relative;z-index:2;font-family:var(--display);font-size:clamp(26px,4.6vw,46px);line-height:.95;letter-spacing:.2px}
-.card-sub{position:relative;z-index:2;font-size:clamp(11.5px,1.5vw,13.5px);color:rgba(242,239,230,.68);margin-top:.6em;max-width:32em;line-height:1.4}
-.arrow{position:relative;z-index:2;margin-top:clamp(12px,2vh,20px);display:inline-flex;align-items:center;gap:8px;font-size:clamp(11px,1.4vw,13px);font-weight:600;letter-spacing:.4px;transition:transform .25s}
-.arrow svg{width:16px;height:16px}
-
-/* fonds distincts par carte */
-#c-prez .card-bg{background:radial-gradient(120% 140% at 15% 10%,#241414 0%,#0D0D0D 60%);}
-#c-prez .brush{position:absolute;z-index:1;right:-8%;top:8%;width:70%;height:46%;background:
-  radial-gradient(ellipse at 30% 50%, rgba(227,6,19,.55), transparent 60%);
-  filter:blur(2px);transform:rotate(-8deg)}
-#c-appli .card-bg{background:radial-gradient(120% 140% at 85% 10%,#151d20 0%,#0D0D0D 60%);}
-#c-appli .brush{position:absolute;z-index:1;left:-8%;top:10%;width:60%;height:50%;background:
-  radial-gradient(ellipse at 60% 50%, rgba(56,151,240,.28), transparent 62%);
-  filter:blur(2px)}
-
-footer{position:relative;z-index:2;text-align:center;padding-bottom:clamp(12px,2.4vh,22px);font-size:10.5px;color:rgba(242,239,230,.4);letter-spacing:.6px}
+:root{--paper:#F2EEE4;--ink:#121212;--or:#B9893F;--gris:#8B8578}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--ink);color:var(--paper);font-family:'Spectral',Georgia,serif;
+  display:flex;flex-direction:column;min-height:100dvh;position:relative;overflow-x:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.pellicule{position:fixed;right:0;top:0;bottom:0;width:clamp(40px,5vw,74px);
+  background:repeating-linear-gradient(to bottom,var(--paper) 0 18px,transparent 18px 40px);opacity:.09;pointer-events:none}
+header{padding:clamp(30px,6vh,64px) clamp(24px,5vw,64px) 0;position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:'Oswald',sans-serif;font-weight:600;
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--or)}
+.eyebrow .dot{width:6px;height:6px;background:var(--or);border-radius:50%}
+h1{font-family:'Oswald',sans-serif;font-weight:700;line-height:.9;text-transform:uppercase;
+  font-size:clamp(44px,9vw,120px);margin-top:14px}
+.regle{width:clamp(60px,9vw,120px);height:4px;background:var(--or);margin:22px 0}
+.sous{font-size:clamp(15px,1.7vw,21px);font-weight:300;line-height:1.5;max-width:46ch;color:#D8D2C4}
+.sous em{color:var(--or);font-style:italic}
+main{flex:1;display:flex;align-items:center;padding:clamp(24px,5vh,56px) clamp(24px,5vw,64px);position:relative;z-index:2}
+.grille{display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2.4vw,28px);width:100%;max-width:1060px}
+@media(max-width:760px){.grille{grid-template-columns:1fr;max-width:520px}}
+a.carte{display:flex;flex-direction:column;justify-content:space-between;min-height:clamp(180px,26vh,250px);
+  padding:clamp(20px,3vw,32px);border:1px solid #2E2B26;border-radius:4px;text-decoration:none;color:inherit;
+  transition:border-color .2s,background .2s;background:#171613}
+a.carte:hover{border-color:var(--or);background:#1C1A16}
+a.carte .n{font-family:'Oswald',sans-serif;font-weight:700;font-size:clamp(22px,2.8vw,34px);
+  text-transform:uppercase;line-height:1}
+a.carte .d{font-size:13.5px;line-height:1.55;color:var(--gris);margin-top:10px;max-width:38ch}
+a.carte .fl{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--or)}
+footer{padding:0 clamp(24px,5vw,64px) clamp(24px,5vh,44px);font-family:'Oswald',sans-serif;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:#5E594F;position:relative;z-index:2}
 </style>
 </head>
 <body>
-<div class="wm">冲击</div>
-
+<div class="pellicule" aria-hidden="true"></div>
 <header>
-  <div class="brand-logo"><svg style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="595.276pt" height="118.581pt" viewBox="0 0 595.276 118.581">
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 100.296875 85.171875 C 105.644531 85.171875 111.679688 83.882812 115.902344 81.984375 L 115.902344 65.617188 C 111.59375 68.027344 106.246094 69.320312 101.851562 69.320312 C 93.226562 69.320312 87.449219 62.773438 87.449219 53.8125 C 87.449219 45.367188 93.226562 39.164062 102.367188 39.164062 C 106.679688 39.164062 111.679688 40.542969 115.902344 42.871094 L 115.902344 26.5 C 111.59375 24.605469 105.988281 23.3125 100.816406 23.3125 C 82.621094 23.3125 70.207031 36.492188 70.207031 53.8125 C 70.207031 71.128906 82.621094 85.171875 100.296875 85.171875 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 161.34375 24.519531 L 161.34375 45.195312 L 143.234375 45.195312 L 143.234375 24.519531 L 126.59375 24.519531 L 126.59375 83.96875 L 143.234375 83.96875 L 143.234375 60.703125 L 161.34375 60.703125 L 161.34375 83.96875 L 177.980469 83.96875 L 177.980469 24.519531 Z M 161.34375 24.519531 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 218.421875 85.863281 C 236.269531 85.863281 249.546875 72.421875 249.546875 53.8125 C 249.546875 35.203125 236.699219 22.621094 218.421875 22.621094 C 200.140625 22.621094 187.292969 35.71875 187.292969 53.8125 C 187.292969 71.90625 200.570312 85.863281 218.421875 85.863281 M 218.421875 69.835938 C 210.746094 69.835938 204.539062 63.289062 204.539062 53.8125 C 204.539062 44.9375 210.316406 38.648438 218.421875 38.648438 C 226.523438 38.648438 232.300781 44.851562 232.300781 53.8125 C 232.300781 63.289062 226.09375 69.835938 218.421875 69.835938 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 313.003906 24.519531 L 297.65625 24.519531 L 297.65625 62.6875 L 280.066406 24.519531 L 258.859375 24.519531 L 258.859375 83.96875 L 274.203125 83.96875 L 274.203125 45.023438 L 291.707031 83.96875 L 312.917969 83.96875 C 312.917969 72.078125 313.003906 60.1875 313.003906 48.296875 Z M 313.003906 24.519531 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 384.136719 83.96875 L 375.167969 71.648438 C 378.617188 66.046875 380.515625 59.066406 380.515625 51.140625 L 346.714844 51.140625 L 358.527344 68.199219 C 356.71875 69.0625 354.734375 69.492188 352.664062 69.492188 C 345.597656 69.492188 339.558594 63.632812 339.558594 53.8125 C 339.558594 45.453125 345.25 39.164062 354.90625 39.164062 C 361.027344 39.164062 367.238281 41.234375 372.066406 44.164062 L 372.066406 27.792969 C 366.976562 25.207031 360.425781 23.3125 353.527344 23.3125 C 334.644531 23.3125 322.316406 36.925781 322.316406 53.8125 C 322.316406 71.992188 334.90625 85.171875 351.113281 85.171875 C 357.148438 85.171875 362.496094 83.449219 366.976562 80.433594 C 367.839844 81.554688 368.617188 82.761719 369.480469 83.96875 Z M 384.136719 83.96875 "/>
-<path fill-rule="nonzero" fill="rgb(88.627625%, 5.097961%, 10.588074%)" fill-opacity="1" d="M 409.042969 22.929688 C 411.125 24.652344 413.855469 27.164062 415 28.847656 L 419.023438 24.792969 C 417.730469 23.109375 414.859375 20.8125 412.777344 19.269531 Z M 408.289062 44.417969 L 413.136719 47.683594 C 415.144531 44.023438 417.050781 40.113281 418.808594 36.242188 L 414.644531 33.011719 C 412.597656 37.316406 410.082031 41.695312 408.289062 44.421875 Z M 427.671875 34.65625 L 424.441406 34.65625 L 424.441406 28.378906 L 427.671875 28.378906 Z M 432.949219 28.378906 L 436.25 28.378906 L 436.25 34.65625 L 432.949219 34.65625 Z M 427.671875 16.902344 L 427.671875 23.109375 L 419.308594 23.109375 L 419.308594 41.191406 L 424.441406 41.191406 L 424.441406 39.9375 L 427.671875 39.9375 L 427.671875 50.988281 L 432.949219 50.988281 L 432.949219 39.9375 L 436.25 39.9375 L 436.25 41.011719 L 441.667969 41.011719 L 441.667969 23.113281 L 432.949219 23.113281 L 432.949219 16.90625 L 427.671875 16.90625 Z M 427.671875 16.902344 "/>
-<path fill-rule="nonzero" fill="rgb(88.627625%, 5.097961%, 10.588074%)" fill-opacity="1" d="M 411.460938 83.933594 L 411.460938 96.453125 L 433.105469 96.453125 L 433.105469 97.886719 L 438.566406 97.886719 L 438.566406 83.824219 L 433.105469 83.824219 L 433.105469 91.394531 L 428.011719 91.394531 L 428.011719 82.175781 L 441.476562 82.175781 L 441.476562 76.9375 L 428.011719 76.9375 L 428.011719 73.636719 L 439.179688 73.636719 L 439.179688 68.472656 L 428.011719 68.472656 L 428.011719 63.84375 L 422.445312 63.84375 L 422.445312 68.472656 L 411.03125 68.472656 L 411.03125 73.636719 L 422.445312 73.636719 L 422.445312 76.9375 L 408.484375 76.9375 L 408.484375 82.175781 L 422.445312 82.175781 L 422.445312 91.394531 L 417.0625 91.394531 L 417.0625 83.933594 Z M 411.460938 83.933594 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 494.5 24.519531 L 478.117188 24.519531 L 478.117188 85.863281 C 474.410156 85.605469 470.703125 85.433594 466.996094 85.175781 L 466.996094 99.476562 C 476.132812 99.992188 485.359375 100.683594 494.5 101.199219 Z M 494.5 24.519531 "/>
-<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 507.433594 83.96875 L 523.8125 83.96875 L 523.8125 24.519531 L 507.433594 24.519531 Z M 507.433594 83.96875 "/>
-</svg></div>
-  <div class="baseline">Des arts martiaux au 7<sup>e</sup> art</div>
+  <span class="eyebrow"><span class="dot"></span>Projet professionnel · TS2 · 2026 — 2027</span>
+  <h1>CONTRE<br>CHAMP</h1>
+  <div class="regle"></div>
+  <p class="sous">Arts martiaux et cinéma : un siècle d’<em>influences croisées</em>. Un essai illustré de 208 pages.</p>
 </header>
-
 <main>
-  <div class="grid">
-    <a id="c-prez" class="card" href="presentation.html">
-      <div class="card-bg"></div>
-      <div class="brush"></div>
-      <span class="card-num">01</span>
-      <span class="card-tag">Soutenance</span>
-      <span class="card-title">LA&nbsp;PRÉSENTATION</span>
-      <span class="card-sub">Le deck complet — mémoire, projet, système graphique.</span>
-      <span class="arrow">Ouvrir <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  <div class="grille">
+    <a class="carte" href="contre-champ.html">
+      <div><div class="n">La présentation</div>
+        <div class="d">Synopsis, note d’intention, étude de marché, descriptif technique, économie et planning — 18 slides.</div></div>
+      <div class="fl">Ouvrir →</div>
     </a>
-    <a id="c-appli" class="card" href="hub-complet.html">
-      <div class="card-bg"></div>
-      <div class="brush"></div>
-      <span class="card-num">02</span>
-      <span class="card-tag">Compagnon jury</span>
-      <span class="card-title">L'APPLI<br>iPAD</span>
-      <span class="card-sub">Galerie 3D, charte, mockups, billet, festival — expérience AR incluse.</span>
-      <span class="arrow">Ouvrir <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    <a class="carte" href="editeur.html">
+      <div><div class="n">L’éditeur</div>
+        <div class="d">Modifier les textes, les images, l’ordre et la mise en forme des slides, puis publier en ligne.</div></div>
+      <div class="fl">Ouvrir →</div>
     </a>
   </div>
 </main>
-
-<footer>Clovis — M2 DADG</footer>
+<footer>Clovis — TS2 · 2026 — 2027</footer>
 </body>
 </html>

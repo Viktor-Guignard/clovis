@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Clovis Project — Éditeur</title>
+<title>CONTRE-CHAMP — Éditeur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -159,7 +159,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <body>
 
 <header>
-  <div class="brand">CLOVIS <span>PROJECT</span></div>
+  <div class="brand">CONTRE<span>-CHAMP</span></div>
   <div class="seg">
     <button id="mEdit" class="on">Édition</button>
     <button id="mView">Aperçu</button>
@@ -201,7 +201,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
       <div id="veil">
         <div>
           <div style="font-family:var(--display);font-size:26px;color:var(--bone);letter-spacing:.5px">CHARGEMENT DU DECK</div>
-          <div style="margin-top:8px">81 Mo — la première ouverture prend un moment.<br>Les suivantes sortent du cache du navigateur.</div>
+          <div style="margin-top:8px">CONTRE-CHAMP — 18 slides.</div>
           <div class="bar"><i></i></div>
         </div>
       </div>
@@ -380,7 +380,7 @@ const EDIT_CSS = `
 
 /* ---------- pilotage du deck ---------- */
 const frame = $('#deck');
-const DECK_URL = 'presentation.html?preview=1';
+const DECK_URL = 'contre-champ.html?preview=1';
 function loadDeck(){
   $('#veil').classList.remove('gone');
   // le deck lit cet état AVANT d'initialiser sa navigation : pas de désynchro
@@ -816,8 +816,8 @@ $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); $('#cfg').clo
    Ce bouton lui donne le contexte : où tu en es, et les règles du dépôt. */
 function contexte(){
   const ss = sections(), sec = ss[S.cur], L = [];
-  L.push("Contexte — Clovis Project, deck CHONG JI. Dépôt : " + REPO + " (cloné dans ~/chongji-hub).");
-  L.push("Les modifications sont des ops dans patch.js, appliquées par cj-apply.js. Ne réécris jamais presentation.html (81 Mo).");
+  L.push("Contexte — CONTRE-CHAMP, livre sur les arts martiaux et le cinéma. Projet professionnel TS2.");
+  L.push("Dépôt " + REPO + " (cloné dans ~/chongji-hub). Le deck est contre-champ.html ; les modifications sont des ops dans patch.js, appliquées par cj-apply.js.");
   if (sec) L.push('Je suis sur la slide ' + (S.cur+1) + '/' + ss.length + ' : « ' + (sec.dataset.lbl||'') + ' » (' + (sec.dataset.chapter||'') + ').');
   if (dirty()) { const k = S.ops.length;
     L.push("Attention : j'ai " + k + ' modification' + (k>1?'s':'') + ' non enregistrée' + (k>1?'s':'') + " dans l'éditeur — je les enregistre avant que tu touches au dépôt."); }

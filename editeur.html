@@ -86,6 +86,8 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 .op .i{color:var(--grey);font-size:10.5px;width:18px;flex:none;font-variant-numeric:tabular-nums}
 .op .t{flex:1;line-height:1.45}
 .op .w{color:#E8B33A;font-size:11px}
+.op.morte{background:rgba(232,179,58,.06)}
+.op.morte .t{color:var(--grey)}
 .op button{background:none;border:1px solid var(--line);color:var(--grey);border-radius:4px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:var(--body)}
 .op button:hover{color:var(--red);border-color:var(--red)}
 .kbd{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-size:11px;font-family:ui-monospace,Menlo,monospace;color:var(--bone)}
@@ -224,6 +226,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <tr><td><b>◉</b> / <b>◌</b></td><td>masquer une slide sans la supprimer</td></tr>
   </table>
   <p style="margin-top:16px">Pour une refonte, une réécriture ou une nouvelle slide : <b>Copier le contexte</b>, puis colle dans la fenêtre Claude.</p>
+  <p><b>Après un enregistrement.</b> GitHub publie en une minute environ, mais les navigateurs gardent la page en cache jusqu'à dix minutes. Pour voir le résultat tout de suite — chez toi ou devant le jury — recharge avec <span class="kbd">⌘⇧R</span>.</p>
   <div class="row"><button class="btn prim" id="helpClose">Fermer</button></div>
 </div></dialog>
 
@@ -322,6 +325,9 @@ function loadDeck(){
 }
 frame.addEventListener('load', () => {
   S.doc = frame.contentDocument;   // les ops ont déjà été appliquées par cj-apply.js
+  try { S.applique = frame.contentWindow.CJ_APPLIED || []; } catch(e){ S.applique = []; }
+  const mortes = S.applique.filter(r => r && !r.ok).length;
+  if (mortes) console.info(mortes + ' modification(s) sans effet — voir le bouton Modifications');
   if (S.mode === 'edit') setupEdit();
   buildRail();
   showSlide(Math.min(S.cur, sections().length-1));
@@ -686,8 +692,12 @@ async function save(){
     };
     const res = await gh('contents/'+FILE, { method:'PUT', body: JSON.stringify(body) });
     S.base = JSON.stringify(S.ops);
-    S.busy = false; status('enregistré — en ligne dans ~1 min', 'ok');
-    setTimeout(refreshStatus, 6000);
+    S.busy = false;
+    // GitHub Pages sert avec cache-control: max-age=600 — la publication prend
+    // une minute, mais un navigateur qui a déjà chargé le calque peut garder
+    // l'ancien jusqu'à dix. Autant le dire plutôt que laisser douter.
+    status('enregistré — publié d\'ici 1 min, visible jusqu\'à 10 min plus tard', 'ok');
+    setTimeout(refreshStatus, 9000);
   } catch(err){
     S.busy = false;
     status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
@@ -759,6 +769,15 @@ function ouvrirOps(){
     const txt = document.createElement('span'); txt.className = 't'; txt.textContent = decrireOp(o);
     const p = poidsOp(o);
     if (p > 200*1024) { const w = document.createElement('span'); w.className = 'w'; w.textContent = fmtPoids(p); txt.append(' '); txt.appendChild(w); }
+    // cj-apply.js rend compte de chaque op : une cible disparue laisse une modification inerte
+    const sort = (S.applique || [])[i];
+    if (sort && !sort.ok) {
+      d.classList.add('morte');
+      const m = document.createElement('span'); m.className = 'w';
+      m.textContent = ' — ne s\'applique plus à rien';
+      m.title = sort.err || "La slide ou le bloc visé n'existe plus. Tu peux révoquer cette modification sans rien perdre.";
+      txt.appendChild(m);
+    }
     const b = document.createElement('button'); b.textContent = 'révoquer';
     b.title = "Retirer cette modification. Celles qui en dépendaient seront ignorées.";
     b.onclick = () => {
@@ -769,8 +788,12 @@ function ouvrirOps(){
     d.append(num, txt, b); box.appendChild(d);
   });
   const total = patchFile().length;
+  const mortes = S.ops.filter((o,i) => (S.applique||[])[i] && !(S.applique||[])[i].ok).length;
   $('#opsPoids').innerHTML = 'Poids du calque : <b>' + fmtPoids(total) + '</b>'
-    + (total > 2*1048576 ? ' — commence à être lourd. Les images remplacées en sont la cause.' : '');
+    + (total > 2*1048576 ? ' — commence à être lourd. Les images remplacées en sont la cause.' : '')
+    + (mortes ? '<br><span style="color:#E8B33A">' + mortes + ' modification' + (mortes>1?'s':'')
+       + ' ne s\'applique' + (mortes>1?'nt':'') + ' plus à rien — tu peux ' + (mortes>1?'les':'la')
+       + ' révoquer sans rien perdre.</span>' : '');
   $('#dlgOps').showModal();
 }
 $('#btnOps').onclick = ouvrirOps;

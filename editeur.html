@@ -122,6 +122,27 @@ textarea.champ{font-family:ui-monospace,Menlo,monospace;font-size:12px;line-heig
 .res b{color:var(--red);font-weight:600}
 .res .ou{color:var(--grey);font-size:11px;display:block}
 
+/* cadre de l'image sélectionnée, posé au-dessus de l'aperçu */
+#cadre{position:fixed;z-index:55;display:none;border:1.5px solid var(--red);pointer-events:none}
+#cadre.on{display:block}
+#cadre .grip{position:absolute;left:50%;top:-13px;transform:translateX(-50%);pointer-events:auto;
+  background:var(--red);color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 9px;border-radius:3px;cursor:grab;white-space:nowrap;font-weight:600}
+#cadre .grip:active{cursor:grabbing}
+#cadre .poignee{position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;background:var(--red);
+  border:2px solid var(--panel);border-radius:2px;cursor:nwse-resize;pointer-events:auto}
+#cadre .outils{position:absolute;right:0;top:-30px;display:flex;gap:3px;pointer-events:auto}
+#cadre .outils button{background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:12px;line-height:1;display:grid;place-items:center}
+#cadre .outils button:hover{border-color:var(--red);color:var(--red)}
+#cadre .taille{position:absolute;left:-2px;bottom:-24px;font-size:10px;color:var(--red);
+  font-variant-numeric:tabular-nums;letter-spacing:.04em}
+
+/* repère de dépôt — même vocabulaire que l'éditeur de cartes */
+#repere{position:fixed;z-index:56;display:none;height:3px;background:var(--red);pointer-events:none;
+  box-shadow:0 0 0 1px rgba(227,6,19,.3)}
+#repere.on{display:block}
+
 /* accessibilité : un anneau de focus visible partout */
 :focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:4px}
 button.btn,.iconbtn,.seg button{transition:border-color .12s,color .12s,background .12s}
@@ -265,6 +286,20 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <div class="row"><button class="btn prim" id="helpClose">Fermer</button></div>
 </div></dialog>
 
+<div id="cadre" aria-hidden="true">
+  <span class="grip" id="gripDep">⤧ déplacer</span>
+  <div class="outils">
+    <button data-i="gauche" title="Aligner à gauche">⇤</button>
+    <button data-i="centre" title="Centrer">⇹</button>
+    <button data-i="droite" title="Aligner à droite">⇥</button>
+    <button data-i="remplacer" title="Remplacer le fichier">⟳</button>
+    <button data-i="supprimer" title="Supprimer l'image">✕</button>
+  </div>
+  <span class="taille" id="cadreTaille"></span>
+  <span class="poignee" id="poigneeTaille"></span>
+</div>
+<div id="repere"></div>
+
 <div id="bar" role="toolbar" aria-label="Mise en forme">
   <span class="lbl">Texte</span>
   <button data-a="gras" title="Gras (⌘B)"><b>B</b></button>
@@ -276,7 +311,8 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <button data-a="haut" title="Monter le bloc">↑</button>
   <button data-a="bas" title="Descendre le bloc">↓</button>
   <button data-a="copie" title="Dupliquer le bloc">⧉</button>
-  <button data-a="plus" title="Insérer un paragraphe après">＋</button>
+  <button data-a="plus" title="Insérer un bloc du même type après">＋</button>
+  <button data-a="image" title="Insérer une image après ce bloc">▣</button>
   <button data-a="moins" title="Supprimer le bloc">✕</button>
 </div>
 
@@ -428,7 +464,10 @@ function setupEdit(){
   });
   S.doc.addEventListener('click', e => {
     const im = e.target.closest && e.target.closest('img[data-cj-img]');
-    if (im) { e.preventDefault(); e.stopPropagation(); pickImage(im); }
+    // un clic sélectionne (pour déplacer ou agrandir) ; le remplacement passe
+    // par le bouton ⟳ du cadre — sinon on ne pouvait plus que remplacer.
+    if (im) { e.preventDefault(); e.stopPropagation(); selectionnerImage(im); }
+    else if (!(e.target.closest && e.target.closest('[data-cj-ed]'))) deselectionnerImage();
   }, true);
 
   // la barre flottante suit le bloc où se trouve le curseur
@@ -441,7 +480,7 @@ function setupEdit(){
   S.doc.addEventListener('click', e => {
     if (!(e.target.closest && e.target.closest('[data-cj-ed]'))) { blocActif = null; majBarre(); }
   });
-  S.doc.addEventListener('scroll', () => placerBarre(), true);
+  S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); }, true);
 }
 
 const INLINE = new Set(['SPAN','EM','B','I','STRONG','BR','A','SMALL','SUP','SUB','U','MARK','ABBR']);
@@ -464,6 +503,7 @@ function armEditables(sec){
 function showSlide(i){
   const ss = sections(); if (!ss.length) return;
   if (typeof blocActif !== 'undefined') { blocActif = null; const b = $('#bar'); if (b) b.classList.remove('on'); }
+  if (typeof imgActive !== 'undefined') { imgActive = null; const c = $('#cadre'); if (c) c.classList.remove('on'); }
   S.cur = Math.max(0, Math.min(ss.length-1, i));
   const sec0 = ss[S.cur];
   if (S.mode === 'view') {
@@ -498,6 +538,7 @@ function fitFrame(){
   box.style.transform = 'translate(-50%,-50%) scale('+k+')';
   S.echelle = k;
   if (window.placerBarre) placerBarre();
+  if (window.placerCadre) placerCadre();
 }
 addEventListener('resize', fitFrame);
 </script>
@@ -669,19 +710,53 @@ $('#btnAdd').onclick = () => {
 };
 
 /* ---------- remplacement d'image ---------- */
-let pending = null;
-function pickImage(im){ pending = im; $('#filePick').value=''; $('#filePick').click(); }
+let pending = null;      // image à remplacer
+let apresQuoi = null;    // bloc après lequel insérer une nouvelle image
+function pickImage(im){ pending = im; apresQuoi = null; $('#filePick').value=''; $('#filePick').click(); }
+
+/* La figure porte sa largeur en pourcentage : c'est ce que « agrandir »
+   déplace, et ça reste juste quelle que soit la taille de l'écran. La légende
+   est fournie d'office — la grille du projet exige des visuels légendés et
+   crédités, autant que le gabarit le rappelle. */
+function figureImage(src){
+  const f = S.doc.createElement('figure');
+  f.setAttribute('style', 'width:60%;margin:18px 0;margin-right:auto');
+  const im = S.doc.createElement('img');
+  im.src = src; im.alt = '';
+  im.setAttribute('style', 'width:100%;height:auto;display:block');
+  const c = S.doc.createElement('figcaption');
+  c.className = 'note';
+  c.setAttribute('style', 'margin-top:8px;font-size:12px');
+  c.textContent = 'Légende — crédit.';
+  f.append(im, c);
+  return f;
+}
+
 $('#filePick').onchange = async e => {
-  const f = e.target.files[0]; if (!f || !pending) return;
+  const f = e.target.files[0]; if (!f) return;
+  if (!pending && !apresQuoi) return;
   status('conversion de l\'image…');
   try {
     const src = await toDataURL(f);
-    const sec = pending.closest('section.slide');
-    setOp({ t:'img', slide: sec.dataset.lbl, path: pathOf(pending, sec), src });
-    pending.src = src; pending = null;
     const ko = Math.round(src.length/1365);
-    status('image remplacée (' + (ko>1024 ? (ko/1024).toFixed(1)+' Mo' : ko+' Ko') + ')', 'dirty');
-    setTimeout(refreshStatus, 2500);
+    const poids = ko > 1024 ? (ko/1024).toFixed(1)+' Mo' : ko+' Ko';
+    if (pending) {
+      const sec = pending.closest('section.slide');
+      setOp({ t:'img', slide: sec.dataset.lbl, path: pathOf(pending, sec), src });
+      pending.src = src; pending = null;
+      status('image remplacée (' + poids + ')', 'dirty');
+    } else {
+      const fig = figureImage(src);
+      apresQuoi.after(fig);
+      const sec = fig.closest('section.slide');
+      enregistrerParent(fig);
+      delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
+      armEditables(sec);
+      selectionnerImage(fig.querySelector('img'));
+      apresQuoi = null;
+      status('image insérée (' + poids + ')', 'dirty');
+    }
+    setTimeout(refreshStatus, 2800);
   } catch(err){ status('image illisible', 'err'); console.error(err); }
 };
 function toDataURL(file){
@@ -960,10 +1035,10 @@ function majBarre(){
   ['gras','ital','rouge','net'].forEach(a =>
     bar.querySelector('[data-a="'+a+'"]').disabled = !texteSelectionne);
   const sec = blocActif.closest('section.slide');
-  const surSection = blocActif.parentElement === sec;
-  bar.querySelector('[data-a="haut"]').disabled = !blocActif.previousElementSibling;
-  bar.querySelector('[data-a="bas"]').disabled  = !blocActif.nextElementSibling;
-  bar.querySelector('[data-a="moins"]').disabled = surSection && sec.children.length <= 1;
+  const u = unite(blocActif);
+  bar.querySelector('[data-a="haut"]').disabled = !u.previousElementSibling;
+  bar.querySelector('[data-a="bas"]').disabled  = !u.nextElementSibling;
+  bar.querySelector('[data-a="moins"]').disabled = (u.parentElement === sec && sec.children.length <= 1);
   placerBarre();
 }
 
@@ -986,7 +1061,41 @@ function nettoyerMiseEnForme(){
   r.insertNode(txt);
   sel.removeAllRanges();
 }
-const MODELE_BLOC = '<p class="note r">Nouveau paragraphe — clique pour l\'écrire.</p>';
+/* Cliquer un texte sélectionne une FEUILLE (le numéro d'une ligne, le titre
+   d'une fiche). Mais « monter », « dupliquer » ou « insérer » n'ont de sens
+   que sur l'unité qui se répète : la ligne de liste, la ligne de tableau, la
+   fiche. On remonte donc jusqu'au premier ancêtre qui a un frère de même
+   forme. Une cellule remonte à sa ligne — ajouter une colonne n'est presque
+   jamais ce qu'on veut. */
+function forme(x){ return x.tagName + '.' + (x.className||'').toString().trim().split(/\s+/)[0]; }
+function unite(el){
+  const sec = el.closest('section.slide');
+  let n = el;
+  while (n.parentElement && n.parentElement !== sec) {
+    const f = forme(n);
+    if ([...n.parentElement.children].some(x => x !== n && forme(x) === f)) break;
+    n = n.parentElement;
+  }
+  if (/^(TD|TH)$/.test(n.tagName) && n.parentElement) n = n.parentElement;
+  return n;
+}
+/* Insérer, c'est cloner l'unité et la vider : le HTML reste valide quel que
+   soit le contexte — une ligne de tableau donne une ligne, un <li> donne un
+   <li>. Un modèle fixe produisait un <p> au milieu d'un <tr>, que le
+   navigateur rejetait hors du tableau au rechargement. */
+function cloneVide(u){
+  const c = u.cloneNode(true);
+  c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  // On vide les nœuds de TEXTE, pas les éléments : un contenu mixte
+  // (« <strong>210 mm</strong> à la française ») gardait sinon la part
+  // hors balise. Une feuille reçoit « … » pour rester cliquable ; le texte
+  // qui accompagne des balises disparaît.
+  const w = S.doc.createTreeWalker(c, NodeFilter.SHOW_TEXT);
+  const tn = []; let t; while ((t = w.nextNode())) tn.push(t);
+  tn.forEach(n => { if (n.nodeValue.trim()) n.nodeValue = n.parentElement.children.length ? '' : '…'; });
+  if (!c.textContent.trim()) c.textContent = '…';
+  return c;
+}
 
 bar.addEventListener('mousedown', e => e.preventDefault());   // ne pas perdre la sélection
 bar.addEventListener('click', e => {
@@ -1000,30 +1109,26 @@ bar.addEventListener('click', e => {
   if (a === 'rouge') envelopper('red');
   if (a === 'net')   nettoyerMiseEnForme();
 
-  if (a === 'haut' && blocActif.previousElementSibling)
-    blocActif.parentElement.insertBefore(blocActif, blocActif.previousElementSibling);
-  if (a === 'bas' && blocActif.nextElementSibling)
-    blocActif.parentElement.insertBefore(blocActif.nextElementSibling, blocActif);
+  const u = unite(blocActif);
+  if (a === 'haut' && u.previousElementSibling) u.parentElement.insertBefore(u, u.previousElementSibling);
+  if (a === 'bas'  && u.nextElementSibling)     u.parentElement.insertBefore(u.nextElementSibling, u);
   if (a === 'copie') {
-    const c = blocActif.cloneNode(true);
-    c.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
-    c.removeAttribute('id');
-    blocActif.after(c); cible = c;
+    const c = u.cloneNode(true);
+    c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+    u.after(c); cible = c;
   }
-  if (a === 'plus') {
-    const t = S.doc.createElement('template'); t.innerHTML = MODELE_BLOC;
-    const nb = t.content.firstElementChild;
-    blocActif.after(nb); cible = nb;
-  }
+  if (a === 'plus')  { const c = cloneVide(u); u.after(c); cible = c; }
+  if (a === 'image') { apresQuoi = u; $('#filePick').value = ''; $('#filePick').click(); return; }
   if (a === 'moins') {
-    if (!confirm('Supprimer ce bloc ?')) return;
-    const p = blocActif.parentElement, voisin = blocActif.nextElementSibling || blocActif.previousElementSibling;
-    blocActif.remove(); cible = voisin || p;
+    if (!confirm('Supprimer « ' + (u.textContent.trim().slice(0,46) || u.tagName.toLowerCase()) + ' » ?')) return;
+    const par = u.parentElement, voisin = u.nextElementSibling || u.previousElementSibling;
+    u.remove(); cible = voisin || par;
   }
 
   // Mise en forme : le bloc seul suffit, et l'op se confond avec celle de la
   // frappe au clavier. Manipulation de blocs : il faut le parent, qui porte
   // l'ordre et la présence des enfants.
+  if (a === 'image') return;
   if (['gras','ital','rouge','net'].indexOf(a) >= 0) {
     enregistrerBloc(blocActif);
   } else {
@@ -1121,7 +1226,119 @@ $('#codeGo').onclick = () => {
   status('slide reconstruite', 'dirty'); setTimeout(refreshStatus, 2500);
 };
 
-window.CJ_DEBUG = { contexte, decrireOp, masquerMedias, rendreMedias, get ops(){ return S.ops; } };
+/* =========================================================
+   IMAGES — sélectionner, déplacer, agrandir
+   L'aperçu est un iframe mis à l'échelle : les poignées vivent donc dans le
+   document parent et sont reprojetées à chaque mouvement. Les poser dans
+   l'iframe les aurait fait enregistrer avec la slide.
+   ========================================================= */
+let imgActive = null;
+const cadre = $('#cadre'), repere = $('#repere');
+
+function versParent(r){
+  const box = $('#frameBox').getBoundingClientRect(), k = S.echelle || 1;
+  return { x: box.left + r.left * k, y: box.top + r.top * k, w: r.width * k, h: r.height * k };
+}
+function figureDe(im){ return im.closest('figure') || im.parentElement; }
+
+function placerCadre(){
+  if (!imgActive || !imgActive.isConnected || S.mode !== 'edit') { cadre.classList.remove('on'); return; }
+  const p = versParent(figureDe(imgActive).getBoundingClientRect());
+  cadre.classList.add('on');
+  cadre.style.left = p.x + 'px'; cadre.style.top = p.y + 'px';
+  cadre.style.width = p.w + 'px'; cadre.style.height = p.h + 'px';
+  const l = figureDe(imgActive).style.width;
+  $('#cadreTaille').textContent = l ? 'largeur ' + l : '';
+}
+function selectionnerImage(im){ imgActive = im; blocActif = null; bar.classList.remove('on'); placerCadre(); }
+function deselectionnerImage(){ imgActive = null; cadre.classList.remove('on'); }
+window.placerCadre = placerCadre;
+
+/* ---------- agrandir ---------- */
+$('#poigneeTaille').addEventListener('pointerdown', e => {
+  if (!imgActive) return;
+  e.preventDefault(); e.stopPropagation();
+  const fig = figureDe(imgActive);
+  const parentLargeur = fig.parentElement.getBoundingClientRect().width;
+  const depart = fig.getBoundingClientRect().width;
+  const x0 = e.clientX, k = S.echelle || 1;
+  const bouge = ev => {
+    const px = Math.max(60, depart + (ev.clientX - x0) / k);
+    const pct = Math.max(10, Math.min(100, Math.round(px / parentLargeur * 100)));
+    fig.style.width = pct + '%';
+    placerCadre();
+  };
+  const fin = () => {
+    removeEventListener('pointermove', bouge); removeEventListener('pointerup', fin);
+    enregistrerParent(fig);
+    status('largeur : ' + fig.style.width, 'dirty'); setTimeout(refreshStatus, 2000);
+  };
+  addEventListener('pointermove', bouge); addEventListener('pointerup', fin);
+});
+
+/* ---------- déplacer ---------- */
+function cibleDepot(cy, fig){
+  const sec = fig.closest('section.slide');
+  const freres = [...sec.children].filter(x => x !== fig);
+  for (const el of freres) {
+    const r = el.getBoundingClientRect();
+    if (cy < r.top + r.height / 2) return { avant: el, r, haut: true };
+  }
+  const last = freres[freres.length - 1];
+  return last ? { avant: null, r: last.getBoundingClientRect(), haut: false } : null;
+}
+$('#gripDep').addEventListener('pointerdown', e => {
+  if (!imgActive) return;
+  e.preventDefault(); e.stopPropagation();
+  const fig = figureDe(imgActive);
+  let choix = null;
+  const bouge = ev => {
+    const box = $('#frameBox').getBoundingClientRect(), k = S.echelle || 1;
+    const cy = (ev.clientY - box.top) / k;                 // coordonnée dans l'iframe
+    choix = cibleDepot(cy, fig);
+    if (!choix) { repere.classList.remove('on'); return; }
+    const p = versParent(choix.r);
+    repere.classList.add('on');
+    repere.style.left = p.x + 'px';
+    repere.style.width = p.w + 'px';
+    repere.style.top = (choix.haut ? p.y - 2 : p.y + p.h) + 'px';
+  };
+  const fin = () => {
+    removeEventListener('pointermove', bouge); removeEventListener('pointerup', fin);
+    repere.classList.remove('on');
+    if (choix) {
+      const sec = fig.closest('section.slide');
+      if (choix.avant) sec.insertBefore(fig, choix.avant); else sec.appendChild(fig);
+      enregistrerParent(fig);
+      status('image déplacée', 'dirty'); setTimeout(refreshStatus, 2000);
+    }
+    placerCadre();
+  };
+  addEventListener('pointermove', bouge); addEventListener('pointerup', fin);
+});
+
+/* ---------- alignement, remplacement, suppression ---------- */
+cadre.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !imgActive) return;
+  const fig = figureDe(imgActive), i = b.dataset.i;
+  if (i === 'gauche') { fig.style.marginLeft = '0';    fig.style.marginRight = 'auto'; }
+  if (i === 'centre') { fig.style.marginLeft = 'auto'; fig.style.marginRight = 'auto'; }
+  if (i === 'droite') { fig.style.marginLeft = 'auto'; fig.style.marginRight = '0'; }
+  if (i === 'remplacer') { pickImage(imgActive); return; }
+  if (i === 'supprimer') {
+    if (!confirm('Supprimer cette image ?')) return;
+    const sec = fig.closest('section.slide'), par = fig.parentElement;
+    fig.remove(); deselectionnerImage();
+    enregistrerParent(par.firstElementChild || sec);
+    delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed'); armEditables(sec);
+    status('image supprimée', 'dirty'); setTimeout(refreshStatus, 2000);
+    return;
+  }
+  enregistrerParent(fig);
+  placerCadre();
+});
+
+window.CJ_DEBUG = { contexte, decrireOp, masquerMedias, rendreMedias, unite, get ops(){ return S.ops; } };
 
 refreshStatus();
 loadDeck();

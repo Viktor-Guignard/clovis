@@ -20,7 +20,6 @@
     stamp = (P && P.updated) ? ' — ' + P.updated : '';
   }
   window.CJ_APPLIED = [];
-  if (!ops.length) return;
 
   var main = document.querySelector('main') || document.body;
 
@@ -64,6 +63,38 @@
     title:   function (o) { var t = document.querySelector('head > title'); if (t) t.textContent = o.value; else document.title = o.value; return true; }
   };
 
+  /* ---------- typographie française ----------
+     Le deck a déjà un script anti-veuve (il soude le dernier mot d'un titre),
+     mais rien pour la ponctuation. Or en français le deux-points, le
+     point-virgule, le point d'exclamation, le point d'interrogation et les
+     guillemets prennent une espace INSÉCABLE : sans elle, la ponctuation peut
+     se retrouver seule en début de ligne. Sur un diplôme de design graphique,
+     ça se voit.
+
+     Fait ici plutôt que dans le fichier source : presentation.html pèse 81 Mo,
+     chaque réécriture en ajoute un exemplaire à l'historique Git. */
+  function typographie() {
+    var IGNORE = { SCRIPT:1, STYLE:1, TEXTAREA:1, CODE:1, PRE:1, KBD:1 };
+    var marche = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        for (var p = n.parentNode; p && p !== main; p = p.parentNode) {
+          // nodeName d'un élément SVG est en minuscules : on écarte tout l'arbre
+          if (IGNORE[p.nodeName] || p.nodeName === 'svg' || p.ownerSVGElement) return NodeFilter.FILTER_REJECT;
+        }
+        return /[ ][:;!?»]|«[ ]|[A-Za-zÀ-ÿ]'[A-Za-zÀ-ÿ]/.test(n.nodeValue)
+          ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var n, touches = 0;
+    while ((n = marche.nextNode())) {
+      n.nodeValue = n.nodeValue
+        .replace(/ ([:;!?»])/g, '\u00A0$1')                        // insécable avant
+        .replace(/« /g, '«\u00A0')                                  // et après l'ouvrant
+        .replace(/([A-Za-zÀ-ÿ])'([A-Za-zÀ-ÿ])/g, '$1\u2019$2');     // apostrophe courbe
+      touches++;
+    }
+    return touches;
+  }
   var agies = 0;
   ops.forEach(function (op, i) {
     var ok = false, err = null;
@@ -73,5 +104,25 @@
     window.CJ_APPLIED[i] = { t: op.t, ok: ok, err: err };
     if (!ok) console.warn('[CJ_PATCH] op ' + (i + 1) + ' (' + op.t + ') sans effet' + (err ? ' : ' + err : ''), op);
   });
-  console.log('[CJ_PATCH] ' + agies + '/' + ops.length + ' modification(s) appliquée(s)' + stamp);
+  if (ops.length) console.log('[CJ_PATCH] ' + agies + '/' + ops.length + ' modification(s) appliquée(s)' + stamp);
+
+  /* En dernier, toujours : les textes réécrits par le calque méritent la même
+     typographie que les autres, et un calque vide ne doit pas la priver.
+
+     Rejouée ensuite : plusieurs slides construisent leur contenu en JavaScript
+     (listes de logos, personas, légendes) après le passage de ce script. La
+     passe est idempotente — une espace déjà insécable le reste — donc la
+     rejouer ne coûte qu'un parcours de texte. */
+  function passe(quand) {
+    try {
+      var t = typographie();
+      if (t) console.log('[CJ_TYPO] ' + t + ' bloc(s) ajustés (' + quand + ')');
+    } catch (e) { console.warn('[CJ_TYPO] passe typographique ignorée', e); }
+  }
+  passe('au chargement');
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', function () { passe('DOM prêt'); });
+  addEventListener('load', function () {
+    [0, 600, 1800].forEach(function (d) { setTimeout(function () { passe('+' + d + 'ms'); }, d); });
+  });
 })();

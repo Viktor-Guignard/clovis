@@ -141,6 +141,20 @@ table.fiche tr:last-child td{border-bottom:0}
   font-family:var(--display);font-weight:600;margin-bottom:8px;display:block}
 @media(prefers-reduced-motion:reduce){.vig::after,.trace{animation:none}.trace{stroke-dashoffset:0}}
 
+/* ---------- curseur ----------
+   Repris du deck CHONG JI, passé à l'or. Un point qui suit la souris avec de
+   l'inertie, un anneau au survol de ce qui se clique, une onde au clic.
+   Désactivé au toucher et quand l'utilisateur demande moins d'animation. */
+html,body{cursor:none}
+#cursor{position:fixed;top:0;left:0;width:10px;height:10px;background:var(--or);border-radius:50%;
+  pointer-events:none;z-index:100000;transform:translate(-50%,-50%);
+  transition:width .18s,height .18s,background .18s,border-color .18s;will-change:transform}
+#cursor.hov{width:44px;height:44px;background:transparent;border:1.5px solid var(--or)}
+.ripple{position:fixed;border:1.5px solid var(--or);border-radius:50%;pointer-events:none;z-index:89;
+  transform:translate(-50%,-50%);animation:rip .5s var(--snap) forwards}
+@keyframes rip{from{width:8px;height:8px;opacity:1}to{width:120px;height:120px;opacity:0}}
+@media (hover:none){#cursor{display:none}html,body,a,button{cursor:auto}}
+
 /* pied de page */
 footer{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:14px;
   padding:0 clamp(18px,3vw,42px);font-family:var(--display);font-size:11px;letter-spacing:.13em;
@@ -161,10 +175,10 @@ body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
 @media print{footer,.nav{display:none}}
 
 /* ---------- diaporama ---------- */
-body.diapo{cursor:none}
-body.diapo footer,body.diapo .nav{opacity:0;transition:opacity .3s}
-body.diapo.eveille{cursor:auto}
-body.diapo.eveille footer,body.diapo.eveille .nav{opacity:1}
+/* En diaporama, c'est le curseur PERSONNALISÉ qui s'efface après trois
+   secondes d'immobilité — le système est déjà masqué en permanence. */
+body.diapo footer,body.diapo .nav,body.diapo #cursor{opacity:0;transition:opacity .3s}
+body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opacity:1}
 #invite{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
   background:rgba(18,18,18,.94);color:var(--paper);font-family:var(--display);font-weight:600;
   font-size:clamp(14px,1.6vw,19px);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
@@ -1247,6 +1261,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav{opacity:1}
   <button id="next" aria-label="Slide suivante">›</button>
 </div>
 <div id="invite" hidden>Cliquez pour passer en plein écran</div>
+<div id="cursor" aria-hidden="true"></div>
 
 <!-- Clovis Project : calque de modifications + typographie française.
      Doit précéder le script de navigation : sinon une suppression ou un
@@ -1302,6 +1317,38 @@ body.diapo.eveille footer,body.diapo.eveille .nav{opacity:1}
     if (Math.abs(d) > 60) goSlide(i + (d < 0 ? 1 : -1));
     x0 = null;
   }, {passive:true});
+
+  /* ---------- curseur ----------
+     Écarté dans l'éditeur : le deck y est dans une iframe mise à l'échelle,
+     le point serait décalé et masquerait le curseur système dont on a besoin
+     pour cliquer dans le texte. On le détecte par window.top. */
+  const dansIframe = (() => { try { return window.top !== window.self; } catch(e){ return true; } })();
+  const finesse = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const moinsAnime = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  if (dansIframe) {
+    document.documentElement.style.cursor = 'auto';
+    document.body.style.cursor = 'auto';
+    const c = $('#cursor'); if (c) c.style.display = 'none';
+  } else if (finesse) {
+    const cur = $('#cursor');
+    let x = innerWidth/2, y = innerHeight/2, tx = x, ty = y;
+    (function boucle(){
+      x += (tx - x) * .35; y += (ty - y) * .35;
+      cur.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%)';
+      requestAnimationFrame(boucle);
+    })();
+    addEventListener('pointermove', e => { tx = e.clientX; ty = e.clientY; }, {passive:true});
+    const CLIQUABLE = 'a,button,.prog i,[role="button"],#invite';
+    addEventListener('pointerover', e => { if (e.target.closest && e.target.closest(CLIQUABLE)) cur.classList.add('hov'); }, {passive:true});
+    addEventListener('pointerout',  e => { if (e.target.closest && e.target.closest(CLIQUABLE)) cur.classList.remove('hov'); }, {passive:true});
+    addEventListener('pointerdown', e => {
+      if (moinsAnime) return;
+      const r = document.createElement('div');
+      r.className = 'ripple'; r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px';
+      document.body.appendChild(r); setTimeout(() => r.remove(), 520);
+    }, {passive:true});
+  }
 
   /* ---------- diaporama ----------
      Le plein écran ne peut être demandé que depuis un geste de l'utilisateur :

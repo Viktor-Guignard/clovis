@@ -1342,9 +1342,30 @@ body.diapo.eveille footer,body.diapo.eveille .nav{opacity:1}
   if (/[?&]plein=1/.test(location.search)) {
     const inv = $('#invite');
     inv.hidden = false;
-    const partir = () => { inv.hidden = true; basculerPlein(); removeEventListener('keydown', partir); };
-    inv.addEventListener('click', partir, { once:true });
+    const partir = e => {
+      if (e && e.key === 'Escape') return;           // Échap sert à sortir, pas à entrer
+      inv.hidden = true; basculerPlein();
+      removeEventListener('keydown', partir);
+    };
+    inv.addEventListener('click', () => partir(), { once:true });
     addEventListener('keydown', partir);
+
+    /* Échap referme le diaporama et rend la main à l'éditeur. On sort d'abord
+       du plein écran, puis on tente de fermer l'onglet — ce que le navigateur
+       n'autorise que s'il a été ouvert par script — et à défaut on retourne
+       simplement à l'éditeur. */
+    addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      try {
+        const sortie = document.exitFullscreen || document.webkitExitFullscreen;
+        if (document.fullscreenElement || document.webkitFullscreenElement) sortie.call(document);
+      } catch (err) {}
+      setTimeout(() => {
+        try { window.close(); } catch (err) {}
+        if (!window.closed) location.href = 'editeur.html';
+      }, 160);
+    });
   }
 
   goSlide(0);

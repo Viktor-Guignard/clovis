@@ -12,7 +12,12 @@
      - sinon (le deck public) : le calque enregistré dans patch.js */
   var ops = null, stamp = '';
   if (/[?&]preview=1/.test(location.search)) {
+    /* Deux canaux, et c'est nécessaire : sessionStorage sert l'aperçu dans
+       l'iframe, mais un onglet ouvert avec rel="noopener" n'en hérite PAS —
+       le diaporama lisait un état vide et affichait le deck d'origine. Le
+       localStorage, lui, est partagé par tous les onglets de l'origine. */
     try { ops = JSON.parse(sessionStorage.getItem('cj_preview_ops') || 'null'); } catch (e) {}
+    if (!ops) { try { ops = JSON.parse(localStorage.getItem('cj_preview_ops') || 'null'); } catch (e) {} }
     ops = ops || []; stamp = ' (aperçu éditeur)';
   } else {
     var P = window.CJ_PATCH;

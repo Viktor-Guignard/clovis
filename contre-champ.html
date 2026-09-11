@@ -156,18 +156,25 @@ html,body{cursor:none}
 @media (hover:none){#cursor{display:none}html,body,a,button{cursor:auto}}
 
 /* pied de page */
-footer{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:14px;
-  padding:0 clamp(18px,3vw,42px);font-family:var(--display);font-size:11px;letter-spacing:.13em;
+/* Les boutons vivaient dans un bloc flottant calé en bas à droite : ils
+   recouvraient le compteur de folio, qui occupe le même coin. Ils sont
+   désormais dans le pied lui-même, en bout de ligne. */
+footer{position:fixed;left:0;right:0;bottom:0;min-height:46px;display:flex;align-items:center;gap:14px;
+  padding:6px clamp(18px,3vw,42px);font-family:var(--display);font-size:11px;letter-spacing:.13em;
   text-transform:uppercase;color:var(--gris);z-index:20;pointer-events:none}
 body.chrome-sombre footer{color:#7C7669}
-.prog{display:flex;gap:3px;flex:none;pointer-events:auto}
-.prog i{width:13px;height:3px;background:var(--trait);cursor:pointer;transition:background .2s}
+/* 52 pastilles à 13 px font 830 px : la barre poussait les flèches hors de
+   l'écran sur un 1024 de vidéoprojecteur. Elle se comprime désormais, les
+   pastilles avec elle — c'est elle qui absorbe le manque de place. */
+.prog{display:flex;gap:3px;flex:1 1 auto;min-width:0;pointer-events:auto}
+.prog i{flex:1 1 0;min-width:2px;max-width:13px;height:3px;background:var(--trait);
+  cursor:pointer;transition:background .2s}
 .prog i.on{background:var(--or)}
 body.chrome-sombre .prog i{background:#33302B}
 body.chrome-sombre .prog i.on{background:var(--or)}
-footer .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-footer .cnt{font-variant-numeric:tabular-nums}
-.nav{position:fixed;bottom:8px;right:clamp(14px,3vw,38px);display:flex;gap:6px;z-index:21}
+footer .lbl{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer .cnt{font-variant-numeric:tabular-nums;flex:none;pointer-events:auto}
+.nav{display:flex;gap:6px;flex:none;pointer-events:auto;margin-left:4px}
 .nav button{width:30px;height:30px;border:1px solid var(--trait);background:transparent;color:inherit;
   border-radius:3px;cursor:pointer;font-size:15px;line-height:1;font-family:var(--serif)}
 .nav button:hover{border-color:var(--or);color:var(--or)}
@@ -1254,12 +1261,12 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <div class="prog" id="prog"></div>
   <div class="lbl" id="pied-lbl">Couverture</div>
   <div class="cnt"><span id="cnt-cur">01</span> / <span id="cnt-tot">--</span></div>
+  <div class="nav">
+    <button id="plein" aria-label="Plein écran (F)" title="Plein écran · F">⛶</button>
+    <button id="prev" aria-label="Slide précédente">‹</button>
+    <button id="next" aria-label="Slide suivante">›</button>
+  </div>
 </footer>
-<div class="nav">
-  <button id="plein" aria-label="Plein écran (F)" title="Plein écran · F">⛶</button>
-  <button id="prev" aria-label="Slide précédente">‹</button>
-  <button id="next" aria-label="Slide suivante">›</button>
-</div>
 <div id="invite" hidden>Cliquez pour passer en plein écran</div>
 <div id="cursor" aria-hidden="true"></div>
 

@@ -21,7 +21,13 @@ html,body{height:100%;overflow:hidden}
 body{font-family:var(--body);background:var(--ink);color:var(--bone);font-size:14px;display:flex;flex-direction:column}
 
 /* ---------- barre du haut ---------- */
-header{display:flex;align-items:center;gap:14px;padding:0 14px;height:52px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+/* L'en-tête passe à la ligne plutôt que de rogner : à 1180 px, « Enregistrer »
+   et l'aide sortaient du cadre — le bouton le plus important était le premier
+   à disparaître. Rien ne peut plus être coupé, quelle que soit la largeur. */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 12px;
+  min-height:52px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+@media(max-width:1320px){ button.btn{padding:7px 10px;font-size:12px} header{gap:6px} }
+@media(max-width:1000px){ .brand{font-size:16px} .status{min-width:0} }
 .brand{font-family:var(--display);font-size:19px;letter-spacing:.5px;line-height:1}
 .brand span{color:var(--or)}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
@@ -449,6 +455,10 @@ const EDIT_CSS = `
   [data-cj-ed]:focus{outline:2px solid #B9893F;background:rgba(185,137,63,.05)}
   img[data-cj-img]{cursor:pointer}
   img[data-cj-img]:hover{outline:3px solid #B9893F;outline-offset:2px}
+  /* le décoratif est souvent posé en pointer-events:none : on le réveille */
+  [data-cj-obj]{pointer-events:auto!important;cursor:pointer}
+  [data-cj-obj]:hover{outline:2px dashed #B9893F;outline-offset:-2px}
+  [data-cj-obj].cj-choisi{outline:2px solid #B9893F;outline-offset:-2px}
 `;
 
 /* ---------- pilotage du deck ---------- */
@@ -515,7 +525,12 @@ function setupEdit(){
   S.doc.addEventListener('mouseup', () => majBarre());
   S.doc.addEventListener('selectionchange', () => majBarre());
   S.doc.addEventListener('click', e => {
-    if (!(e.target.closest && e.target.closest('[data-cj-ed]'))) { blocActif = null; majBarre(); }
+    if (!e.target.closest) return;
+    if (e.target.closest('[data-cj-ed]')) return;
+    S.doc.querySelectorAll('.cj-choisi').forEach(x => x.classList.remove('cj-choisi'));
+    const obj = e.target.closest('[data-cj-obj]');
+    if (obj) { obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
+    else { blocActif = null; majBarre(); }
   });
   S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); }, true);
 }
@@ -535,6 +550,18 @@ function armEditables(sec){
     if (hasText && !block) { el.setAttribute('data-cj-ed',''); el.contentEditable = 'true'; }
   });
   sec.querySelectorAll('img').forEach(im => im.setAttribute('data-cj-img',''));
+
+  // Les blocs décoratifs — amorce de pellicule, filets, pastilles — n'ont ni
+  // texte ni image : ils échappaient entièrement à l'éditeur. On les rend
+  // sélectionnables pour qu'ils puissent être déplacés, dupliqués ou retirés.
+  sec.querySelectorAll('*').forEach(el => {
+    if (el.hasAttribute('data-cj-ed') || el.hasAttribute('data-cj-img')) return;
+    if (el.closest('svg,[data-cj-ed]') || el.querySelector('[data-cj-ed],img')) return;
+    if (el.textContent.trim()) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) return;      // rien d'invisible ou de minuscule
+    el.setAttribute('data-cj-obj','');
+  });
 }
 
 function showSlide(i){
@@ -1026,12 +1053,18 @@ $('#helpClose').onclick = () => $('#dlgHelp').close();
    attributs ne doivent JAMAIS partir dans le calque : publiés sur le deck,
    ils rendraient les slides éditables pour n'importe quel visiteur. On
    enregistre donc une copie nettoyée, jamais le DOM vivant. */
-const ATTRS_EDITEUR = ['data-cj-ed', 'contenteditable', 'data-cj-img', 'data-cj-cur', 'data-cj-armed'];
+const ATTRS_EDITEUR = ['data-cj-ed', 'contenteditable', 'data-cj-img', 'data-cj-cur',
+                       'data-cj-armed', 'data-cj-obj'];
+const CLASSES_EDITEUR = ['cj-choisi'];
 function propre(el){
   const c = el.cloneNode(true);
-  const nettoie = n => ATTRS_EDITEUR.forEach(a => n.removeAttribute(a));
+  const nettoie = n => {
+    ATTRS_EDITEUR.forEach(a => n.removeAttribute(a));
+    CLASSES_EDITEUR.forEach(k => n.classList && n.classList.remove(k));
+    if (n.classList && !n.classList.length && n.getAttribute('class') === '') n.removeAttribute('class');
+  };
   nettoie(c);
-  c.querySelectorAll('[' + ATTRS_EDITEUR.join('],[') + ']').forEach(nettoie);
+  c.querySelectorAll('*').forEach(nettoie);
   return c;
 }
 
@@ -1069,9 +1102,11 @@ window.placerBarre = placerBarre;
 function majBarre(){
   if (!blocActif) { bar.classList.remove('on'); fermerPanneau(); return; }
   const sel = S.doc.getSelection();
-  const texteSelectionne = sel && !sel.isCollapsed && blocActif.contains(sel.anchorNode);
+  const estTexte = blocActif.hasAttribute('data-cj-ed');
+  const texteSelectionne = estTexte && sel && !sel.isCollapsed && blocActif.contains(sel.anchorNode);
   ['gras','ital','rouge','net'].forEach(a =>
     bar.querySelector('[data-a="'+a+'"]').disabled = !texteSelectionne);
+  bar.querySelector('[data-a="typo"]').disabled = !estTexte;
   const sec = blocActif.closest('section.slide');
   const u = unite(blocActif);
   bar.querySelector('[data-a="haut"]').disabled = !u.previousElementSibling;

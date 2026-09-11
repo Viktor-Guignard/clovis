@@ -1115,7 +1115,7 @@ function cd(){
     $('#countdown').innerHTML=over
       ? '<div style="text-align:center;width:100%"><b style="font-size:22px">MERCI — À L\'ANNÉE PROCHAINE</b><i>édition 2026 terminée</i></div>'
       : '<div style="text-align:center;width:100%"><b style="font-size:26px;color:var(--red)">C\'EST AUJOURD\'HUI</b><i>portes 9h15 — Zénith Paris</i></div>';
-    clearInterval(cdTimer);return;
+    if(cdTimer)clearInterval(cdTimer);return;
   }
   const j=Math.floor(d/864e5);d-=j*864e5;
   const h=Math.floor(d/36e5);d-=h*36e5;
@@ -1124,7 +1124,11 @@ function cd(){
   $('#cd-d').textContent=pad(j,3);$('#cd-h').textContent=pad(h,2);
   $('#cd-m').textContent=pad(m,2);$('#cd-s').textContent=pad(s,2);
 }
-cd();const cdTimer=setInterval(cd,1000);
+/* cdTimer doit exister avant le premier appel : passé la date du festival, cd()
+   atteint clearInterval() dès l'appel synchrone, et un const en zone morte y
+   lève une ReferenceError qui interrompait tout le script en dessous. */
+let cdTimer=null;
+cd();cdTimer=setInterval(cd,1000);
 
 /* ---- FAQ accordéons ---- */
 $$('.faq summary').forEach(s=>{

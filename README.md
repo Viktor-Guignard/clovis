@@ -1,9 +1,9 @@
-# CHONG JI 冲击
+# Clovis Project — CHONG JI 冲击
 
 Menu d'accès : **la présentation** (deck complet de soutenance) et **l'appli iPad du jury**
 (compagnon de soutenance).
 
-Ouvrir : https://viktor-guignard.github.io/clovis/chongji-hub/
+Ouvrir : https://viktor-guignard.github.io/clovis/
 
 - `index.html` — menu d'accueil (2 cartes)
 - `presentation.html` — deck complet (mémoire, projet, système graphique)
@@ -17,7 +17,7 @@ Ouvrir : https://viktor-guignard.github.io/clovis/editeur.html
 
 `presentation.html` n'est jamais réécrit. Toutes les modifications sont des « ops »
 enregistrées dans `patch.js`, que `cj-apply.js` applique au chargement du deck.
-C'est ce qui permet à Viktor et à Claude d'éditer le même deck sans se marcher dessus,
+C'est ce qui permet d'éditer le même deck à la main et avec Claude sans se marcher dessus,
 et qui garde le dépôt léger malgré un fichier source de 81 Mo.
 
 - `editeur.html` — l'éditeur (textes, images, ajout/suppression/ordre des slides)
@@ -60,4 +60,4 @@ Puis glisser l'app dans le Dock. Au premier lancement, macOS demande
 l'autorisation de piloter Safari — c'est normal, il faut l'accorder.
 Le partage se règle avec `partEditeur` en haut du script.
 
-Viktor Guignard — M2 DADG · ESDAC Paris
+Clovis — M2 DADG

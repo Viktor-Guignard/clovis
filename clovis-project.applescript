@@ -1,4 +1,4 @@
--- Clovis Project
+-- Clovis Project — CONTRE-CHAMP
 -- Ouvre l'établi : l'éditeur du deck à gauche, Claude à droite,
 -- deux vraies fenêtres Safari calées sur l'écran principal.
 --

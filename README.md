@@ -1,39 +1,40 @@
-# Clovis Project — CHONG JI 冲击
+# CONTRE-CHAMP
 
-Menu d'accès : **la présentation** (deck complet de soutenance) et **l'appli iPad du jury**
-(compagnon de soutenance).
+**Arts martiaux et cinéma : un siècle d'influences croisées.**
+Essai illustré, 208 pages — projet professionnel TS2, 2026 — 2027.
 
 Ouvrir : https://viktor-guignard.github.io/clovis/
 
-- `index.html` — menu d'accueil (2 cartes)
-- `presentation.html` — deck complet (mémoire, projet, système graphique)
-- `hub-complet.html` — compagnon iPad du jury : galerie 3D, charte, mockups, billet, festival + AR
-- `appli.html` — application mobile du festival (bonus, non lié depuis le menu)
+- `contre-champ.html` — la présentation du projet (18 slides)
+- `editeur.html` — l'éditeur du deck
+- `index.html` — page d'accueil
 
 ## Éditer le deck
 
-`editeur.html` — éditeur type Google Slides pour `presentation.html`, avec Claude intégré.
-Ouvrir : https://viktor-guignard.github.io/clovis/editeur.html
+https://viktor-guignard.github.io/clovis/editeur.html
 
-`presentation.html` n'est jamais réécrit. Toutes les modifications sont des « ops »
-enregistrées dans `patch.js`, que `cj-apply.js` applique au chargement du deck.
-C'est ce qui permet d'éditer le même deck à la main et avec Claude sans se marcher dessus,
-et qui garde le dépôt léger malgré un fichier source de 81 Mo.
+Textes en place, remplacement d'images, ajout / duplication / suppression /
+masquage / réordonnancement des slides, mise en forme (gras, italique, accent),
+manipulation des blocs, rechercher-remplacer global, édition du HTML.
+Un jeton GitHub à renseigner une fois par navigateur (Réglages).
 
-- `editeur.html` — l'éditeur (textes, images, ajout/suppression/ordre des slides)
-- `patch.js` — le calque de modifications (seul fichier réécrit à chaque enregistrement)
-- `cj-apply.js` — applique le calque au chargement
-- `bake.py` — fabrique `presentation-soutenance.html` : un fichier unique et autonome, hors ligne
+`contre-champ.html` n'est jamais réécrit par l'éditeur : chaque modification
+devient une « op » dans `patch.js`, appliquée au chargement. C'est ce qui permet
+d'éditer à la main et de faire travailler Claude sur le même deck sans conflit,
+et de révoquer une modification une par une.
+
+- `patch.js` — le calque de modifications (seul fichier réécrit à l'enregistrement)
+- `cj-early.js` — applique le calque dès l'en-tête (titre, écran de chargement)
+- `cj-apply.js` — applique le calque aux slides, puis la typographie française
+  (espaces insécables, apostrophes courbes)
+- `bake.py` — fabrique `contre-champ-figee.html`, fichier unique et autonome
 - `clovis-project.applescript` — source de l'app « Clovis Project »
 
 ## Clovis Project (l'app à deux fenêtres)
 
-Ouvre d'un clic les deux fenêtres Safari côte à côte sur l'écran principal :
-l'éditeur du deck à gauche, Claude à droite. Dock et barre de menus pris en
-compte ; sur plusieurs écrans, seul l'écran principal est utilisé. Le partage
-s'adapte à la taille de l'écran — 63/37 sous 1500 pt (MacBook Air 13"),
-58/42 au-delà — parce que le rail de slides occupe une largeur fixe alors que
-Claude se resserre sans gêne.
+Ouvre d'un clic deux fenêtres Safari côte à côte sur l'écran principal :
+l'éditeur à gauche, Claude à droite. Le partage s'adapte à l'écran — 63/37 sous
+1500 pt (MacBook Air 13"), 58/42 au-delà.
 
 ### Installer sur un Mac
 
@@ -43,21 +44,14 @@ Ouvrir **Terminal** (⌘Espace, taper « Terminal ») et coller cette ligne :
 cd ~/Desktop && curl -fsSLO https://raw.githubusercontent.com/Viktor-Guignard/clovis/main/clovis-project.applescript && osacompile -o "Clovis Project.app" clovis-project.applescript && rm clovis-project.applescript && open .
 ```
 
-Elle télécharge le script, fabrique l'app sur le Bureau et ouvre le dossier.
-Glisser ensuite `Clovis Project.app` dans le Dock.
+Glisser ensuite `Clovis Project.app` dans le Dock. Construire l'app localement
+évite la quarantaine Gatekeeper : signée ad-hoc et non notarisée, une copie reçue
+par mail ou AirDrop serait refusée au lancement.
 
-Construire l'app localement évite la quarantaine Gatekeeper : elle est signée
-ad-hoc et non notarisée, donc une copie reçue par mail ou AirDrop serait refusée
-au lancement. Recoller la même ligne plus tard met l'app à jour.
+## Archives
 
-Depuis un clone du dépôt, la version courte suffit :
+`presentation.html`, `hub-complet.html` et `appli.html` appartiennent au projet
+CHONG JI, abandonné. Conservés le temps de décider de leur sort ; ils ne sont
+plus liés depuis l'accueil.
 
-```sh
-osacompile -o "Clovis Project.app" clovis-project.applescript
-```
-
-Puis glisser l'app dans le Dock. Au premier lancement, macOS demande
-l'autorisation de piloter Safari — c'est normal, il faut l'accorder.
-Le partage se règle avec `partEditeur` en haut du script.
-
-Clovis — M2 DADG
+Clovis — TS2 · 2026 — 2027

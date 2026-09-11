@@ -49,9 +49,12 @@ section.slide.sombre .note,section.slide.sombre .lead{color:#BDB6A6}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:600;
   font-size:clamp(10px,1.05vw,12px);letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin-bottom:clamp(12px,2vh,22px)}
 .eyebrow .dot{width:6px;height:6px;background:var(--or);border-radius:50%;flex:none}
-h1.titre{font-family:var(--display);font-weight:700;line-height:.9;letter-spacing:-.01em;
+/* Interlignage : en Oswald, une capitale monte à ~.73 em mais son accent à ~.95.
+   Sous 1.0, « À » ou « É » en seconde ligne percutent la ligne du dessus —
+   c'est visible sur 8 titres du deck. On desserre juste ce qu'il faut. */
+h1.titre{font-family:var(--display);font-weight:700;line-height:.96;letter-spacing:-.01em;
   font-size:clamp(46px,8.4vw,118px);text-transform:uppercase}
-h2.titre{font-family:var(--display);font-weight:700;line-height:.95;letter-spacing:-.005em;
+h2.titre{font-family:var(--display);font-weight:700;line-height:1.04;letter-spacing:-.005em;
   font-size:clamp(30px,4.6vw,62px);text-transform:uppercase;margin-bottom:clamp(14px,2.4vh,26px)}
 h3{font-family:var(--display);font-weight:600;font-size:clamp(13px,1.35vw,16px);letter-spacing:.13em;
   text-transform:uppercase;margin-bottom:8px}
@@ -127,6 +130,16 @@ footer .cnt{font-variant-numeric:tabular-nums}
 .nav button:hover{border-color:var(--or);color:var(--or)}
 body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
 @media print{footer,.nav{display:none}}
+
+/* ---------- diaporama ---------- */
+body.diapo{cursor:none}
+body.diapo footer,body.diapo .nav{opacity:0;transition:opacity .3s}
+body.diapo.eveille{cursor:auto}
+body.diapo.eveille footer,body.diapo.eveille .nav{opacity:1}
+#invite{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  background:rgba(18,18,18,.94);color:var(--paper);font-family:var(--display);font-weight:600;
+  font-size:clamp(14px,1.6vw,19px);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+#invite[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1142,9 +1155,11 @@ body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
   <div class="cnt"><span id="cnt-cur">01</span> / <span id="cnt-tot">--</span></div>
 </footer>
 <div class="nav">
+  <button id="plein" aria-label="Plein écran (F)" title="Plein écran · F">⛶</button>
   <button id="prev" aria-label="Slide précédente">‹</button>
   <button id="next" aria-label="Slide suivante">›</button>
 </div>
+<div id="invite" hidden>Cliquez pour passer en plein écran</div>
 
 <!-- Clovis Project : calque de modifications + typographie française.
      Doit précéder le script de navigation : sinon une suppression ou un
@@ -1200,6 +1215,50 @@ body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
     if (Math.abs(d) > 60) goSlide(i + (d < 0 ? 1 : -1));
     x0 = null;
   }, {passive:true});
+
+  /* ---------- diaporama ----------
+     Le plein écran ne peut être demandé que depuis un geste de l'utilisateur :
+     ouvert avec ?plein=1, on affiche donc une invite plutôt que d'échouer en
+     silence. En plein écran, le curseur et le chrome s'effacent après trois
+     secondes d'immobilité — ce qui reste à l'écran doit être la slide. */
+  const racine = document.documentElement;
+  function basculerPlein(){
+    const demande = racine.requestFullscreen || racine.webkitRequestFullscreen;
+    const sortie = document.exitFullscreen || document.webkitExitFullscreen;
+    try {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) demande.call(racine);
+      else sortie.call(document);
+    } catch (e) { console.warn('plein écran refusé', e); }
+  }
+  $('#plein').onclick = basculerPlein;
+  addEventListener('keydown', e => {
+    if (e.target.isContentEditable) return;
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); basculerPlein(); }
+  });
+
+  let sommeil = null;
+  function eveiller(){
+    document.body.classList.add('eveille');
+    clearTimeout(sommeil);
+    sommeil = setTimeout(() => document.body.classList.remove('eveille'), 3000);
+  }
+  function majDiapo(){
+    const plein = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    document.body.classList.toggle('diapo', plein);
+    if (plein) eveiller(); else { clearTimeout(sommeil); document.body.classList.remove('eveille'); }
+  }
+  document.addEventListener('fullscreenchange', majDiapo);
+  document.addEventListener('webkitfullscreenchange', majDiapo);
+  addEventListener('mousemove', () => { if (document.body.classList.contains('diapo')) eveiller(); });
+
+  // ouvert depuis l'éditeur en mode diaporama : on attend le premier geste
+  if (/[?&]plein=1/.test(location.search)) {
+    const inv = $('#invite');
+    inv.hidden = false;
+    const partir = () => { inv.hidden = true; basculerPlein(); removeEventListener('keydown', partir); };
+    inv.addEventListener('click', partir, { once:true });
+    addEventListener('keydown', partir);
+  }
 
   goSlide(0);
 })();

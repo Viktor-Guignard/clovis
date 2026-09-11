@@ -139,6 +139,19 @@ textarea.champ{font-family:ui-monospace,Menlo,monospace;font-size:12px;line-heig
 #cadre .taille{position:absolute;left:-2px;bottom:-24px;font-size:10px;color:var(--or);
   font-variant-numeric:tabular-nums;letter-spacing:.04em}
 
+/* panneau de typographie — le « mini PowerPoint » */
+#typo{position:fixed;z-index:61;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:8px;box-shadow:0 14px 40px rgba(0,0,0,.6);width:246px;font-family:var(--ui)}
+#typo[hidden]{display:none}
+#typo .rang{display:flex;align-items:center;gap:4px;padding:4px 2px}
+#typo .rang+.rang{border-top:1px solid var(--line)}
+#typo .et{flex:1;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey)}
+#typo button{background:var(--panel2);border:1px solid var(--line);color:var(--bone);min-width:26px;height:24px;
+  border-radius:4px;cursor:pointer;font-size:12px;line-height:1;font-family:var(--ui);padding:0 5px}
+#typo button:hover{border-color:var(--or);color:var(--or)}
+#typo button.large{flex:1;font-size:11px;letter-spacing:.06em}
+#typo .val{min-width:42px;text-align:center;font-size:11px;color:var(--or);font-variant-numeric:tabular-nums}
+
 /* repère de dépôt — même vocabulaire que l'éditeur de cartes */
 #repere{position:fixed;z-index:56;display:none;height:3px;background:var(--or);pointer-events:none;
   box-shadow:0 0 0 1px rgba(185,137,63,.3)}
@@ -188,6 +201,8 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   </div>
   <div class="spacer"></div>
   <span class="status" id="status">—</span>
+  <button class="btn" id="btnDiapo" title="Lire la présentation en plein écran, animations comprises">▶ Diaporama</button>
+  <button class="btn" id="btnDl" title="Télécharger un fichier HTML autonome, qui fonctionne sans réseau">↓ HTML</button>
   <button class="btn" id="btnRR" title="Rechercher et remplacer dans toutes les slides (⌘R)">Remplacer</button>
   <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
@@ -276,6 +291,9 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <tr><td>Sélectionner des mots</td><td>gras, italique, accent rouge</td></tr>
     <tr><td>Barre → <b>↑ ↓ ⧉ ＋ ✕</b></td><td>déplacer, dupliquer, insérer, supprimer un bloc</td></tr>
     <tr><td>Bouton <b>Code</b></td><td>éditer le HTML de la slide</td></tr>
+    <tr><td>Barre → <b>Aa</b></td><td>taille, interligne, graisse, alignement, casse du bloc</td></tr>
+    <tr><td>Bouton <b>▶ Diaporama</b></td><td>lecture plein écran, animations comprises — <span class="kbd">F</span> bascule, <span class="kbd">Échap</span> sort</td></tr>
+    <tr><td>Bouton <b>↓ HTML</b></td><td>fichier unique et autonome, polices embarquées : il fonctionne sans réseau</td></tr>
     <tr><td>Clic sur un texte</td><td>l'éditer directement</td></tr>
     <tr><td>Clic sur une image</td><td>la remplacer par un fichier</td></tr>
     <tr><td>Double-clic sur un nom</td><td>renommer la slide</td></tr>
@@ -301,12 +319,29 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 </div>
 <div id="repere"></div>
 
+<div id="typo" hidden>
+  <div class="rang"><span class="et">Taille</span>
+    <button data-t="fs-">−</button><span class="val" id="vFs">—</span><button data-t="fs+">+</button></div>
+  <div class="rang"><span class="et">Interligne</span>
+    <button data-t="lh-">−</button><span class="val" id="vLh">—</span><button data-t="lh+">+</button></div>
+  <div class="rang"><span class="et">Graisse</span>
+    <button data-t="w-">−</button><span class="val" id="vW">—</span><button data-t="w+">+</button></div>
+  <div class="rang"><span class="et">Alignement</span>
+    <button data-t="al-g" title="À gauche">⇤</button><button data-t="al-c" title="Centré">⇹</button>
+    <button data-t="al-d" title="À droite">⇥</button><button data-t="al-j" title="Justifié">≡</button></div>
+  <div class="rang"><span class="et">Casse</span>
+    <button data-t="maj" title="CAPITALES">AA</button><button data-t="min" title="minuscules">aa</button>
+    <button data-t="cap" title="Normal">Aa</button></div>
+  <div class="rang fin"><button data-t="raz" class="large">Réinitialiser ce bloc</button></div>
+</div>
+
 <div id="bar" role="toolbar" aria-label="Mise en forme">
   <span class="lbl">Texte</span>
   <button data-a="gras" title="Gras (⌘B)"><b>B</b></button>
   <button data-a="ital" title="Italique (⌘I)"><i>I</i></button>
   <button data-a="rouge" class="rouge" title="Accent rouge de la charte">A</button>
   <button data-a="net" title="Retirer la mise en forme">⌫</button>
+  <button data-a="typo" title="Taille, interligne, alignement">Aa</button>
   <span class="sep"></span>
   <span class="lbl">Bloc</span>
   <button data-a="haut" title="Monter le bloc">↑</button>
@@ -528,6 +563,7 @@ function showSlide(i){
   $('#curLbl').textContent = (S.cur+1) + ' / ' + ss.length + ' · ' + (sec.dataset.chapter||'') + ' — ' + (sec.dataset.lbl||'sans titre');
   [...$('#list').querySelectorAll('.item')].forEach(el => el.classList.toggle('cur', +el.dataset.i === S.cur));
   const cu = $('#list').querySelector('.item.cur'); if (cu) cu.scrollIntoView({block:'nearest'});
+  const tp = $('#typo'); if (tp) tp.hidden = true;
 }
 
 /* le deck est dessiné pour un viewport plein écran : on le rend à taille réelle puis on met à l'échelle */
@@ -1031,7 +1067,7 @@ function placerBarre(){
 window.placerBarre = placerBarre;
 
 function majBarre(){
-  if (!blocActif) { bar.classList.remove('on'); return; }
+  if (!blocActif) { bar.classList.remove('on'); fermerPanneau(); return; }
   const sel = S.doc.getSelection();
   const texteSelectionne = sel && !sel.isCollapsed && blocActif.contains(sel.anchorNode);
   ['gras','ital','rouge','net'].forEach(a =>
@@ -1131,6 +1167,11 @@ bar.addEventListener('click', e => {
   // frappe au clavier. Manipulation de blocs : il faut le parent, qui porte
   // l'ordre et la présence des enfants.
   if (a === 'image') return;
+  if (a === 'typo') {
+    panneau.hidden = !panneau.hidden;
+    if (!panneau.hidden) { majPanneau(); placerPanneau(); }
+    return;
+  }
   if (['gras','ital','rouge','net'].indexOf(a) >= 0) {
     enregistrerBloc(blocActif);
   } else {
@@ -1226,6 +1267,164 @@ $('#codeGo').onclick = () => {
   armEditables(sec);
   $('#dlgCode').close();
   status('slide reconstruite', 'dirty'); setTimeout(refreshStatus, 2500);
+};
+
+/* =========================================================
+   TYPOGRAPHIE — taille, interligne, graisse, alignement, casse
+   Les valeurs vivent dans l'attribut style du bloc, donc dans une op « attr » :
+   une op « text » n'enregistre que le CONTENU d'un élément, jamais ses propres
+   attributs — la mise en forme aurait été perdue au rechargement.
+   ========================================================= */
+const panneau = $('#typo');
+
+/* La taille est posée en vw, pas en px : le deck se lit en plein écran sur des
+   écrans de tailles différentes, et une valeur fixe casserait ce que les clamp
+   du deck font très bien. */
+function enVw(px){ return +(px / innerWidthDeck() * 100).toFixed(2); }
+function innerWidthDeck(){ try { return S.doc.defaultView.innerWidth || 1600; } catch(e){ return 1600; } }
+
+function styleCourant(el){
+  const c = S.doc.defaultView.getComputedStyle(el);
+  return {
+    fs: parseFloat(c.fontSize),
+    lh: c.lineHeight === 'normal' ? parseFloat(c.fontSize) * 1.2 : parseFloat(c.lineHeight),
+    w: parseInt(c.fontWeight, 10) || 400
+  };
+}
+function majPanneau(){
+  if (!blocActif) return;
+  const c = styleCourant(blocActif);
+  $('#vFs').textContent = Math.round(c.fs) + ' px';
+  $('#vLh').textContent = (c.lh / c.fs).toFixed(2);
+  $('#vW').textContent = c.w;
+}
+function placerPanneau(){
+  if (panneau.hidden) return;
+  const r = bar.getBoundingClientRect();
+  panneau.style.left = Math.max(8, Math.min(innerWidth - 254, r.left)) + 'px';
+  panneau.style.top = (r.bottom + 6) + 'px';
+}
+function fermerPanneau(){ panneau.hidden = true; }
+
+function appliquerTypo(t){
+  if (!blocActif) return;
+  const el = blocActif, c = styleCourant(el);
+  const poser = (prop, val) => el.style.setProperty(prop, val);
+
+  if (t === 'fs+' || t === 'fs-') {
+    const k = t === 'fs+' ? 1.08 : 1/1.08;
+    poser('font-size', enVw(c.fs * k) + 'vw');
+    // l'interligne suit la taille, sinon le bloc se disloque
+    if (!el.style.lineHeight) poser('line-height', (c.lh / c.fs).toFixed(2));
+  }
+  if (t === 'lh+' || t === 'lh-') poser('line-height', Math.max(0.75, c.lh / c.fs + (t === 'lh+' ? .06 : -.06)).toFixed(2));
+  if (t === 'w+' || t === 'w-') {
+    const paliers = [200,300,400,500,600,700,800,900];
+    let i = paliers.findIndex(x => x >= c.w);
+    i = Math.max(0, Math.min(paliers.length - 1, i + (t === 'w+' ? 1 : -1)));
+    poser('font-weight', paliers[i]);
+  }
+  if (t === 'al-g') poser('text-align', 'left');
+  if (t === 'al-c') poser('text-align', 'center');
+  if (t === 'al-d') poser('text-align', 'right');
+  if (t === 'al-j') poser('text-align', 'justify');
+  if (t === 'maj') poser('text-transform', 'uppercase');
+  if (t === 'min') poser('text-transform', 'lowercase');
+  if (t === 'cap') poser('text-transform', 'none');
+  if (t === 'raz') el.removeAttribute('style');
+
+  const sec = el.closest('section.slide');
+  setOp({ t:'attr', slide: sec.dataset.lbl, path: pathOf(el, sec),
+          name:'style', value: el.getAttribute('style') || '' });
+  majPanneau(); placerBarre(); placerPanneau();
+}
+panneau.addEventListener('mousedown', e => e.preventDefault());
+panneau.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (b) appliquerTypo(b.dataset.t);
+});
+addEventListener('resize', placerPanneau);
+
+/* =========================================================
+   DIAPORAMA ET TÉLÉCHARGEMENT
+   ========================================================= */
+
+/* Le diaporama lit l'état COURANT, modifications non enregistrées comprises :
+   on passe par sessionStorage, comme l'aperçu. Un onglet nommé, pour ne pas
+   en empiler un à chaque clic. */
+$('#btnDiapo').onclick = () => {
+  try { sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops)); } catch(e){ console.warn(e); }
+  const a = document.createElement('a');
+  a.href = 'contre-champ.html?preview=1&plein=1';
+  a.target = 'cc-diaporama'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+/* Le téléchargement produit un fichier UNIQUE et autonome : les trois scripts
+   sont inlinés, et les polices Google embarquées en base64. Sans elles, le
+   fichier s'ouvrirait en Times le jour où il n'y a pas de réseau — c'est-à-dire
+   précisément le jour où on en a besoin. */
+async function embarquerPolices(html){
+  const m = html.match(/<link href="(https:\/\/fonts\.googleapis\.com\/css2[^"]+)" rel="stylesheet">/);
+  if (!m) return html;
+  let css = await fetch(m[1]).then(r => r.ok ? r.text() : Promise.reject(r.status));
+  const urls = [...new Set([...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g)].map(x => x[1]))];
+  for (const u of urls) {
+    const buf = await fetch(u).then(r => r.arrayBuffer());
+    const b = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i+0x8000));
+    css = css.split(u).join('data:font/woff2;base64,' + btoa(bin));
+  }
+  return html.replace(m[0], '<style>\n/* polices embarquées — le fichier fonctionne hors ligne */\n' + css + '\n</style>');
+}
+
+async function fabriquerFichier(){
+  const [deck, early, apply] = await Promise.all([
+    fetch('contre-champ.html').then(r => r.text()),
+    fetch('cj-early.js').then(r => r.text()),
+    fetch('cj-apply.js').then(r => r.text())
+  ]);
+  // Des expressions régulières plutôt que des chaînes : écrite en clair dans un
+  // littéral — ou même dans un commentaire — la balise fermante de script clôt
+  // le bloc qui la contient, et l'échapper à la main est une source d'erreur.
+  // La forme fonction du remplacement évite en prime que les $ du contenu
+  // inliné soient interprétés comme des références de capture.
+  const bloc = src => '<scr' + 'ipt>\n' + src + '\n<' + '/scr' + 'ipt>';
+  let html = deck
+    .replace(/<script src="patch\.js"><\/script>\s*<script src="cj-early\.js"><\/script>/,
+             () => bloc(patchFile()) + '\n' + bloc(early))
+    .replace(/<script src="cj-apply\.js"><\/script>/, () => bloc(apply));
+  if (/<script src="(patch|cj-)/.test(html)) throw new Error('une balise de script n\'a pas été inlinée');
+  let polices = true;
+  try { html = await embarquerPolices(html); } catch(e){ polices = false; console.warn('polices non embarquées', e); }
+  return { html, polices };
+}
+
+$('#btnDl').onclick = async () => {
+  const b = $('#btnDl'); b.disabled = true;
+  status('fabrication du fichier…');
+  try {
+    const { html, polices } = await fabriquerFichier();
+    const blob = new Blob([html], { type:'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = 'contre-champ-' + d + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    const ko = Math.round(blob.size/1024);
+    status('téléchargé — ' + (ko > 1024 ? (ko/1024).toFixed(1)+' Mo' : ko+' Ko')
+           + (polices ? ' · hors ligne' : ' · polices non embarquées'), polices ? 'ok' : 'dirty');
+    if (!polices) alert("Le fichier est téléchargé, mais les polices n'ont pas pu être embarquées.\n"
+      + "Il s'affichera correctement avec une connexion, et dans une police de substitution sans.");
+    setTimeout(refreshStatus, 6000);
+  } catch(err){
+    console.error(err);
+    status('fabrication impossible', 'err');
+    alert('Le fichier n\'a pas pu être fabriqué :\n\n' + err.message);
+    setTimeout(refreshStatus, 4000);
+  }
+  b.disabled = false;
 };
 
 /* =========================================================

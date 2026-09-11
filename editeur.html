@@ -96,6 +96,32 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 .dlg td:first-child{width:120px;white-space:nowrap}
 .dlg tr:last-child td{border-bottom:0}
 
+/* barre d'outils flottante, posée au-dessus de l'aperçu */
+#bar{position:fixed;z-index:60;display:none;align-items:center;gap:2px;padding:4px;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 10px 30px rgba(0,0,0,.55)}
+#bar.on{display:flex}
+#bar button{background:none;border:0;color:var(--bone);width:28px;height:28px;border-radius:5px;
+  cursor:pointer;font-size:13px;line-height:1;display:grid;place-items:center;font-family:var(--body)}
+#bar button:hover{background:var(--panel2)}
+#bar button:disabled{opacity:.3;cursor:default;background:none}
+#bar .sep{width:1px;height:18px;background:var(--line);margin:0 3px}
+#bar .rouge{color:var(--red);font-weight:700}
+#bar .lbl{font-size:10px;color:var(--grey);padding:0 6px;letter-spacing:.5px;text-transform:uppercase}
+
+/* fenêtres rechercher/remplacer et code */
+.champ{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--bone);
+  border-radius:6px;padding:9px 10px;font-family:var(--body);font-size:13px}
+.champ:focus{outline:none;border-color:var(--red)}
+textarea.champ{font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;
+  min-height:46vh;resize:vertical;white-space:pre;overflow-wrap:normal;overflow-x:auto}
+.res{max-height:30vh;overflow-y:auto;border:1px solid var(--line);border-radius:6px;
+  background:var(--panel2);margin-top:12px;font-size:12.5px}
+.res div{padding:7px 10px;border-bottom:1px solid var(--line);line-height:1.45}
+.res div:last-child{border-bottom:0}
+.res b{color:var(--red);font-weight:600}
+.res .ou{color:var(--grey);font-size:11px;display:block}
+
 /* accessibilité : un anneau de focus visible partout */
 :focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:4px}
 button.btn,.iconbtn,.seg button{transition:border-color .12s,color .12s,background .12s}
@@ -140,8 +166,11 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   </div>
   <div class="spacer"></div>
   <span class="status" id="status">—</span>
+  <button class="btn" id="btnRR" title="Rechercher et remplacer dans toutes les slides (⌘R)">Remplacer</button>
+  <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
-  <button class="btn" id="btnUndo" title="Annuler la dernière modification (⌘Z)">↶</button>
+  <button class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
+  <button class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
   <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Copier le contexte</button>
   <button class="btn" id="btnCfg">Réglages</button>
   <button class="btn prim" id="btnSave" disabled>Enregistrer</button>
@@ -219,6 +248,12 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <tr><td><span class="kbd">⌘S</span></td><td>enregistrer</td></tr>
     <tr><td><span class="kbd">⌘Z</span></td><td>annuler la dernière modification</td></tr>
     <tr><td><span class="kbd">⌘F</span></td><td>filtrer les slides</td></tr>
+    <tr><td><span class="kbd">⌘R</span></td><td>rechercher et remplacer partout</td></tr>
+    <tr><td><span class="kbd">⌘⇧Z</span></td><td>rétablir</td></tr>
+    <tr><td>Clic dans un texte</td><td>fait apparaître la barre de mise en forme</td></tr>
+    <tr><td>Sélectionner des mots</td><td>gras, italique, accent rouge</td></tr>
+    <tr><td>Barre → <b>↑ ↓ ⧉ ＋ ✕</b></td><td>déplacer, dupliquer, insérer, supprimer un bloc</td></tr>
+    <tr><td>Bouton <b>Code</b></td><td>éditer le HTML de la slide</td></tr>
     <tr><td>Clic sur un texte</td><td>l'éditer directement</td></tr>
     <tr><td>Clic sur une image</td><td>la remplacer par un fichier</td></tr>
     <tr><td>Double-clic sur un nom</td><td>renommer la slide</td></tr>
@@ -228,6 +263,45 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <p style="margin-top:16px">Pour une refonte, une réécriture ou une nouvelle slide : <b>Copier le contexte</b>, puis colle dans la fenêtre Claude.</p>
   <p><b>Après un enregistrement.</b> GitHub publie en une minute environ, mais les navigateurs gardent la page en cache jusqu'à dix minutes. Pour voir le résultat tout de suite — chez toi ou devant le jury — recharge avec <span class="kbd">⌘⇧R</span>.</p>
   <div class="row"><button class="btn prim" id="helpClose">Fermer</button></div>
+</div></dialog>
+
+<div id="bar" role="toolbar" aria-label="Mise en forme">
+  <span class="lbl">Texte</span>
+  <button data-a="gras" title="Gras (⌘B)"><b>B</b></button>
+  <button data-a="ital" title="Italique (⌘I)"><i>I</i></button>
+  <button data-a="rouge" class="rouge" title="Accent rouge de la charte">A</button>
+  <button data-a="net" title="Retirer la mise en forme">⌫</button>
+  <span class="sep"></span>
+  <span class="lbl">Bloc</span>
+  <button data-a="haut" title="Monter le bloc">↑</button>
+  <button data-a="bas" title="Descendre le bloc">↓</button>
+  <button data-a="copie" title="Dupliquer le bloc">⧉</button>
+  <button data-a="plus" title="Insérer un paragraphe après">＋</button>
+  <button data-a="moins" title="Supprimer le bloc">✕</button>
+</div>
+
+<dialog id="dlgRR"><div class="dlg">
+  <h3>RECHERCHER & REMPLACER</h3>
+  <p>Dans le texte de toutes les slides. Les images et le code ne sont jamais touchés.</p>
+  <label>Rechercher</label>
+  <input id="rrQ" class="champ" autocomplete="off" placeholder="ex. Zénith">
+  <label>Remplacer par</label>
+  <input id="rrR" class="champ" autocomplete="off" placeholder="laisse vide pour supprimer">
+  <div class="res" id="rrRes"></div>
+  <div class="row">
+    <button class="btn" id="rrClose">Fermer</button>
+    <button class="btn prim" id="rrGo" disabled>Remplacer</button>
+  </div>
+</div></dialog>
+
+<dialog id="dlgCode"><div class="dlg">
+  <h3>CODE DE LA SLIDE</h3>
+  <p>Le HTML de la slide courante. Les images et vidéos sont remplacées par des jetons <b>«MÉDIA n»</b> — laisse-les tels quels, ils seront réinjectés. Échappatoire pour ce que l'éditeur ne sait pas faire.</p>
+  <textarea id="codeTxt" class="champ" spellcheck="false"></textarea>
+  <div class="row">
+    <button class="btn" id="codeClose">Annuler</button>
+    <button class="btn prim" id="codeGo">Appliquer</button>
+  </div>
 </div></dialog>
 
 <input type="file" id="filePick" accept="image/*" hidden>
@@ -248,7 +322,7 @@ const $ = s => document.querySelector(s);
 const S = {
   ops:  (window.CJ_PATCH && window.CJ_PATCH.ops) ? JSON.parse(JSON.stringify(window.CJ_PATCH.ops)) : [],
   base: JSON.stringify((window.CJ_PATCH && window.CJ_PATCH.ops) || []),
-  undo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false
+  undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1
 };
 const cfg = {
   get gh(){ return localStorage.getItem('cj_gh') || ''; },  set gh(v){ localStorage.setItem('cj_gh', v); },
@@ -263,9 +337,10 @@ function refreshStatus(){
   else status(n ? n+' modification'+(n>1?'s':'')+' enregistrée'+(n>1?'s':'') : 'aucune modification');
   $('#btnSave').disabled = !dirty();
   $('#btnUndo').disabled = !S.undo.length;
+  const r = $('#btnRedo'); if (r) r.disabled = !S.redo.length;
   if (window.majOps) majOps();
 }
-function snapshot(){ S.undo.push(JSON.stringify(S.ops)); if (S.undo.length>40) S.undo.shift(); }
+function snapshot(){ S.undo.push(JSON.stringify(S.ops)); if (S.undo.length>40) S.undo.shift(); S.redo = []; }
 
 /* ---------- ops ---------- */
 const KEYED = { text:1, attr:1, img:1, lbl:1, skip:1 };
@@ -348,13 +423,25 @@ function setupEdit(){
     clearTimeout(tmr);
     tmr = setTimeout(() => {
       const sec = el.closest('section.slide');
-      setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: el.innerHTML });
+      setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML });
     }, 450);
   });
   S.doc.addEventListener('click', e => {
     const im = e.target.closest && e.target.closest('img[data-cj-img]');
     if (im) { e.preventDefault(); e.stopPropagation(); pickImage(im); }
   }, true);
+
+  // la barre flottante suit le bloc où se trouve le curseur
+  S.doc.addEventListener('focusin', e => {
+    const el = e.target.closest && e.target.closest('[data-cj-ed]');
+    if (el) { blocActif = el; majBarre(); }
+  });
+  S.doc.addEventListener('mouseup', () => majBarre());
+  S.doc.addEventListener('selectionchange', () => majBarre());
+  S.doc.addEventListener('click', e => {
+    if (!(e.target.closest && e.target.closest('[data-cj-ed]'))) { blocActif = null; majBarre(); }
+  });
+  S.doc.addEventListener('scroll', () => placerBarre(), true);
 }
 
 const INLINE = new Set(['SPAN','EM','B','I','STRONG','BR','A','SMALL','SUP','SUB','U','MARK','ABBR']);
@@ -376,6 +463,7 @@ function armEditables(sec){
 
 function showSlide(i){
   const ss = sections(); if (!ss.length) return;
+  if (typeof blocActif !== 'undefined') { blocActif = null; const b = $('#bar'); if (b) b.classList.remove('on'); }
   S.cur = Math.max(0, Math.min(ss.length-1, i));
   const sec0 = ss[S.cur];
   if (S.mode === 'view') {
@@ -408,6 +496,8 @@ function fitFrame(){
   // jamais d'échelle nulle ou négative si la colonne est écrasée
   const k = Math.max(0.05, Math.min((w.clientWidth-28)/W, (w.clientHeight-28)/H));
   box.style.transform = 'translate(-50%,-50%) scale('+k+')';
+  S.echelle = k;
+  if (window.placerBarre) placerBarre();
 }
 addEventListener('resize', fitFrame);
 </script>
@@ -559,7 +649,7 @@ function dupSlide(sec){
   clone.dataset.lbl = lbl; delete clone.dataset.cjArmed; clone.removeAttribute('data-cj-armed');
   clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));   // pas de doublon d'id
   clone.classList.remove('active'); clone.removeAttribute('data-cj-cur');
-  setOp({ t:'add', after: sec.dataset.lbl, html: clone.outerHTML });
+  setOp({ t:'add', after: sec.dataset.lbl, html: propre(clone).outerHTML });
   sec.after(clone);
   buildRail(); showSlide(sections().indexOf(clone));
 }
@@ -621,6 +711,7 @@ function setMode(m){
   if (m === S.mode) return;
   if (m === 'view' && dirty() && !confirm('L\'aperçu recharge le deck.\nTes modifications non enregistrées sont conservées en mémoire et réappliquées. Continuer ?')) return;
   S.mode = m;
+  if (typeof blocActif !== 'undefined') { blocActif = null; $('#bar').classList.remove('on'); }
   $('#mEdit').classList.toggle('on', m === 'edit');
   $('#mView').classList.toggle('on', m === 'view');
   $('#hint').textContent = m === 'edit'
@@ -633,7 +724,14 @@ $('#mView').onclick = () => setMode('view');
 
 $('#btnUndo').onclick = () => {
   if (!S.undo.length) return;
+  S.redo.push(JSON.stringify(S.ops));
   S.ops = JSON.parse(S.undo.pop());
+  refreshStatus(); loadDeck();
+};
+$('#btnRedo').onclick = () => {
+  if (!S.redo.length) return;
+  S.undo.push(JSON.stringify(S.ops));
+  S.ops = JSON.parse(S.redo.pop());
   refreshStatus(); loadDeck();
 };
 addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue=''; } });
@@ -642,7 +740,8 @@ addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); showSlide(S.cur+1); }
   if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); showSlide(S.cur-1); }
   if ((e.metaKey||e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
-  if ((e.metaKey||e.ctrlKey) && e.key === 'z') { e.preventDefault(); $('#btnUndo').click(); }
+  if ((e.metaKey||e.ctrlKey) && e.key === 'z') { e.preventDefault(); (e.shiftKey ? $('#btnRedo') : $('#btnUndo')).click(); }
+  if ((e.metaKey||e.ctrlKey) && e.key === 'r') { e.preventDefault(); ouvrirRR(); }
   if ((e.metaKey||e.ctrlKey) && e.key === 'f') { e.preventDefault(); $('#q').focus(); $('#q').select(); }
   if (e.key === 'Escape' && $('#q').value) { $('#q').value = ''; filtrer(); }
 });
@@ -802,7 +901,227 @@ $('#opsSave').onclick = () => { $('#dlgOps').close(); save(); };
 $('#btnHelp').onclick = () => $('#dlgHelp').showModal();
 $('#helpClose').onclick = () => $('#dlgHelp').close();
 
-window.CJ_DEBUG = { contexte, decrireOp, get ops(){ return S.ops; } };
+/* =========================================================
+   ÉDITION FINE — barre flottante, blocs, remplacement, code
+   ========================================================= */
+
+/* Enregistre le bloc PARENT : une op « text » sur le parent capture
+   l'ordre, l'ajout ou la suppression de ses enfants d'un seul coup.
+   Le dédoublonnage par slide+chemin fait que dix manipulations
+   successives sur le même parent ne laissent qu'une op. */
+/* L'éditeur marque les blocs modifiables (data-cj-ed, contenteditable). Ces
+   attributs ne doivent JAMAIS partir dans le calque : publiés sur le deck,
+   ils rendraient les slides éditables pour n'importe quel visiteur. On
+   enregistre donc une copie nettoyée, jamais le DOM vivant. */
+const ATTRS_EDITEUR = ['data-cj-ed', 'contenteditable', 'data-cj-img', 'data-cj-cur', 'data-cj-armed'];
+function propre(el){
+  const c = el.cloneNode(true);
+  const nettoie = n => ATTRS_EDITEUR.forEach(a => n.removeAttribute(a));
+  nettoie(c);
+  c.querySelectorAll('[' + ATTRS_EDITEUR.join('],[') + ']').forEach(nettoie);
+  return c;
+}
+
+function enregistrerBloc(el){
+  const sec = el.closest('section.slide'); if (!sec || !el.isConnected) return;
+  setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML });
+}
+function enregistrerParent(el){
+  const sec = el.closest('section.slide'); if (!sec) return;
+  const parent = el.parentElement && el.parentElement !== sec ? el.parentElement : sec;
+  const html = propre(parent).innerHTML;
+  if (html.length > 700*1024 && !confirm('Ce bloc contient des images intégrées ('
+      + Math.round(html.length/1048576*10)/10 + ' Mo).\nL\'enregistrer alourdira d\'autant le calque.\n\nContinuer ?')) return;
+  setOp({ t:'text', slide: sec.dataset.lbl, path: parent === sec ? '' : pathOf(parent, sec), html });
+}
+
+/* ---------- barre flottante ---------- */
+let blocActif = null;
+const bar = $('#bar');
+
+function placerBarre(){
+  if (!blocActif || S.mode !== 'edit' || !blocActif.isConnected) { bar.classList.remove('on'); return; }
+  const r = blocActif.getBoundingClientRect();
+  const box = $('#frameBox').getBoundingClientRect();
+  const k = S.echelle || 1;
+  const x = box.left + r.left * k;
+  const y = box.top + r.top * k;
+  bar.classList.add('on');
+  const w = bar.offsetWidth, h = bar.offsetHeight;
+  bar.style.left = Math.max(8, Math.min(innerWidth - w - 8, x)) + 'px';
+  bar.style.top  = Math.max(60, y - h - 8) + 'px';
+}
+window.placerBarre = placerBarre;
+
+function majBarre(){
+  if (!blocActif) { bar.classList.remove('on'); return; }
+  const sel = S.doc.getSelection();
+  const texteSelectionne = sel && !sel.isCollapsed && blocActif.contains(sel.anchorNode);
+  ['gras','ital','rouge','net'].forEach(a =>
+    bar.querySelector('[data-a="'+a+'"]').disabled = !texteSelectionne);
+  const sec = blocActif.closest('section.slide');
+  const surSection = blocActif.parentElement === sec;
+  bar.querySelector('[data-a="haut"]').disabled = !blocActif.previousElementSibling;
+  bar.querySelector('[data-a="bas"]').disabled  = !blocActif.nextElementSibling;
+  bar.querySelector('[data-a="moins"]').disabled = surSection && sec.children.length <= 1;
+  placerBarre();
+}
+
+/* ---------- actions ---------- */
+function envelopper(classe){
+  const sel = S.doc.getSelection();
+  if (!sel || sel.isCollapsed) return;
+  const r = sel.getRangeAt(0);
+  const sp = S.doc.createElement('span');
+  if (classe) sp.className = classe;
+  try { r.surroundContents(sp); }
+  catch(_) { sp.appendChild(r.extractContents()); r.insertNode(sp); }
+  sel.removeAllRanges();
+}
+function nettoyerMiseEnForme(){
+  const sel = S.doc.getSelection(); if (!sel || sel.isCollapsed) return;
+  const r = sel.getRangeAt(0);
+  const frag = r.extractContents();
+  const txt = S.doc.createTextNode(frag.textContent);
+  r.insertNode(txt);
+  sel.removeAllRanges();
+}
+const MODELE_BLOC = '<p class="note r">Nouveau paragraphe — clique pour l\'écrire.</p>';
+
+bar.addEventListener('mousedown', e => e.preventDefault());   // ne pas perdre la sélection
+bar.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !blocActif) return;
+  const a = b.dataset.a;
+  const sec = blocActif.closest('section.slide');
+  let cible = blocActif;
+
+  if (a === 'gras')  { try { S.doc.execCommand('bold'); } catch(_){ envelopper('') ; } }
+  if (a === 'ital')  { try { S.doc.execCommand('italic'); } catch(_){} }
+  if (a === 'rouge') envelopper('red');
+  if (a === 'net')   nettoyerMiseEnForme();
+
+  if (a === 'haut' && blocActif.previousElementSibling)
+    blocActif.parentElement.insertBefore(blocActif, blocActif.previousElementSibling);
+  if (a === 'bas' && blocActif.nextElementSibling)
+    blocActif.parentElement.insertBefore(blocActif.nextElementSibling, blocActif);
+  if (a === 'copie') {
+    const c = blocActif.cloneNode(true);
+    c.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    c.removeAttribute('id');
+    blocActif.after(c); cible = c;
+  }
+  if (a === 'plus') {
+    const t = S.doc.createElement('template'); t.innerHTML = MODELE_BLOC;
+    const nb = t.content.firstElementChild;
+    blocActif.after(nb); cible = nb;
+  }
+  if (a === 'moins') {
+    if (!confirm('Supprimer ce bloc ?')) return;
+    const p = blocActif.parentElement, voisin = blocActif.nextElementSibling || blocActif.previousElementSibling;
+    blocActif.remove(); cible = voisin || p;
+  }
+
+  // Mise en forme : le bloc seul suffit, et l'op se confond avec celle de la
+  // frappe au clavier. Manipulation de blocs : il faut le parent, qui porte
+  // l'ordre et la présence des enfants.
+  if (['gras','ital','rouge','net'].indexOf(a) >= 0) {
+    enregistrerBloc(blocActif);
+  } else {
+    enregistrerParent(cible === blocActif ? blocActif : cible);
+    delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
+    armEditables(sec);
+  }
+  blocActif = cible && cible.isConnected ? cible : null;
+  majBarre();
+});
+
+/* ---------- rechercher & remplacer ---------- */
+function blocsTexte(){
+  const out = [];
+  sections().forEach(sec => {
+    armEditables(sec);
+    sec.querySelectorAll('[data-cj-ed]').forEach(el => out.push({ sec, el }));
+  });
+  return out;
+}
+function echapRx(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function ouvrirRR(){ $('#rrQ').value=''; $('#rrR').value=''; $('#rrRes').innerHTML=''; $('#rrGo').disabled=true; $('#dlgRR').showModal(); $('#rrQ').focus(); }
+function chercher(){
+  const q = $('#rrQ').value;
+  const box = $('#rrRes'); box.innerHTML = '';
+  if (!q) { $('#rrGo').disabled = true; return []; }
+  const rx = new RegExp(echapRx(q), 'gi');
+  const trouves = blocsTexte().filter(({el}) => rx.test(el.textContent) && (rx.lastIndex = 0, true));
+  trouves.slice(0, 40).forEach(({sec, el}) => {
+    const d = document.createElement('div');
+    const t = el.textContent, i = t.toLowerCase().indexOf(q.toLowerCase());
+    d.innerHTML = '<span class="ou">' + (sec.dataset.lbl||'').replace(/</g,'&lt;') + '</span>';
+    const av = document.createTextNode('…' + t.slice(Math.max(0,i-40), i));
+    const gr = document.createElement('b'); gr.textContent = t.substr(i, q.length);
+    const ap = document.createTextNode(t.slice(i+q.length, i+q.length+40) + '…');
+    d.append(av, gr, ap); box.appendChild(d);
+  });
+  if (trouves.length > 40) { const d=document.createElement('div'); d.className='ou'; d.textContent='… et '+(trouves.length-40)+' autres'; box.appendChild(d); }
+  if (!trouves.length) box.innerHTML = '<div class="ou">Aucun résultat.</div>';
+  $('#rrGo').disabled = !trouves.length;
+  $('#rrGo').textContent = trouves.length ? 'Remplacer (' + trouves.length + ')' : 'Remplacer';
+  return trouves;
+}
+$('#rrQ').addEventListener('input', chercher);
+$('#btnRR').onclick = ouvrirRR;
+$('#rrClose').onclick = () => $('#dlgRR').close();
+$('#rrGo').onclick = () => {
+  const q = $('#rrQ').value, r = $('#rrR').value;
+  if (!q) return;
+  const cibles = chercher();
+  if (!cibles.length) return;
+  snapshot();
+  const rx = new RegExp(echapRx(q), 'gi');
+  let n = 0;
+  cibles.forEach(({sec, el}) => {
+    // on ne touche qu'aux nœuds de texte : le balisage interne reste intact
+    const w = S.doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node, change = false;
+    while ((node = w.nextNode())) {
+      if (rx.test(node.nodeValue)) { rx.lastIndex = 0; node.nodeValue = node.nodeValue.replace(rx, r); change = true; }
+      rx.lastIndex = 0;
+    }
+    if (change) { setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML }, true); n++; }
+  });
+  refreshStatus();
+  $('#dlgRR').close();
+  status(n + ' bloc' + (n>1?'s':'') + ' modifié' + (n>1?'s':''), 'dirty');
+  setTimeout(refreshStatus, 3000);
+};
+
+/* ---------- vue code de la slide ---------- */
+const MED = { liste: [], index: new Map() };
+function jeton(v){ let i = MED.index.get(v); if (i === undefined) { i = MED.liste.push(v)-1; MED.index.set(v, i); } return '«MÉDIA'+i+'»'; }
+function masquerMedias(html){
+  return html
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, m => m.length > 1200 ? jeton(m) : m)
+    .replace(/(data:[a-z0-9.+\/-]+;base64,)([A-Za-z0-9+\/=]{60,})/gi, m => jeton(m));
+}
+function rendreMedias(html){ return String(html).replace(/«MÉDIA(\d+)»/g, (m,i) => MED.liste[+i] ?? m); }
+$('#btnCode').onclick = () => {
+  const sec = curSec(); if (!sec) return;
+  $('#codeTxt').value = masquerMedias(propre(sec).innerHTML);
+  $('#dlgCode').showModal();
+};
+$('#codeClose').onclick = () => $('#dlgCode').close();
+$('#codeGo').onclick = () => {
+  const sec = curSec(); if (!sec) return;
+  const html = rendreMedias($('#codeTxt').value);
+  if (/«MÉDIA\d+»/.test(html)) { alert('Un jeton «MÉDIA n» ne correspond à rien. Vérifie les numéros.'); return; }
+  setOp({ t:'text', slide: sec.dataset.lbl, path:'', html });
+  sec.innerHTML = html;
+  delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
+  armEditables(sec);
+  $('#dlgCode').close();
+  status('slide reconstruite', 'dirty'); setTimeout(refreshStatus, 2500);
+};
+
+window.CJ_DEBUG = { contexte, decrireOp, masquerMedias, rendreMedias, get ops(){ return S.ops; } };
 
 refreshStatus();
 loadDeck();

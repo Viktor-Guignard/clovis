@@ -46,7 +46,13 @@
     },
     order: function (op) {
       op.slides.forEach(function (lbl) { var s = slideOf(lbl); if (s) main.appendChild(s); });
-    }
+    },
+
+    /* Ops par sélecteur : portée au document entier, pas seulement aux slides.
+       Indispensables pour le <title>, l'écran de chargement et les attributs. */
+    seltext: function (op) { var n = document.querySelector(op.sel); if (n) n.innerHTML = op.html; },
+    selattr: function (op) { var n = document.querySelector(op.sel); if (n) n.setAttribute(op.name, op.value); },
+    title:   function (op) { var t = document.querySelector('head > title'); if (t) t.textContent = op.value; else document.title = op.value; }
   };
 
   ops.forEach(function (op) {

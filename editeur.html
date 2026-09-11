@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CHONG JI — Éditeur</title>
+<title>Clovis Project — Éditeur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -63,7 +63,40 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 .item .act{display:none;background:none;border:0;color:var(--grey);cursor:pointer;font-size:13px;padding:2px 3px;line-height:1}
 .item:hover .act,.item.cur .act{display:block}
 .item .act:hover{color:var(--red)}
-.badge{font-size:9px;background:var(--red);color:#fff;padding:1px 5px;border-radius:8px;font-weight:600}
+.nm[contenteditable="true"]{background:var(--ink);outline:1px solid var(--red);border-radius:3px;padding:1px 4px;text-overflow:clip;cursor:text}
+.item.masque{display:none}
+.chap.vide{display:none}
+
+/* champ de recherche du rail */
+.search{position:relative;padding:0 8px 8px}
+.search input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--bone);border-radius:5px;padding:6px 26px 6px 9px;font-family:var(--body);font-size:12px}
+.search input:focus{outline:none;border-color:var(--red)}
+.search .clr{position:absolute;right:14px;top:5px;background:none;border:0;color:var(--grey);cursor:pointer;font-size:14px;line-height:1;padding:2px}
+.search .clr:hover{color:var(--red)}
+.vide-msg{color:var(--grey);font-size:12px;padding:14px 10px;line-height:1.55}
+
+/* compteur de modifications */
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:700}
+.count.zero{display:none}
+
+/* liste des modifications */
+.ops{max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+.op{display:flex;align-items:center;gap:9px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12.5px}
+.op:last-child{border-bottom:0}
+.op .i{color:var(--grey);font-size:10.5px;width:18px;flex:none;font-variant-numeric:tabular-nums}
+.op .t{flex:1;line-height:1.45}
+.op .w{color:#E8B33A;font-size:11px}
+.op button{background:none;border:1px solid var(--line);color:var(--grey);border-radius:4px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:var(--body)}
+.op button:hover{color:var(--red);border-color:var(--red)}
+.kbd{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-size:11px;font-family:ui-monospace,Menlo,monospace;color:var(--bone)}
+.dlg table{width:100%;border-collapse:collapse;font-size:12.5px}
+.dlg td{padding:6px 4px;border-bottom:1px solid var(--line);color:var(--grey)}
+.dlg td:first-child{width:120px;white-space:nowrap}
+.dlg tr:last-child td{border-bottom:0}
+
+/* accessibilité : un anneau de focus visible partout */
+:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:4px}
+button.btn,.iconbtn,.seg button{transition:border-color .12s,color .12s,background .12s}
 
 /* ---------- scène ---------- */
 #stage{background:#0A0A0A;position:relative}
@@ -80,7 +113,8 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 @keyframes sl{0%{transform:translateX(-100%)}100%{transform:translateX(390%)}}
 
 /* ---------- réglages ---------- */
-dialog{border:1px solid var(--line);background:var(--panel);color:var(--bone);border-radius:10px;padding:0;max-width:560px;width:92vw}
+/* margin:auto centre un <dialog> modal — le reset *{margin:0} l'avait supprimé */
+dialog{margin:auto;border:1px solid var(--line);background:var(--panel);color:var(--bone);border-radius:10px;padding:0;max-width:560px;width:92vw;max-height:86vh}
 dialog::backdrop{background:rgba(0,0,0,.72)}
 .dlg{padding:22px}
 .dlg h3{font-family:var(--display);font-size:22px;margin-bottom:4px;letter-spacing:.5px}
@@ -97,17 +131,19 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <body>
 
 <header>
-  <div class="brand">CHONG JI <span>冲击</span></div>
+  <div class="brand">CLOVIS <span>PROJECT</span></div>
   <div class="seg">
     <button id="mEdit" class="on">Édition</button>
     <button id="mView">Aperçu</button>
   </div>
   <div class="spacer"></div>
   <span class="status" id="status">—</span>
-  <button class="btn" id="btnUndo" title="Annuler la dernière modification">↶ Annuler</button>
+  <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
+  <button class="btn" id="btnUndo" title="Annuler la dernière modification (⌘Z)">↶</button>
   <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Copier le contexte</button>
   <button class="btn" id="btnCfg">Réglages</button>
   <button class="btn prim" id="btnSave" disabled>Enregistrer</button>
+  <button class="btn" id="btnHelp" title="Raccourcis et mode d'emploi" aria-label="Aide">?</button>
 </header>
 
 <main id="main">
@@ -115,6 +151,10 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <div class="railhead">
       <h2>Slides</h2>
       <button class="iconbtn" id="btnAdd" title="Ajouter une slide après la slide courante">+</button>
+    </div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Filtrer les slides…" aria-label="Filtrer les slides" autocomplete="off">
+      <button class="clr" id="qClr" title="Effacer" hidden>✕</button>
     </div>
     <div id="list"></div>
   </section>
@@ -158,6 +198,35 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   </div>
 </div></dialog>
 
+<dialog id="dlgOps"><div class="dlg">
+  <h3>MODIFICATIONS EN ATTENTE</h3>
+  <p>Elles sont appliquées à l'écran mais pas encore publiées. <b>Enregistrer</b> les met en ligne.</p>
+  <div class="ops" id="opsList"></div>
+  <p style="margin:14px 0 0" id="opsPoids"></p>
+  <div class="row">
+    <button class="btn" id="opsClose">Fermer</button>
+    <button class="btn prim" id="opsSave">Enregistrer</button>
+  </div>
+</div></dialog>
+
+<dialog id="dlgHelp"><div class="dlg">
+  <h3>MODE D'EMPLOI</h3>
+  <p>Le deck n'est jamais réécrit. Chaque changement est enregistré à part, dans un calque appliqué au chargement — c'est ce qui permet d'éditer à la main et de faire travailler Claude sur la même présentation.</p>
+  <table>
+    <tr><td><span class="kbd">↑</span> <span class="kbd">↓</span></td><td>slide précédente / suivante</td></tr>
+    <tr><td><span class="kbd">⌘S</span></td><td>enregistrer</td></tr>
+    <tr><td><span class="kbd">⌘Z</span></td><td>annuler la dernière modification</td></tr>
+    <tr><td><span class="kbd">⌘F</span></td><td>filtrer les slides</td></tr>
+    <tr><td>Clic sur un texte</td><td>l'éditer directement</td></tr>
+    <tr><td>Clic sur une image</td><td>la remplacer par un fichier</td></tr>
+    <tr><td>Double-clic sur un nom</td><td>renommer la slide</td></tr>
+    <tr><td>Glisser dans la liste</td><td>réordonner</td></tr>
+    <tr><td><b>◉</b> / <b>◌</b></td><td>masquer une slide sans la supprimer</td></tr>
+  </table>
+  <p style="margin-top:16px">Pour une refonte, une réécriture ou une nouvelle slide : <b>Copier le contexte</b>, puis colle dans la fenêtre Claude.</p>
+  <div class="row"><button class="btn prim" id="helpClose">Fermer</button></div>
+</div></dialog>
+
 <input type="file" id="filePick" accept="image/*" hidden>
 
 <script src="patch.js"></script>
@@ -191,6 +260,7 @@ function refreshStatus(){
   else status(n ? n+' modification'+(n>1?'s':'')+' enregistrée'+(n>1?'s':'') : 'aucune modification');
   $('#btnSave').disabled = !dirty();
   $('#btnUndo').disabled = !S.undo.length;
+  if (window.majOps) majOps();
 }
 function snapshot(){ S.undo.push(JSON.stringify(S.ops)); if (S.undo.length>40) S.undo.shift(); }
 
@@ -204,34 +274,17 @@ function setOp(op, quiet){
   refreshStatus();
 }
 
-/* ---------- application des ops à un document ---------- */
-function esc(s){ return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g,'\\$&'); }
-function slideOf(doc, lbl){ return doc.querySelector('section.slide[data-lbl="'+esc(lbl)+'"]'); }
-function nodeAt(root, path){
-  if (!root) return null; if (!path) return root;
-  let n = root; for (const p of String(path).split('-')) { n = n.children[+p]; if (!n) return null; }
-  return n;
+/* ---------- repérage dans le deck ----------
+   L'application des ops, elle, vit dans cj-apply.js : une seule implémentation,
+   partagée par l'éditeur et par le deck public. */
+function slideOf(doc, lbl){
+  const e = (window.CSS && CSS.escape) ? CSS.escape(lbl) : String(lbl).replace(/["\\]/g,'\\$&');
+  return doc.querySelector('section.slide[data-lbl="'+e+'"]');
 }
 function pathOf(el, sec){
   const p = []; let n = el;
   while (n && n !== sec) { p.unshift([].indexOf.call(n.parentNode.children, n)); n = n.parentNode; }
   return p.join('-');
-}
-function applyOps(doc, ops){
-  const main = doc.querySelector('main') || doc.body;
-  const H = {
-    text: o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.innerHTML = o.html; },
-    attr: o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.setAttribute(o.name, o.value); },
-    img:  o => { const n = nodeAt(slideOf(doc,o.slide), o.path); if (n) n.setAttribute('src', o.src); },
-    lbl:  o => { const s = slideOf(doc,o.slide); if (s) s.dataset.lbl = o.value; },
-    skip: o => { const s = slideOf(doc,o.slide); if (s) s.classList.toggle('skip', !!o.on); },
-    del:  o => { const s = slideOf(doc,o.slide); if (s) s.remove(); },
-    add:  o => { const t = doc.createElement('template'); t.innerHTML = o.html.trim();
-                 const s = t.content.firstElementChild; if (!s) return;
-                 const ref = o.after ? slideOf(doc,o.after) : null; ref ? ref.after(s) : main.appendChild(s); },
-    order:o => { o.slides.forEach(l => { const s = slideOf(doc,l); if (s) main.appendChild(s); }); }
-  };
-  ops.forEach(o => { try { H[o.t] && H[o.t](o); } catch(e){ console.warn('op ignorée', o, e); } });
 }
 
 /* ---------- CSS injecté en mode édition ---------- */
@@ -253,7 +306,16 @@ const DECK_URL = 'presentation.html?preview=1';
 function loadDeck(){
   $('#veil').classList.remove('gone');
   // le deck lit cet état AVANT d'initialiser sa navigation : pas de désynchro
-  try { sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops)); } catch(e){ console.warn(e); }
+  try {
+    sessionStorage.setItem('cj_preview_ops', JSON.stringify(S.ops));
+  } catch(e){
+    // sessionStorage plafonne vers 5 Mo : des images non enregistrées peuvent le saturer.
+    // Le silence ferait disparaître le travail de l'écran sans explication.
+    console.warn(e);
+    alert("Le navigateur ne peut plus garder tes modifications en mémoire pour l'aperçu "
+        + "— elles sont trop lourdes (des images remplacées, probablement).\n\n"
+        + "Enregistre maintenant : elles seront relues depuis GitHub au rechargement.");
+  }
   // même URL = on relit le cache du navigateur au lieu de retélécharger 81 Mo
   if (frame.getAttribute('src') === DECK_URL && frame.contentWindow) frame.contentWindow.location.reload();
   else frame.setAttribute('src', DECK_URL);
@@ -347,21 +409,65 @@ addEventListener('resize', fitFrame);
 /* ---------- rail des slides ---------- */
 function buildRail(){
   const list = $('#list'); list.innerHTML = '';
+  list.setAttribute('role','listbox');
   let chap = null;
   sections().forEach((s,i) => {
     const c = s.dataset.chapter || '';
     if (c !== chap) { chap = c; const h = document.createElement('div'); h.className='chap'; h.textContent = c || '—'; list.appendChild(h); }
+    const masquee = s.classList.contains('skip');
     const it = document.createElement('div');
-    it.className = 'item' + (s.classList.contains('skip') ? ' hidden' : '');
-    it.dataset.i = i; it.draggable = true;
-    it.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span>
-      <span class="nm" title="Double-clic pour renommer">${(s.dataset.lbl||'sans titre').replace(/</g,'&lt;')}</span>
-      <button class="act" data-a="skip" title="Masquer / afficher dans la présentation">${s.classList.contains('skip')?'◌':'◉'}</button>
-      <button class="act" data-a="dup"  title="Dupliquer">⧉</button>
-      <button class="act" data-a="del"  title="Supprimer">✕</button>`;
+    it.className = 'item' + (masquee ? ' hidden' : '');
+    it.dataset.i = i; it.draggable = true; it.tabIndex = 0; it.setAttribute('role','option');
+
+    const num = document.createElement('span');
+    num.className = 'num'; num.textContent = String(i+1).padStart(2,'0');
+    const nm = document.createElement('span');
+    nm.className = 'nm'; nm.title = 'Double-clic pour renommer';
+    nm.textContent = s.dataset.lbl || 'sans titre';   // textContent : aucun échappement à faire
+    it.append(num, nm);
+
+    [['skip', masquee ? '◌' : '◉', masquee ? 'Réafficher dans la présentation' : 'Masquer de la présentation'],
+     ['dup',  '⧉', 'Dupliquer'],
+     ['del',  '✕', 'Supprimer']].forEach(([a, txt, tip]) => {
+      const b = document.createElement('button');
+      b.className = 'act'; b.dataset.a = a; b.title = tip; b.textContent = txt;
+      b.setAttribute('aria-label', tip);
+      it.appendChild(b);
+    });
     list.appendChild(it);
   });
+  filtrer();
 }
+
+/* ---------- filtre du rail ---------- */
+function filtrer(){
+  const q = $('#q').value.trim().toLowerCase();
+  $('#qClr').hidden = !q;
+  let visibles = 0;
+  [...$('#list').children].forEach(el => {
+    if (!el.classList.contains('item')) return;
+    const ok = !q || el.querySelector('.nm').textContent.toLowerCase().includes(q);
+    el.classList.toggle('masque', !ok);
+    if (ok) visibles++;
+  });
+  // un chapitre dont toutes les slides sont filtrées n'a plus lieu d'être
+  let entete = null, compte = 0;
+  [...$('#list').children].forEach(el => {
+    if (el.classList.contains('chap')) {
+      if (entete) entete.classList.toggle('vide', compte === 0);
+      entete = el; compte = 0;
+    } else if (el.classList.contains('item') && !el.classList.contains('masque')) compte++;
+  });
+  if (entete) entete.classList.toggle('vide', compte === 0);
+
+  const dejaVide = $('#list').querySelector('.vide-msg');
+  if (q && !visibles) {
+    if (!dejaVide) { const d = document.createElement('div'); d.className = 'vide-msg';
+      d.textContent = 'Aucune slide ne contient « ' + q +' ».'; $('#list').appendChild(d); }
+  } else if (dejaVide) dejaVide.remove();
+}
+$('#q').addEventListener('input', filtrer);
+$('#qClr').onclick = () => { $('#q').value = ''; filtrer(); $('#q').focus(); };
 $('#list').addEventListener('click', e => {
   const it = e.target.closest('.item'); if (!it) return;
   const i = +it.dataset.i, sec = sections()[i], a = e.target.dataset.a;
@@ -370,12 +476,26 @@ $('#list').addEventListener('click', e => {
   if (a === 'dup')  dupSlide(sec);
   if (a === 'del')  delSlide(sec);
 });
+/* renommage sur place, dans le rail */
 $('#list').addEventListener('dblclick', e => {
-  const nm = e.target.closest('.nm'); if (!nm) return;
-  const i = +nm.closest('.item').dataset.i, sec = sections()[i];
-  const old = sec.dataset.lbl || '', v = prompt('Nom de la slide :', old);
-  if (v === null || v === old || !v.trim()) return;
-  renameSlide(sec, v.trim());
+  const nm = e.target.closest('.nm'); if (!nm || nm.isContentEditable) return;
+  const it = nm.closest('.item'), sec = sections()[+it.dataset.i];
+  const old = sec.dataset.lbl || '';
+  nm.contentEditable = 'true'; it.draggable = false;
+  nm.focus();
+  const r = document.createRange(); r.selectNodeContents(nm);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+
+  const fin = valider => {
+    nm.contentEditable = 'false'; it.draggable = true;
+    const v = nm.textContent.trim();
+    nm.removeEventListener('keydown', onKey); nm.removeEventListener('blur', onBlur);
+    if (valider && v && v !== old) renameSlide(sec, v); else buildRail();
+  };
+  const onKey  = ev => { if (ev.key === 'Enter') { ev.preventDefault(); fin(true); }
+                         if (ev.key === 'Escape'){ ev.preventDefault(); fin(false); } };
+  const onBlur = () => fin(true);
+  nm.addEventListener('keydown', onKey); nm.addEventListener('blur', onBlur);
 });
 
 /* glisser-déposer pour réordonner */
@@ -403,19 +523,31 @@ function uniqLbl(base){
   return base+' ('+n+')';
 }
 function renameSlide(sec, v){
-  const old = sec.dataset.lbl; const nv = uniqLbl(v);
-  snapshot();
-  S.ops.forEach(o => { if (o.slide === old) o.slide = nv; if (o.after === old) o.after = nv;
-                       if (o.t === 'order') o.slides = o.slides.map(l => l === old ? nv : l); });
-  setOp({ t:'lbl', slide: old, value: nv }, true);
+  const old = sec.dataset.lbl, nv = uniqLbl(v);
+  if (nv === old) return;
+  // Le CSS du deck cible certaines slides par leur nom (ex. .slide[data-lbl="Couverture"]).
+  if (CSS_LBL.has(old) && !confirm('« ' + old + ' » est utilisée comme repère dans le CSS du deck.\n'
+      + 'La renommer désactivera un effet visuel sur cette slide.\n\nRenommer quand même ?')) return;
+  // On n'édite PAS les ops déjà enregistrées : chacune vaut à son rang dans la séquence,
+  // où la slide portait encore son ancien nom. Réécrire l'historique perdait les
+  // modifications faites avant le renommage.
+  setOp({ t:'lbl', slide: old, value: nv });
   sec.dataset.lbl = nv; buildRail(); showSlide(S.cur);
 }
+/* noms de slides sur lesquels s'appuie le CSS du deck */
+const CSS_LBL = new Set(['Couverture']);
 function delSlide(sec){
   if (!confirm('Supprimer la slide « '+(sec.dataset.lbl||'')+' » ?\n\nTu peux annuler juste après avec ↶.')) return;
   setOp({ t:'del', slide: sec.dataset.lbl });
   sec.remove(); buildRail(); showSlide(Math.min(S.cur, sections().length-1));
 }
 function dupSlide(sec){
+  // une slide illustrée embarque ses images en base64 : la dupliquer recopie tout ce poids
+  // dans le calque, qui doit rester léger.
+  const poids = sec.outerHTML.length;
+  if (poids > 900*1024 && !confirm('« ' + (sec.dataset.lbl||'') + ' » pèse '
+      + (poids/1048576).toFixed(1) + ' Mo (ses images sont intégrées).\n'
+      + 'La dupliquer ajoutera tout ce poids au calque et ralentira l\'enregistrement.\n\nContinuer ?')) return;
   const lbl = uniqLbl((sec.dataset.lbl||'slide') + ' (copie)');
   const clone = sec.cloneNode(true);
   clone.dataset.lbl = lbl; delete clone.dataset.cjArmed; clone.removeAttribute('data-cj-armed');
@@ -504,11 +636,14 @@ addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); showSlide(S.cur+1); }
   if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); showSlide(S.cur-1); }
   if ((e.metaKey||e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
+  if ((e.metaKey||e.ctrlKey) && e.key === 'z') { e.preventDefault(); $('#btnUndo').click(); }
+  if ((e.metaKey||e.ctrlKey) && e.key === 'f') { e.preventDefault(); $('#q').focus(); $('#q').select(); }
+  if (e.key === 'Escape' && $('#q').value) { $('#q').value = ''; filtrer(); }
 });
 
 /* ---------- enregistrement sur GitHub ---------- */
 function patchFile(){
-  return '/* CHONG JI — calque de modifications\n'
+  return '/* Clovis Project — calque de modifications\n'
        + '   Écrit par l\'éditeur (editeur.html) et par Claude. Appliqué au chargement du deck.\n'
        + '   Ne pas éditer à la main sauf si tu sais ce que tu fais. */\n'
        + 'window.CJ_PATCH = ' + JSON.stringify({ version:1, updated:new Date().toISOString(), ops:S.ops }, null, 1) + ';\n';
@@ -523,28 +658,41 @@ async function gh(path, opt){
   const r = await fetch('https://api.github.com/repos/'+REPO+'/'+path, {
     ...opt, headers: { Authorization:'Bearer '+cfg.gh, Accept:'application/vnd.github+json', ...(opt&&opt.headers) }
   });
-  if (!r.ok) throw new Error('GitHub ' + r.status + ' — ' + (await r.text()).slice(0,200));
+  if (!r.ok) { const e = new Error('GitHub ' + r.status + ' — ' + (await r.text()).slice(0,200)); e.statut = r.status; throw e; }
   return r.json();
+}
+/* Messages parlants : chaque code HTTP a une cause précise et une seule action à faire. */
+function diagnostic(err){
+  switch (err.statut) {
+    case 401: return "Jeton refusé — il a peut-être expiré. Refais-en un dans Réglages.";
+    case 404: return "Le jeton ne voit pas le dépôt « " + REPO + " ».\nDans GitHub : Repository access → Only select repositories → " + REPO.split('/')[1] + ".";
+    case 403: return "Le jeton n'a pas le droit d'écrire.\nDans GitHub : Permissions → Contents → Read and write.";
+    case 409: return "Le calque a changé sur GitHub depuis que tu as ouvert l'éditeur — Claude a probablement publié entre-temps.\n\nRecharge la page (⌘⇧R) pour repartir de la version à jour. Tes modifications en cours seraient perdues : copie-les d'abord si elles comptent.";
+    case 422: return "GitHub a refusé le contenu. Le calque est peut-être trop lourd — regarde son poids dans Modifications.";
+    default:  return err.message;
+  }
 }
 async function save(){
   if (!dirty() || S.busy) return;
   if (!cfg.gh) { alert('Il manque le jeton GitHub. Ouvre Réglages.'); return openCfg(); }
   S.busy = true; $('#btnSave').disabled = true; status('enregistrement…');
   try {
-    let sha = S.sha;
-    if (!sha) { try { sha = (await gh('contents/'+FILE)).sha; } catch(_){ sha = null; } }
+    let sha = null;
+    try { sha = (await gh('contents/'+FILE)).sha; } catch(e){ if (e.statut !== 404) throw e; }
     const body = {
       message: 'Deck : ' + S.ops.length + ' modification(s) — via éditeur',
       content: b64(patchFile()),
       ...(sha ? { sha } : {})
     };
     const res = await gh('contents/'+FILE, { method:'PUT', body: JSON.stringify(body) });
-    S.sha = res.content.sha; S.base = JSON.stringify(S.ops);
+    S.base = JSON.stringify(S.ops);
     S.busy = false; status('enregistré — en ligne dans ~1 min', 'ok');
     setTimeout(refreshStatus, 6000);
   } catch(err){
-    S.busy = false; status('échec de l\'enregistrement', 'err');
-    alert('Enregistrement impossible :\n\n' + err.message + '\n\nVérifie le jeton dans Réglages (permission Contents : Read and write sur chongji-hub).');
+    S.busy = false;
+    status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
+    alert('Enregistrement impossible\n\n' + diagnostic(err));
+    console.error(err);
     refreshStatus();
   }
 }
@@ -559,7 +707,7 @@ $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); $('#cfg').clo
    Ce bouton lui donne le contexte : où tu en es, et les règles du dépôt. */
 function contexte(){
   const ss = sections(), sec = ss[S.cur], L = [];
-  L.push("Contexte — deck de soutenance CHONG JI, dépôt Viktor-Guignard/clovis (cloné dans ~/chongji-hub).");
+  L.push("Contexte — Clovis Project, deck CHONG JI. Dépôt : " + REPO + " (cloné dans ~/chongji-hub).");
   L.push("Les modifications sont des ops dans patch.js, appliquées par cj-apply.js. Ne réécris jamais presentation.html (81 Mo).");
   if (sec) L.push('Je suis sur la slide ' + (S.cur+1) + '/' + ss.length + ' : « ' + (sec.dataset.lbl||'') + ' » (' + (sec.dataset.chapter||'') + ').');
   if (dirty()) { const k = S.ops.length;
@@ -576,7 +724,62 @@ $('#btnCtx').onclick = async () => {
   }
   setTimeout(refreshStatus, 3500);
 };
-window.CJ_DEBUG = { contexte, get ops(){ return S.ops; } };
+/* ---------- ce qui est en attente ---------- */
+function decrireOp(o){
+  switch (o.t) {
+    case 'text':    return o.path ? 'Texte réécrit — ' + o.slide : 'Slide reconstruite — ' + o.slide;
+    case 'img':     return 'Image remplacée — ' + o.slide;
+    case 'attr':    return 'Attribut ' + o.name + ' — ' + o.slide;
+    case 'lbl':     return 'Renommée — « ' + o.slide + ' » → « ' + o.value + ' »';
+    case 'skip':    return (o.on ? 'Masquée' : 'Réaffichée') + ' — ' + o.slide;
+    case 'del':     return 'Supprimée — ' + o.slide;
+    case 'add':     return 'Slide ajoutée après « ' + o.after + ' »';
+    case 'order':   return 'Ordre des slides modifié';
+    case 'seltext': return 'Texte réécrit hors slide — ' + o.sel;
+    case 'selattr': return 'Attribut ' + o.name + ' — ' + o.sel;
+    case 'title':   return 'Titre de la page — « ' + o.value + ' »';
+    default:        return o.t;
+  }
+}
+function poidsOp(o){ return JSON.stringify(o).length; }
+function fmtPoids(n){ return n > 1048576 ? (n/1048576).toFixed(1)+' Mo' : Math.round(n/1024)+' Ko'; }
+
+window.majOps = majOps;
+function majOps(){
+  const n = S.ops.length;
+  const c = $('#opsN'); c.textContent = n; c.classList.toggle('zero', !n);
+}
+function ouvrirOps(){
+  const box = $('#opsList'); box.innerHTML = '';
+  if (!S.ops.length) {
+    box.innerHTML = '<div class="op"><span class="t" style="color:var(--grey)">Aucune modification en attente.</span></div>';
+  } else S.ops.forEach((o, i) => {
+    const d = document.createElement('div'); d.className = 'op';
+    const num = document.createElement('span'); num.className = 'i'; num.textContent = i+1;
+    const txt = document.createElement('span'); txt.className = 't'; txt.textContent = decrireOp(o);
+    const p = poidsOp(o);
+    if (p > 200*1024) { const w = document.createElement('span'); w.className = 'w'; w.textContent = fmtPoids(p); txt.append(' '); txt.appendChild(w); }
+    const b = document.createElement('button'); b.textContent = 'révoquer';
+    b.title = "Retirer cette modification. Celles qui en dépendaient seront ignorées.";
+    b.onclick = () => {
+      snapshot();
+      S.ops.splice(i, 1);
+      refreshStatus(); ouvrirOps(); loadDeck();
+    };
+    d.append(num, txt, b); box.appendChild(d);
+  });
+  const total = patchFile().length;
+  $('#opsPoids').innerHTML = 'Poids du calque : <b>' + fmtPoids(total) + '</b>'
+    + (total > 2*1048576 ? ' — commence à être lourd. Les images remplacées en sont la cause.' : '');
+  $('#dlgOps').showModal();
+}
+$('#btnOps').onclick = ouvrirOps;
+$('#opsClose').onclick = () => $('#dlgOps').close();
+$('#opsSave').onclick = () => { $('#dlgOps').close(); save(); };
+$('#btnHelp').onclick = () => $('#dlgHelp').showModal();
+$('#helpClose').onclick = () => $('#dlgHelp').close();
+
+window.CJ_DEBUG = { contexte, decrireOp, get ops(){ return S.ops; } };
 
 refreshStatus();
 loadDeck();

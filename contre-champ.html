@@ -13,6 +13,14 @@
 <style>
 :root{
   --paper:#F2EEE4; --ink:#121212; --or:#B9893F; --gris:#8B8578; --trait:#DAD4C6;
+  /* Sur le papier crème, l'or de la charte tombe à 2,70:1 et le gris à 3,17:1 :
+     sous le seuil de lisibilité dès qu'ils portent du texte, et un projecteur
+     en salle éclairée fait perdre encore du contraste. Deux tons de TEXTE, même
+     teinte, simplement plus profonds — 4,5:1 tous les deux. L'or de la charte
+     reste intact partout où il ne porte pas de mots : pastilles, filets,
+     bordures, barre de progression. Pour revenir en arrière, il suffit de
+     pointer ces deux variables sur --or et --gris. */
+  --or-txt:#8A662F; --gris-txt:#716C61;
   --display:'Oswald','Arial Narrow',sans-serif;
   --serif:'Spectral',Georgia,serif;
   --snap:cubic-bezier(.2,.8,.2,1);
@@ -36,7 +44,9 @@ section.slide{position:absolute;inset:0;z-index:1;display:flex;flex-direction:co
 section.slide::-webkit-scrollbar{display:none}
 section.slide.active{opacity:1;visibility:visible;pointer-events:auto;z-index:2}
 section.slide.skip{display:none!important}
-section.slide.sombre{background:var(--ink);color:var(--paper)}
+section.slide.sombre{background:var(--ink);color:var(--paper);
+  /* fond sombre : l'or clair passe à 5,99:1, le ton profond serait pire */
+  --or-txt:var(--or); --gris-txt:#BDB6A6}
 section.slide.sombre .eyebrow{color:var(--or)}
 section.slide.sombre .note,section.slide.sombre .lead{color:#BDB6A6}
 
@@ -47,7 +57,7 @@ section.slide.sombre .note,section.slide.sombre .lead{color:#BDB6A6}
 
 /* éléments de base */
 .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--display);font-weight:600;
-  font-size:clamp(10px,1.05vw,12px);letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin-bottom:clamp(12px,2vh,22px)}
+  font-size:clamp(10px,1.05vw,12px);letter-spacing:.22em;text-transform:uppercase;color:var(--or-txt);margin-bottom:clamp(12px,2vh,22px)}
 .eyebrow .dot{width:6px;height:6px;background:var(--or);border-radius:50%;flex:none}
 /* Interlignage : en Oswald, une capitale monte à ~.73 em mais son accent à ~.95.
    Sous 1.0, « À » ou « É » en seconde ligne percutent la ligne du dessus —
@@ -61,9 +71,9 @@ h3{font-family:var(--display);font-weight:600;font-size:clamp(13px,1.35vw,16px);
 .lead{font-size:clamp(16px,1.7vw,22px);line-height:1.5;max-width:62ch;font-weight:300}
 .note{font-size:clamp(12.5px,1.2vw,15px);line-height:1.6;color:#4A463E;max-width:70ch}
 p+p{margin-top:.7em}
-em{font-style:italic;color:var(--or)}
+em{font-style:italic;color:var(--or-txt)}
 strong,b{font-weight:600}
-.or{color:var(--or)}
+.or{color:var(--or-txt)}
 
 /* grilles */
 .cols{display:grid;gap:clamp(18px,2.6vw,42px);margin-top:clamp(16px,2.6vh,30px)}
@@ -73,15 +83,15 @@ strong,b{font-weight:600}
 @media(max-width:820px){.c3,.c4{grid-template-columns:repeat(2,minmax(0,1fr))}.c2{grid-template-columns:1fr}}
 .bloc{border-top:2px solid var(--ink);padding-top:12px}
 .sombre .bloc{border-top-color:var(--or)}
-.num{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.2vw,44px);color:var(--or);line-height:1}
+.num{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.2vw,44px);color:var(--or-txt);line-height:1}
 
 /* listes et tableaux */
 .liste{list-style:none;margin-top:clamp(14px,2.2vh,24px)}
 .liste li{display:flex;gap:16px;padding:11px 0;border-bottom:1px solid var(--trait);font-size:clamp(13px,1.25vw,16px);line-height:1.45}
 .sombre .liste li{border-bottom-color:#2C2A26}
-.liste li .k{font-family:var(--display);font-weight:600;color:var(--or);flex:none;width:2.6em;letter-spacing:.06em}
+.liste li .k{font-family:var(--display);font-weight:600;color:var(--or-txt);flex:none;width:2.6em;letter-spacing:.06em}
 .liste li .v{flex:1}
-.liste li .t{color:var(--gris);font-size:.86em;white-space:nowrap}
+.liste li .t{color:var(--gris-txt);font-size:.86em;white-space:nowrap}
 table.fiche{width:100%;border-collapse:collapse;margin-top:clamp(14px,2.2vh,24px);font-size:clamp(12.5px,1.2vw,15px)}
 table.fiche td{padding:10px 6px;border-bottom:1px solid var(--trait);vertical-align:top;line-height:1.45}
 .sombre table.fiche td{border-bottom-color:#2C2A26}
@@ -93,7 +103,7 @@ table.fiche tr:last-child td{border-bottom:0}
 .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:clamp(12px,1.8vw,26px);margin-top:clamp(16px,2.4vh,28px)}
 .fig{border-top:2px solid var(--or);padding-top:10px}
 .fig .nom{font-family:var(--display);font-weight:600;font-size:clamp(14px,1.5vw,19px);text-transform:uppercase;line-height:1.05}
-.fig .an{color:var(--gris);font-size:11.5px;letter-spacing:.08em;margin:3px 0 6px;font-family:var(--display)}
+.fig .an{color:var(--gris-txt);font-size:11.5px;letter-spacing:.08em;margin:3px 0 6px;font-family:var(--display)}
 .fig p{font-size:12.5px;line-height:1.5;color:#4A463E}
 .sombre .fig p{color:#BDB6A6}
 
@@ -137,7 +147,7 @@ table.fiche tr:last-child td{border-bottom:0}
 @keyframes tracer{0%{stroke-dashoffset:150;opacity:1}26%{stroke-dashoffset:0;opacity:1}
   90%{stroke-dashoffset:0;opacity:1}97%,100%{stroke-dashoffset:0;opacity:0}}
 .corps{fill:none;stroke:var(--paper);stroke-width:2.2;stroke-linecap:round;opacity:.5}
-.leg{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gris);
+.leg{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gris-txt);
   font-family:var(--display);font-weight:600;margin-bottom:8px;display:block}
 @media(prefers-reduced-motion:reduce){.vig::after,.trace{animation:none}.trace{stroke-dashoffset:0}}
 
@@ -288,7 +298,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       <h3 class="or">Ce que le dojo a donné au cinéma</h3>
       <ul class="liste">
         <li><span class="k">A</span><span class="v">La chorégraphie — l’opéra de Pékin forme les premiers cascadeurs de Hong Kong</span></li>
-        <li><span class="k">B</span><span class="v">Les formes — le <em>tao</em>, séquence codifiée, se filme comme une phrase</span></li>
+        <li><span class="k">B</span><span class="v">Les formes — le <em>taolu</em>, séquence codifiée, se filme comme une phrase</span></li>
         <li><span class="k">C</span><span class="v">Le rituel — salut, garde, distance : une grammaire de plans toute prête</span></li>
         <li><span class="k">D</span><span class="v">Le maître et l’élève — une structure narrative avant d’être un scénario</span></li>
       </ul>
@@ -438,11 +448,11 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <span class="eyebrow r"><span class="dot"></span>Figures · une histoire mal racontée</span>
   <h2 class="titre r d1">LES OUBLIÉES</h2>
   <p class="lead r d2" style="font-size:clamp(15px,1.6vw,20px);max-width:66ch">
-    L’histoire populaire du cinéma martial est masculine. Elle est fausse : les héroïnes précèdent Bruce Lee de six ans.
+    L’histoire populaire du cinéma martial est masculine. Elle est fausse : les héroïnes précèdent Bruce Lee de cinq ans.
   </p>
   <div class="figs r d3">
     <div class="fig"><div class="nom">Cheng Pei-pei</div><div class="an">1946 — 2024</div>
-      <p><em>Come Drink with Me</em>, 1966. Première star d’action féminine du cinéma chinois — cinq ans <strong>avant</strong> Bruce Lee.</p></div>
+      <p><em>Come Drink with Me</em>, 1966. Première star d’action féminine du cinéma chinois <em>parlant</em> — cinq ans <strong>avant</strong> Bruce Lee.</p></div>
     <div class="fig"><div class="nom">Angela Mao</div><div class="an">1950 —</div>
       <p>La sœur d’<em>Opération Dragon</em>, payée 100 $ pour le rôle. Son propre film, <em>Hapkido</em>, a dépassé celui de Lee au box-office américain.</p></div>
     <div class="fig"><div class="nom">Michelle Yeoh</div><div class="an">1962 —</div>
@@ -451,7 +461,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       <p>Formée à la danse, pas au combat. Le geste martial comme écriture chorégraphique.</p></div>
   </div>
   <p class="note r d4" style="margin-top:clamp(16px,2.4vh,26px)">
-    Ce n’est pas un encart de rattrapage : c’est un fil qui traverse les trois parties. Une histoire du cinéma martial qui commence en <strong>1966</strong> plutôt qu’en 1971 ne raconte pas la même chose — et le box-office de 1973 dit l’inverse de ce que la légende a retenu.
+    Ce n’est pas un encart de rattrapage : c’est un fil qui traverse les trois âges. Une histoire du cinéma martial qui commence en <strong>1966</strong> plutôt qu’en 1971 ne raconte pas la même chose — et le box-office de 1973 dit l’inverse de ce que la légende a retenu.
   </p>
 </section>
 
@@ -506,7 +516,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <ul class="liste r d2">
     <li><span class="k">00</span><span class="v"><strong>Préface</strong> — par un chorégraphe de combat en exercice</span><span class="t">p. 5 · 6 p.</span></li>
     <li><span class="k">01</span><span class="v"><strong>Avant l’image</strong> — opéra, démonstration, transmission orale</span><span class="t">p. 11 · 24 p.</span></li>
-    <li><span class="k">02</span><span class="v"><strong>La caméra entre dans le dojo</strong> — chambara, Shaw Brothers</span><span class="t">p. 35 · 32 p.</span></li>
+    <li><span class="k">02</span><span class="v"><strong>La caméra entre dans la salle</strong> — chambara, Shaw Brothers</span><span class="t">p. 35 · 32 p.</span></li>
     <li><span class="k">03</span><span class="v"><strong>L’icône</strong> — Bruce Lee, la pose qui suffit</span><span class="t">p. 67 · 28 p.</span></li>
     <li><span class="k">04</span><span class="v"><strong>La séquence</strong> — Jackie Chan, le rythme et la chute</span><span class="t">p. 95 · 28 p.</span></li>
     <li><span class="k">05</span><span class="v"><strong>Les passeurs</strong> — chorégraphes et cascadeurs</span><span class="t">p. 123 · 24 p.</span></li>
@@ -589,7 +599,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <div class="bloc"><div class="num">01</div><h3>Elle répare une perte</h3>
       <p class="note">Un enrichissement qui n’ajoute rien au propos est un gadget. Celui-ci restitue la <strong>durée</strong> — la seule chose que la décomposition en planches supprime, et le cœur du sujet.</p></div>
     <div class="bloc"><div class="num">02</div><h3>Elle ne montre pas de film</h3>
-      <p class="note">L’AR anime <strong>les 40 schémas originaux</strong>, pas des extraits. Droits audiovisuels évités, et le contenu augmenté reste la propriété du livre.</p></div>
+      <p class="note">L’AR anime <strong>douze des quarante schémas originaux</strong>, pas des extraits. Droits audiovisuels évités, et le contenu augmenté reste la propriété du livre.</p></div>
     <div class="bloc"><div class="num">03</div><h3>Elle est bornée</h3>
       <p class="note"><strong>12 planches</strong> sur 208 pages, signalées par un pictogramme discret. Le livre se lit entièrement sans téléphone : l’AR est un supplément, jamais une condition.</p></div>
   </div>
@@ -729,7 +739,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
 
 <section class="slide" data-chapter="03 · Le marché" data-lbl="Codes graphiques">
   <span class="eyebrow r"><span class="dot"></span>Étude de marché · dimension graphique et technique</span>
-  <h2 class="titre r d1">CE QUE LE RAYON<br>RESSEMBLE</h2>
+  <h2 class="titre r d1">À QUOI RESSEMBLE<br>LE RAYON</h2>
   <div class="cols c3 r d2">
     <div class="bloc"><h3>Tendances observées</h3>
       <p class="note">Fonds noirs et photographie pleine page, titrages en capitales condensées, papiers mats depuis dix ans, dos toilés sur le haut de gamme. Le segment a durci son vocabulaire : il se veut objet.</p></div>

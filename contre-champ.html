@@ -167,11 +167,16 @@ body.chrome-sombre footer{color:#7C7669}
    l'écran sur un 1024 de vidéoprojecteur. Elle se comprime désormais, les
    pastilles avec elle — c'est elle qui absorbe le manque de place. */
 .prog{display:flex;gap:3px;flex:1 1 auto;min-width:0;pointer-events:auto}
-.prog i{flex:1 1 0;min-width:2px;max-width:13px;height:3px;background:var(--trait);
+/* La pastille ne mesurait que 3 px de haut : impossible à viser. Le trait
+   reste fin — background-clip le confine à la boîte de contenu — mais la
+   zone cliquable fait 19 px grâce au rembourrage. */
+.prog i{flex:1 1 0;min-width:2px;max-width:13px;height:19px;padding:8px 0;
+  background:var(--trait);background-clip:content-box;
   cursor:pointer;transition:background .2s}
-.prog i.on{background:var(--or)}
-body.chrome-sombre .prog i{background:#33302B}
-body.chrome-sombre .prog i.on{background:var(--or)}
+.prog i:hover{background:var(--gris);background-clip:content-box}
+.prog i.on{background:var(--or);background-clip:content-box}
+body.chrome-sombre .prog i{background:#33302B;background-clip:content-box}
+body.chrome-sombre .prog i.on{background:var(--or);background-clip:content-box}
 footer .lbl{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 footer .cnt{font-variant-numeric:tabular-nums;flex:none;pointer-events:auto}
 .nav{display:flex;gap:6px;flex:none;pointer-events:auto;margin-left:4px}

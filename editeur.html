@@ -455,8 +455,11 @@ const EDIT_CSS = `
   [data-cj-ed]:focus{outline:2px solid #B9893F;background:rgba(185,137,63,.05)}
   img[data-cj-img]{cursor:pointer}
   img[data-cj-img]:hover{outline:3px solid #B9893F;outline-offset:2px}
-  /* le décoratif est souvent posé en pointer-events:none : on le réveille */
-  [data-cj-obj]{pointer-events:auto!important;cursor:pointer}
+  /* Le décoratif est posé en pointer-events:none, et surtout il est SOUS le
+     contenu : sur la couverture, .cover recouvre toute la slide et interceptait
+     le clic destiné à l'amorce de pellicule. On le réveille et on le remonte —
+     le temps de l'édition seulement. */
+  [data-cj-obj]{pointer-events:auto!important;cursor:pointer;z-index:40}
   [data-cj-obj]:hover{outline:2px dashed #B9893F;outline-offset:-2px}
   [data-cj-obj].cj-choisi{outline:2px solid #B9893F;outline-offset:-2px}
 `;
@@ -530,7 +533,13 @@ function setupEdit(){
     if (!e.target.closest) return;
     if (e.target.closest('[data-cj-ed]')) return;
     S.doc.querySelectorAll('.cj-choisi').forEach(x => x.classList.remove('cj-choisi'));
-    const obj = e.target.closest('[data-cj-obj]');
+    // Filet de sécurité : si un élément en recouvre un autre, on cherche un
+    // objet décoratif sous le point cliqué plutôt que de ne rien sélectionner.
+    let obj = e.target.closest('[data-cj-obj]');
+    if (!obj && S.doc.elementsFromPoint) {
+      obj = S.doc.elementsFromPoint(e.clientX, e.clientY)
+              .find(el => el.hasAttribute && el.hasAttribute('data-cj-obj')) || null;
+    }
     if (obj) { obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
     else { blocActif = null; majBarre(); }
   });

@@ -1377,6 +1377,16 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     if (e.key === 'f' || e.key === 'F') { e.preventDefault(); basculerPlein(); }
   });
 
+  /* Quitter le diaporama. Le navigateur consomme le premier Échap pour sortir
+     du plein écran sans toujours le transmettre à la page : c'est pourquoi il
+     en fallait deux. On écoute donc la SORTIE du plein écran elle-même. */
+  const lanceDepuisEditeur = /[?&]plein=1/.test(location.search);
+  let aEtePlein = false;
+  function quitterDiaporama(){
+    try { window.close(); } catch (e) {}
+    if (!window.closed) location.href = 'editeur.html';
+  }
+
   let sommeil = null;
   function eveiller(){
     document.body.classList.add('eveille');
@@ -1386,7 +1396,12 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   function majDiapo(){
     const plein = !!(document.fullscreenElement || document.webkitFullscreenElement);
     document.body.classList.toggle('diapo', plein);
-    if (plein) eveiller(); else { clearTimeout(sommeil); document.body.classList.remove('eveille'); }
+    if (plein) { aEtePlein = true; eveiller(); }
+    else {
+      clearTimeout(sommeil); document.body.classList.remove('eveille');
+      // sortir du plein écran, c'est sortir du diaporama : un seul Échap suffit
+      if (lanceDepuisEditeur && aEtePlein) quitterDiaporama();
+    }
   }
   document.addEventListener('fullscreenchange', majDiapo);
   document.addEventListener('webkitfullscreenchange', majDiapo);
@@ -1404,21 +1419,14 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     inv.addEventListener('click', () => partir(), { once:true });
     addEventListener('keydown', partir);
 
-    /* Échap referme le diaporama et rend la main à l'éditeur. On sort d'abord
-       du plein écran, puis on tente de fermer l'onglet — ce que le navigateur
-       n'autorise que s'il a été ouvert par script — et à défaut on retourne
-       simplement à l'éditeur. */
+    /* Échap avant même d'être passé en plein écran — l'invite est encore
+       affichée : on rend la main tout de suite. Une fois en plein écran, c'est
+       fullscreenchange qui s'en charge, sans attendre un second appui. */
     addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
+      if (document.fullscreenElement || document.webkitFullscreenElement) return;
       e.preventDefault();
-      try {
-        const sortie = document.exitFullscreen || document.webkitExitFullscreen;
-        if (document.fullscreenElement || document.webkitFullscreenElement) sortie.call(document);
-      } catch (err) {}
-      setTimeout(() => {
-        try { window.close(); } catch (err) {}
-        if (!window.closed) location.href = 'editeur.html';
-      }, 160);
+      quitterDiaporama();
     });
   }
 

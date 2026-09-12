@@ -624,6 +624,23 @@ function setupEdit(){
     else { blocActif = null; majBarre(); }
   });
   S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); placerPanneau(true); }, true);
+
+  /* Les raccourcis sont écoutés par le document parent, et une touche pressée
+     dans l'iframe n'y remonte pas : ⌘S, ⌘R et ⌘F étaient sans effet pendant
+     qu'on écrivait — c'est-à-dire la plupart du temps. On les relaie.
+     ⌘Z reste au navigateur tant qu'on est dans un bloc éditable : son annulation
+     de frappe est plus fine que la nôtre, qui recharge tout le deck. */
+  S.doc.addEventListener('keydown', e => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const k = (e.key || '').toLowerCase();
+    if (['s','r','f','z'].indexOf(k) < 0) return;
+    if (k === 'r' && e.shiftKey) return;                       // ⌘⇧R : rechargement, au navigateur
+    if (k === 'z' && e.target && e.target.isContentEditable) return;
+    e.preventDefault();
+    dispatchEvent(new KeyboardEvent('keydown', {
+      key: e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey
+    }));
+  });
 }
 
 const INLINE = new Set(['SPAN','EM','B','I','STRONG','BR','A','SMALL','SUP','SUB','U','MARK','ABBR']);
@@ -829,7 +846,10 @@ function renameSlide(sec, v){
   if (nv === old) return;
   // Le CSS du deck cible certaines slides par leur nom (ex. .slide[data-lbl="Couverture"]).
   if (CSS_LBL.has(old) && !confirm('« ' + old + ' » est utilisée comme repère dans le CSS du deck.\n'
-      + 'La renommer désactivera un effet visuel sur cette slide.\n\nRenommer quand même ?')) return;
+      + 'La renommer désactivera un effet visuel sur cette slide.\n\nRenommer quand même ?')) {
+    buildRail();   // le rail affichait le nom saisi alors que rien n'a changé
+    return;
+  }
   // On n'édite PAS les ops déjà enregistrées : chacune vaut à son rang dans la séquence,
   // où la slide portait encore son ancien nom. Réécrire l'historique perdait les
   // modifications faites avant le renommage.
@@ -865,12 +885,15 @@ const TPL = (lbl, chap) => `<section class="slide" data-chapter="${chap}" data-l
   <p class="note r d2">Clique ce texte pour l'écrire. Demande à Claude si tu veux une mise en page particulière.</p>
 </section>`;
 $('#btnAdd').onclick = () => {
-  const sec = curSec(); if (!sec) return;
+  // Après avoir tout supprimé, curSec() est undefined et le bouton ne faisait
+  // plus rien : le deck devenait irrécupérable autrement que par ↶.
+  const sec = curSec();
   const lbl = uniqLbl('Nouvelle slide');
-  const html = TPL(lbl, sec.dataset.chapter || '');
-  setOp({ t:'add', after: sec.dataset.lbl, html });
+  const html = TPL(lbl, sec ? (sec.dataset.chapter || '') : 'Ouverture');
+  setOp(sec ? { t:'add', after: sec.dataset.lbl, html } : { t:'add', html });
   const t = S.doc.createElement('template'); t.innerHTML = html.trim();
-  const nu = t.content.firstElementChild; sec.after(nu);
+  const nu = t.content.firstElementChild;
+  if (sec) sec.after(nu); else (S.doc.querySelector('main') || S.doc.body).appendChild(nu);
   buildRail(); showSlide(sections().indexOf(nu));
 };
 
@@ -962,6 +985,15 @@ function toDataURL(file){
 function setMode(m){
   if (m === S.mode) return;
   viderEnAttente();   // sinon la frappe en cours serait perdue par le rechargement
+  // En Aperçu, les flèches pressées DANS l'iframe font avancer le deck sans que
+  // l'éditeur en sache rien : on revenait alors sur une autre slide que celle
+  // qu'on avait sous les yeux. On relit la slide réellement affichée.
+  if (S.mode === 'view') {
+    try {
+      const i = sections().indexOf(S.doc.querySelector('section.slide.active'));
+      if (i >= 0) S.cur = i;
+    } catch(e){}
+  }
   if (m === 'view' && dirty() && !confirm('L\'aperçu recharge le deck.\nTes modifications non enregistrées sont conservées en mémoire et réappliquées. Continuer ?')) return;
   S.mode = m;
   if (typeof blocActif !== 'undefined') { blocActif = null; $('#bar').classList.remove('on'); }
@@ -1432,6 +1464,12 @@ bar.addEventListener('click', e => {
   const a = b.dataset.a;
   const sec = blocActif.closest('section.slide');
   let cible = blocActif;
+  // Le garde-fou de poids (700 Ko) peut refuser d'enregistrer APRÈS que le DOM
+  // a bougé. Sans retour en arrière, l'aperçu montrerait une chose et le calque
+  // en décrirait une autre — et tous les chemins enregistrés ensuite sur cette
+  // slide seraient faux. On garde donc de quoi défaire.
+  const conteneur = unite(blocActif).parentElement || sec;
+  const avantManip = conteneur.innerHTML;
 
   // execCommand rend false quand il refuse d'agir ; il ne lève pas. Le catch ne
   // se déclenchait donc jamais, et le repli envelopper('') posait de toute façon
@@ -1483,7 +1521,12 @@ bar.addEventListener('click', e => {
     if (!agi) { majBarre(); return; }          // rien n'a bougé : pas d'op, pas de snapshot
     enregistrerBloc(blocActif);
   } else {
-    enregistrerParent(ancre || (cible === blocActif ? blocActif : cible));
+    if (!enregistrerParent(ancre || (cible === blocActif ? blocActif : cible))) {
+      conteneur.innerHTML = avantManip;        // rien n'a été enregistré : rien ne doit rester
+      cible = null;
+      status('modification annulée — rien n\'a été enregistré', 'err');
+      setTimeout(refreshStatus, 3500);
+    }
     delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
     armEditables(sec);
   }

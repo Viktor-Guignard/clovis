@@ -19,9 +19,14 @@
     try { ops = JSON.parse(sessionStorage.getItem('cj_preview_ops') || 'null'); } catch (e) {}
     if (!ops) { try { ops = JSON.parse(localStorage.getItem('cj_preview_ops') || 'null'); } catch (e) {} }
     ops = ops || []; stamp = ' (aperçu éditeur)';
+    /* JSON.parse('{}') passe le test ci-dessus mais n'a pas de forEach : le
+       TypeError avortait l'IIFE entière — plus de typographie, CJ_APPLIED vide,
+       et l'éditeur en concluait qu'aucune op n'était morte. */
+    if (!Array.isArray(ops)) ops = [];
   } else {
     var P = window.CJ_PATCH;
     ops = (P && P.ops) || [];
+    if (!Array.isArray(ops)) ops = [];
     stamp = (P && P.updated) ? ' — ' + P.updated : '';
   }
   window.CJ_APPLIED = [];
@@ -51,14 +56,28 @@
       t.innerHTML = String(o.html).trim();
       var s = t.content.firstElementChild;
       if (!s) return false;
-      var ref = o.after ? slideOf(o.after) : null;
-      if (ref) ref.after(s); else main.appendChild(s);
+      /* Se replier en fin de deck quand la slide de référence n'existe plus
+         plaçait la nouvelle slide en 53e position au lieu de la 5e — et le
+         rapport disait « appliquée ». La fin de deck ne vaut que pour un add
+         sans référence. */
+      if (o.after) { var ref = slideOf(o.after); if (!ref) return false; ref.after(s); }
+      else main.appendChild(s);
       return true;
     },
     order: function (o) {
-      var n = 0;
-      o.slides.forEach(function (l) { var s = slideOf(l); if (s) { main.appendChild(s); n++; } });
-      return n > 0;
+      /* « Couverture » porte class="slide active" en dur dans le deck, et le
+         goSlide(0) d'ouverture ne retire la classe qu'à slides[0]. Après un
+         réordonnancement, slides[0] n'est plus la couverture : deux sections
+         restaient actives, superposées, et les premières slides devenaient
+         invisibles derrière la couverture. On repart d'une ardoise nette. */
+      main.querySelectorAll('section.slide.active').forEach(function (x) { x.classList.remove('active'); });
+      var n = 0, absentes = [];
+      o.slides.forEach(function (l) { var s = slideOf(l); if (s) { main.appendChild(s); n++; } else absentes.push(l); });
+      /* Une slide ajoutée à la source après coup n'est pas dans o.slides : les
+         autres sont ré-appendues dans l'ordre, elle reste devant — en tête du
+         deck. Un ordre partiel n'est pas un ordre : on le signale. */
+      if (absentes.length) throw new Error('ordre incomplet, slides absentes : ' + absentes.join(', '));
+      return n === main.querySelectorAll('section.slide').length;
     },
 
     /* Ops par sélecteur : portée au document entier, pas seulement aux slides.
@@ -79,12 +98,19 @@
      Fait ici plutôt que dans le fichier source : presentation.html pèse 81 Mo,
      chaque réécriture en ajoute un exemplaire à l'historique Git. */
   function typographie() {
-    var IGNORE = { SCRIPT:1, STYLE:1, TEXTAREA:1, CODE:1, PRE:1, KBD:1 };
-    var marche = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+    var IGNORE = { SCRIPT:1, STYLE:1, TEXTAREA:1, CODE:1, PRE:1, KBD:1, NOSCRIPT:1, SAMP:1, VAR:1, OPTION:1 };
+    // Racine = body et non main : le libellé du pied de page vit hors de main et
+    // n'était jamais typographié — apostrophe droite au pied, courbe dans la slide.
+    var racine = document.body || main;
+    var marche = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT, {
       acceptNode: function (n) {
-        for (var p = n.parentNode; p && p !== main; p = p.parentNode) {
+        for (var p = n.parentNode; p && p !== racine; p = p.parentNode) {
           // nodeName d'un élément SVG est en minuscules : on écarte tout l'arbre
           if (IGNORE[p.nodeName] || p.nodeName === 'svg' || p.ownerSVGElement) return NodeFilter.FILTER_REJECT;
+          /* Réécrire le nodeValue d'un bloc en cours d'édition ramène le curseur
+             en tête : dans l'aperçu, l'éditeur arme contenteditable au load,
+             pendant que les passes différées tournent encore. */
+          if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
         }
         return /[ ][:;!?»]|«[ ]|[A-Za-zÀ-ÿ]'[A-Za-zÀ-ÿ]/.test(n.nodeValue)
           ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
@@ -95,7 +121,8 @@
       n.nodeValue = n.nodeValue
         .replace(/ ([:;!?»])/g, '\u00A0$1')                        // insécable avant
         .replace(/« /g, '«\u00A0')                                  // et après l'ouvrant
-        .replace(/([A-Za-zÀ-ÿ])'([A-Za-zÀ-ÿ])/g, '$1\u2019$2');     // apostrophe courbe
+        // lookahead : sans lui, « n'y'a » n'était converti qu'à moitié par passe
+        .replace(/([A-Za-zÀ-ÿ])'(?=[A-Za-zÀ-ÿ])/g, '$1\u2019');     // apostrophe courbe
       touches++;
     }
     return touches;
@@ -103,7 +130,10 @@
   var agies = 0;
   ops.forEach(function (op, i) {
     var ok = false, err = null;
-    try { ok = H[op.t] ? !!H[op.t](op) : false; }
+    /* H[op.t] trouvait « constructor », « toString »… sur le prototype : l'op
+       était déclarée appliquée sans que rien ne se passe. */
+    var f = Object.prototype.hasOwnProperty.call(H, op.t) ? H[op.t] : null;
+    try { ok = f ? !!f(op) : false; }
     catch (e) { err = String(e && e.message || e); }
     if (ok) agies++;
     window.CJ_APPLIED[i] = { t: op.t, ok: ok, err: err };
@@ -127,7 +157,13 @@
   passe('au chargement');
   if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', function () { passe('DOM prêt'); });
-  addEventListener('load', function () {
-    [0, 600, 1800].forEach(function (d) { setTimeout(function () { passe('+' + d + 'ms'); }, d); });
-  });
+  /* Les relances servent au deck public, dont certaines parties se construisent
+     en JavaScript après ce script. Dans l'aperçu, l'éditeur arme contenteditable
+     au même moment : une passe qui tombe pendant la frappe déplace le curseur.
+     On s'en abstient là où l'on écrit. */
+  if (!/[?&]preview=1/.test(location.search)) {
+    addEventListener('load', function () {
+      [0, 600, 1800].forEach(function (d) { setTimeout(function () { passe('+' + d + 'ms'); }, d); });
+    });
+  }
 })();

@@ -90,7 +90,12 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 
 /* compteur de modifications */
 .count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--or);color:#fff;font-size:10px;font-weight:700}
-.count.zero{display:none}
+/* Le badge passait de « rien » à « 1 » dès la première modification : le bouton
+   s'élargissait, l'en-tête se repliait, et ↷ sautait à la ligne suivante pendant
+   que ↶ restait sur la précédente. On réserve la place plutôt que de la prendre. */
+.count.zero{visibility:hidden}
+/* Annuler et Rétablir vont par deux : ils passent à la ligne ensemble ou pas du tout. */
+.paire{display:flex;gap:6px;flex:none}
 
 /* liste des modifications */
 .ops{max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
@@ -218,8 +223,10 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <button class="btn" id="btnRR" title="Rechercher et remplacer dans toutes les slides (⌘R)">Remplacer</button>
   <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
-  <button class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
-  <button class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
+  <div class="paire">
+    <button class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
+    <button class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
+  </div>
   <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Copier le contexte</button>
   <button class="btn" id="btnCfg">Réglages</button>
   <button class="btn prim" id="btnSave" disabled>Enregistrer</button>
@@ -265,7 +272,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 
   <label for="ghTok">Jeton GitHub — pour enregistrer</label>
   <input id="ghTok" type="password" placeholder="github_pat_…" autocomplete="off">
-  <div class="help">À créer sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → fine-grained token</a> : accès <b>uniquement au dépôt chongji-hub</b>, permission <b>Contents : Read and write</b>. Rien d'autre.</div>
+  <div class="help">À créer sur <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → fine-grained token</a> : accès <b>uniquement au dépôt <span id="cfgRepo">clovis</span></b>, permission <b>Contents : Read and write</b>. Rien d'autre.</div>
 
 
 
@@ -351,7 +358,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <span class="lbl">Texte</span>
   <button data-a="gras" title="Gras (⌘B)"><b>B</b></button>
   <button data-a="ital" title="Italique (⌘I)"><i>I</i></button>
-  <button data-a="rouge" class="rouge" title="Accent rouge de la charte">A</button>
+  <button data-a="rouge" class="rouge" title="Accent or de la charte">A</button>
   <button data-a="net" title="Retirer la mise en forme">⌫</button>
   <button data-a="typo" title="Taille, interligne, alignement">Aa</button>
   <span class="sep"></span>
@@ -409,17 +416,27 @@ const S = {
   undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1
 };
 const cfg = {
-  get gh(){ return localStorage.getItem('cj_gh') || ''; },  set gh(v){ localStorage.setItem('cj_gh', v); },
+  get gh(){ try { return localStorage.getItem('cj_gh') || ''; } catch(e){ return ''; } },
+  set gh(v){
+    try { localStorage.setItem('cj_gh', v); }
+    catch(e){
+      // Un calque chargé d'images peut saturer le quota : l'écriture échouait
+      // en silence, le dialogue restait ouvert et le jeton n'était pas gardé.
+      try { localStorage.removeItem('cj_preview_ops'); localStorage.setItem('cj_gh', v); }
+      catch(e2){ alert("Le navigateur refuse d'enregistrer le jeton : sa mémoire locale est pleine.\n\n"
+                     + "Vide les données du site puis recommence."); }
+    }
+  },
 };
 
 const dirty = () => JSON.stringify(S.ops) !== S.base;
 function status(txt, cls){ const e=$('#status'); e.textContent=txt; e.className='status '+(cls||''); }
 function refreshStatus(){
   if (S.busy) return;
-  const n = S.ops.length;
-  if (dirty()) status(n+' modif. non enregistrée'+(n>1?'s':''), 'dirty');
+  const n = S.ops.length, sale = dirty();   // un seul JSON.stringify : le calque peut peser des mégaoctets
+  if (sale) status(n+' modif. non enregistrée'+(n>1?'s':''), 'dirty');
   else status(n ? n+' modification'+(n>1?'s':'')+' enregistrée'+(n>1?'s':'') : 'aucune modification');
-  $('#btnSave').disabled = !dirty();
+  $('#btnSave').disabled = !sale;
   $('#btnUndo').disabled = !S.undo.length;
   const r = $('#btnRedo'); if (r) r.disabled = !S.redo.length;
   if (window.majOps) majOps();
@@ -427,12 +444,21 @@ function refreshStatus(){
 function snapshot(){ S.undo.push(JSON.stringify(S.ops)); if (S.undo.length>40) S.undo.shift(); S.redo = []; }
 
 /* ---------- ops ---------- */
-const KEYED = { text:1, attr:1, img:1, lbl:1, skip:1 };
+/* « lbl » n'y est PAS, volontairement. Sa clé se réduirait à ['lbl', ancien nom] :
+   renommer A→B, éditer, puis B→A puis A→C évinçait la première op et la
+   remontait en fin de liste. Les éditions faites sous le nom intermédiaire
+   perdaient leur cible. Les renommages s'empilent, ils ne fusionnent pas. */
+const KEYED = { text:1, attr:1, img:1, skip:1 };
 function keyOf(o){ return [o.t, o.slide, o.path||'', o.name||''].join('\u0001'); }
 function setOp(op, quiet){
   if (!quiet) snapshot();
   if (KEYED[op.t]) { const k = keyOf(op); const i = S.ops.findIndex(o => keyOf(o)===k); if (i>=0) S.ops.splice(i,1); }
   S.ops.push(op);
+  // Le rapport « appliquée / sans effet » date du dernier chargement de l'iframe
+  // et se lit par POSITION. Dès qu'une op est retirée ou ajoutée, les indices
+  // glissent : le badge « ne s'applique plus à rien » finissait par désigner une
+  // op parfaitement saine. On préfère ne rien affirmer jusqu'au prochain aperçu.
+  S.applique = null;
   refreshStatus();
 }
 
@@ -443,10 +469,17 @@ function slideOf(doc, lbl){
   const e = (window.CSS && CSS.escape) ? CSS.escape(lbl) : String(lbl).replace(/["\\]/g,'\\$&');
   return doc.querySelector('section.slide[data-lbl="'+e+'"]');
 }
+/* Renvoie null si el n'est pas DANS sec. Sans cette sortie, remonter depuis un
+   nœud extérieur atteignait document, dont parentNode est null : TypeError, et
+   tout le gestionnaire appelant sautait — sans op, sans message. */
 function pathOf(el, sec){
   const p = []; let n = el;
-  while (n && n !== sec) { p.unshift([].indexOf.call(n.parentNode.children, n)); n = n.parentNode; }
-  return p.join('-');
+  while (n && n !== sec) {
+    if (!n.parentNode || !n.parentNode.children) return null;
+    p.unshift([].indexOf.call(n.parentNode.children, n));
+    n = n.parentNode;
+  }
+  return n === sec ? p.join('-') : null;
 }
 
 /* ---------- CSS injecté en mode édition ---------- */
@@ -473,13 +506,49 @@ const EDIT_CSS = `
 /* ---------- pilotage du deck ---------- */
 const frame = $('#deck');
 const DECK_URL = 'contre-champ.html?preview=1';
+/* La frappe est reportée de 450 ms pour ne pas écrire une op par caractère.
+   Le report était porté par UN SEUL minuteur pour tout le document : taper dans
+   un titre puis cliquer dans un autre bloc en moins de 450 ms annulait
+   l'enregistrement du titre. La frappe restait à l'écran, n'entrait jamais dans
+   S.ops, et disparaissait au premier rechargement — sans le moindre signe.
+   Un minuteur par bloc, donc, et une purge forcée avant tout ce qui lit S.ops. */
+const enAttente = new Map();                       // Element -> identifiant de minuteur
+function consignerSaisie(el){
+  const sec = el.closest && el.closest('section.slide');
+  if (!sec || !el.isConnected) return;
+  const chemin = pathOf(el, sec); if (chemin === null) return;
+  setOp({ t:'text', slide: sec.dataset.lbl, path: chemin, html: propre(el).innerHTML });
+}
+function programmerSaisie(el){
+  clearTimeout(enAttente.get(el));
+  enAttente.set(el, setTimeout(() => { enAttente.delete(el); consignerSaisie(el); }, 450));
+}
+/* Sans argument : purge tout. Avec : purge ce seul bloc. */
+function viderEnAttente(el){
+  if (el){
+    if (!enAttente.has(el)) return;
+    clearTimeout(enAttente.get(el)); enAttente.delete(el); consignerSaisie(el); return;
+  }
+  if (!enAttente.size) return;
+  const blocs = [...enAttente.keys()];
+  enAttente.forEach(t => clearTimeout(t));
+  enAttente.clear();
+  blocs.forEach(consignerSaisie);
+}
+
 function loadDeck(){
+  viderEnAttente();
   $('#veil').classList.remove('gone');
   // le deck lit cet état AVANT d'initialiser sa navigation : pas de désynchro
+  let ecartDiapo = false;
   try {
     const etat = JSON.stringify(S.ops);
     sessionStorage.setItem('cj_preview_ops', etat);   // l'aperçu, dans l'iframe
-    localStorage.setItem('cj_preview_ops', etat);     // le diaporama, dans son propre onglet
+    // Deux quotas indépendants : si celui-ci échoue seul, l'aperçu montrerait
+    // le bon état pendant que le diaporama rejouerait silencieusement l'ancien.
+    // On efface alors la clé pour qu'il retombe sur le calque publié.
+    try { localStorage.setItem('cj_preview_ops', etat); }
+    catch(e2){ try { localStorage.removeItem('cj_preview_ops'); } catch(_){} ecartDiapo = true; }
   } catch(e){
     // sessionStorage plafonne vers 5 Mo : des images non enregistrées peuvent le saturer.
     // Le silence ferait disparaître le travail de l'écran sans explication.
@@ -488,6 +557,9 @@ function loadDeck(){
         + "— elles sont trop lourdes (des images remplacées, probablement).\n\n"
         + "Enregistre maintenant : elles seront relues depuis GitHub au rechargement.");
   }
+  if (ecartDiapo) alert("L'aperçu est à jour, mais le diaporama ne pourra pas recevoir tes"
+      + " modifications non enregistrées — elles sont trop lourdes pour la mémoire du navigateur.\n\n"
+      + "Enregistre avant de lancer le diaporama, sinon il jouera la version publiée.");
   // même URL = on relit le cache du navigateur au lieu de retélécharger 81 Mo
   if (frame.getAttribute('src') === DECK_URL && frame.contentWindow) frame.contentWindow.location.reload();
   else frame.setAttribute('src', DECK_URL);
@@ -511,14 +583,14 @@ const curSec   = () => sections()[S.cur];
 function setupEdit(){
   const st = S.doc.createElement('style'); st.id = 'cj-edit-css'; st.textContent = EDIT_CSS;
   S.doc.head.appendChild(st);
-  let tmr = null;
   S.doc.addEventListener('input', e => {
     const el = e.target.closest && e.target.closest('[data-cj-ed]'); if (!el) return;
-    clearTimeout(tmr);
-    tmr = setTimeout(() => {
-      const sec = el.closest('section.slide');
-      setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML });
-    }, 450);
+    programmerSaisie(el);
+  });
+  // Quitter un bloc, c'est en avoir fini avec lui : on consigne sans attendre.
+  S.doc.addEventListener('focusout', e => {
+    const el = e.target.closest && e.target.closest('[data-cj-ed]');
+    if (el) viderEnAttente(el);
   });
   S.doc.addEventListener('click', e => {
     const im = e.target.closest && e.target.closest('img[data-cj-img]');
@@ -531,7 +603,9 @@ function setupEdit(){
   // la barre flottante suit le bloc où se trouve le curseur
   S.doc.addEventListener('focusin', e => {
     const el = e.target.closest && e.target.closest('[data-cj-ed]');
-    if (el) { blocActif = el; majBarre(); }
+    // Le cadre et ses poignées restaient actifs par-dessus le texte qu'on
+    // éditait : un clic destiné au paragraphe pouvait redimensionner l'image.
+    if (el) { deselectionnerImage(); blocActif = el; majBarre(); }
   });
   S.doc.addEventListener('mouseup', () => majBarre());
   S.doc.addEventListener('selectionchange', () => majBarre());
@@ -546,10 +620,10 @@ function setupEdit(){
       obj = S.doc.elementsFromPoint(e.clientX, e.clientY)
               .find(el => el.hasAttribute && el.hasAttribute('data-cj-obj')) || null;
     }
-    if (obj) { obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
+    if (obj) { deselectionnerImage(); obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
     else { blocActif = null; majBarre(); }
   });
-  S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); }, true);
+  S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); placerPanneau(true); }, true);
 }
 
 const INLINE = new Set(['SPAN','EM','B','I','STRONG','BR','A','SMALL','SUP','SUB','U','MARK','ABBR']);
@@ -848,24 +922,36 @@ $('#filePick').onchange = async e => {
       status('image insérée (' + poids + ')', 'dirty');
     }
     setTimeout(refreshStatus, 2800);
-  } catch(err){ status('image illisible', 'err'); console.error(err); }
+  } catch(err){
+    // Sans cette remise à zéro, l'état corrompu contaminait la tentative suivante.
+    pending = null; apresQuoi = null;
+    status('image refusée', 'err'); console.error(err);
+    alert("Image refusée\n\n" + (err && err.message ? err.message : err)
+        + "\n\nFormats sûrs : JPEG, PNG, WebP, SVG.");
+    setTimeout(refreshStatus, 2800);
+  }
 };
 function toDataURL(file){
   return new Promise((res, rej) => {
     const rd = new FileReader();
-    rd.onerror = rej;
+    rd.onerror = () => rej(new Error('fichier illisible'));
     rd.onload = () => {
-      // au-delà de 800 Ko on redimensionne : patch.js doit rester raisonnable
-      if (file.size < 800*1024) return res(rd.result);
+      // Le décodage sert de contrôle de type : accept="image/*" n'est qu'un
+      // filtre de boîte de dialogue, et un PDF ou un HEIC renommé passait tel
+      // quel dans le calque, pour un carré vide sur le deck publié.
       const img = new Image();
       img.onload = () => {
+        if (file.size < 800*1024) return res(rd.result);   // assez léger : on garde l'original
         const M = 2200, k = Math.min(1, M/Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.85));
+        // Le JPEG n'a pas de couche alpha : un logo détouré ressortait sur fond
+        // noir. Ce qui peut être transparent reste en PNG.
+        const alpha = /^data:image\/(png|gif|webp|svg)/i.test(rd.result);
+        res(alpha ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85));
       };
-      img.onerror = () => res(rd.result);
+      img.onerror = () => rej(new Error("ce fichier n'est pas une image que le navigateur sait lire"));
       img.src = rd.result;
     };
     rd.readAsDataURL(file);
@@ -875,6 +961,7 @@ function toDataURL(file){
 /* ---------- modes ---------- */
 function setMode(m){
   if (m === S.mode) return;
+  viderEnAttente();   // sinon la frappe en cours serait perdue par le rechargement
   if (m === 'view' && dirty() && !confirm('L\'aperçu recharge le deck.\nTes modifications non enregistrées sont conservées en mémoire et réappliquées. Continuer ?')) return;
   S.mode = m;
   if (typeof blocActif !== 'undefined') { blocActif = null; $('#bar').classList.remove('on'); }
@@ -889,18 +976,20 @@ $('#mEdit').onclick = () => setMode('edit');
 $('#mView').onclick = () => setMode('view');
 
 $('#btnUndo').onclick = () => {
+  viderEnAttente();
   if (!S.undo.length) return;
   S.redo.push(JSON.stringify(S.ops));
   S.ops = JSON.parse(S.undo.pop());
   refreshStatus(); loadDeck();
 };
 $('#btnRedo').onclick = () => {
+  viderEnAttente();
   if (!S.redo.length) return;
   S.undo.push(JSON.stringify(S.ops));
   S.ops = JSON.parse(S.redo.pop());
   refreshStatus(); loadDeck();
 };
-addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue=''; } });
+addEventListener('beforeunload', e => { viderEnAttente(); if (dirty()) { e.preventDefault(); e.returnValue=''; } });
 /* Échap ferme le dialogue ouvert. C'est censé être le comportement natif de
    <dialog>, mais il ne s'est pas déclenché lors des essais : plutôt que de
    parier sur le navigateur pour quelque chose d'aussi basique, on le fait. */
@@ -920,7 +1009,11 @@ addEventListener('keydown', e => {
   if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); showSlide(S.cur+1); }
   if (e.key === 'ArrowUp'   || e.key === 'PageUp')   { e.preventDefault(); showSlide(S.cur-1); }
   if ((e.metaKey||e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
-  if ((e.metaKey||e.ctrlKey) && e.key === 'z') { e.preventDefault(); (e.shiftKey ? $('#btnRedo') : $('#btnUndo')).click(); }
+  // Shift enfoncé, e.key vaut « Z » majuscule : la condition échouait, et la
+  // branche Rétablir n'était jamais atteinte. ⌘⇧Z n'a jamais fonctionné.
+  if ((e.metaKey||e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault(); (e.shiftKey ? $('#btnRedo') : $('#btnUndo')).click();
+  }
   if ((e.metaKey||e.ctrlKey) && e.key === 'r') { e.preventDefault(); ouvrirRR(); }
   if ((e.metaKey||e.ctrlKey) && e.key === 'f') { e.preventDefault(); $('#q').focus(); $('#q').select(); }
   if (e.key === 'Escape' && $('#q').value) { $('#q').value = ''; filtrer(); }
@@ -931,7 +1024,19 @@ function patchFile(){
   return '/* Clovis Project — calque de modifications\n'
        + '   Écrit par l\'éditeur (editeur.html) et par Claude. Appliqué au chargement du deck.\n'
        + '   Ne pas éditer à la main sauf si tu sais ce que tu fais. */\n'
-       + 'window.CJ_PATCH = ' + JSON.stringify({ version:1, updated:new Date().toISOString(), ops:S.ops }, null, 1) + ';\n';
+       + 'window.CJ_PATCH = ' + jsonSur({ version:1, updated:new Date().toISOString(), ops:S.ops }) + ';\n';
+}
+/* JSON.stringify n'échappe ni « < » ni « > ». Sur GitHub, patch.js est un script
+   externe : personne ne s'en aperçoit. Mais le fichier autonome inline le calque
+   dans une balise de script, et une balise de FERMETURE venue d'une donnée —
+   saisie dans la vue Code, ou introduite par Rechercher/remplacer — y fermerait
+   le bloc. Le deck téléchargé s'ouvrirait avec du JSON en clair dans la page et
+   aucune modification appliquée. (Écrire la séquence en toutes lettres dans ce
+   commentaire suffirait à provoquer le bug qu'il décrit : c'est déjà arrivé.) */
+function jsonSur(o){
+  return JSON.stringify(o, null, 1)
+    .replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
+    .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 }
 function b64(str){
   const b = new TextEncoder().encode(str);
@@ -948,30 +1053,69 @@ async function gh(path, opt){
 }
 /* Messages parlants : chaque code HTTP a une cause précise et une seule action à faire. */
 function diagnostic(err){
+  // Pas de code HTTP du tout : la requête n'est jamais partie.
+  if (!err.statut) return "Pas de réponse de GitHub — vérifie ta connexion.\n\n"
+                        + "Rien n'a été envoyé : tes modifications sont intactes à l'écran.";
+  if (err.statut === 403 && /rate limit|abuse|secondary/i.test(err.message||''))
+    return "GitHub a mis l'enregistrement en attente : trop d'écritures rapprochées.\n\n"
+         + "Patiente une minute et recommence. Tes modifications sont intactes.";
   switch (err.statut) {
     case 401: return "Jeton refusé — il a peut-être expiré. Refais-en un dans Réglages.";
     case 404: return "Le jeton ne voit pas le dépôt « " + REPO + " ».\nDans GitHub : Repository access → Only select repositories → " + REPO.split('/')[1] + ".";
     case 403: return "Le jeton n'a pas le droit d'écrire.\nDans GitHub : Permissions → Contents → Read and write.";
     case 409: return "Le calque a changé sur GitHub depuis que tu as ouvert l'éditeur — Claude a probablement publié entre-temps.\n\nRecharge la page (⌘⇧R) pour repartir de la version à jour. Tes modifications en cours seraient perdues : copie-les d'abord si elles comptent.";
-    case 422: return "GitHub a refusé le contenu. Le calque est peut-être trop lourd — regarde son poids dans Modifications.";
+    case 413:
+    case 422: return "GitHub a refusé le contenu. Le calque est trop lourd — regarde son poids dans Modifications, et retire les images les plus grosses.";
     default:  return err.message;
   }
 }
 async function save(){
+  viderEnAttente();
   if (!dirty() || S.busy) return;
   if (!cfg.gh) { alert('Il manque le jeton GitHub. Ouvre Réglages.'); return openCfg(); }
   S.busy = true; $('#btnSave').disabled = true; status('enregistrement…');
   try {
-    let sha = null;
-    try { sha = (await gh('contents/'+FILE)).sha; } catch(e){ if (e.statut !== 404) throw e; }
+    // Ce que l'on s'apprête à envoyer, figé maintenant. Ce qui sera modifié
+    // pendant l'attente réseau ne doit pas être compté comme enregistré :
+    // le bouton se grisait sur des modifications jamais transmises.
+    const instantane = JSON.stringify(S.ops);
+    const contenu = b64(patchFile());
+
+    let sha = null, distant = null;
+    try {
+      const meta = await gh('contents/'+FILE);
+      sha = meta.sha;
+      distant = opsDistantes(meta);
+    } catch(e){ if (e.statut !== 404) throw e; }
+
+    // Relire le SHA juste avant d'écrire annule le contrôle de concurrence de
+    // GitHub : le SHA transmis est toujours à jour, le 409 ne survient jamais,
+    // et ce qu'un autre poste a publié entre-temps est écrasé sans un mot.
+    // On compare donc nous-mêmes le calque distant à celui d'où l'on est parti.
+    if (distant !== null && distant !== S.base) {
+      S.busy = false;
+      status('conflit — rien n\'a été écrit', 'err');
+      alert("Le calque a changé sur GitHub depuis l'ouverture de l'éditeur"
+          + " — Claude ou un autre poste a publié entre-temps.\n\n"
+          + "Rien n'a été envoyé : tes modifications sont intactes à l'écran."
+          + "\n\nCopie-les si elles comptent, puis recharge avec ⌘⇧R pour repartir"
+          + " de la version à jour.");
+      $('#btnSave').disabled = false;
+      return;
+    }
+
     const body = {
       message: 'Deck : ' + S.ops.length + ' modification(s) — via éditeur',
-      content: b64(patchFile()),
+      content: contenu,
       ...(sha ? { sha } : {})
     };
-    const res = await gh('contents/'+FILE, { method:'PUT', body: JSON.stringify(body) });
-    S.base = JSON.stringify(S.ops);
+    await gh('contents/'+FILE, { method:'PUT', body: JSON.stringify(body) });
+    S.base = instantane;
     S.busy = false;
+    // Le calque est publié : cette copie de travail n'a plus lieu d'être. Laissée
+    // en place, un onglet de diaporama rouvert plus tard (historique, onglet
+    // nommé) la rejouait à la place du calque en ligne, sans le dire.
+    try { localStorage.removeItem('cj_preview_ops'); } catch(e){}
     // GitHub Pages sert avec cache-control: max-age=600 — la publication prend
     // une minute, mais un navigateur qui a déjà chargé le calque peut garder
     // l'ancien jusqu'à dix. Autant le dire plutôt que laisser douter.
@@ -982,13 +1126,37 @@ async function save(){
     status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
     alert('Enregistrement impossible\n\n' + diagnostic(err));
     console.error(err);
-    refreshStatus();
+    // Surtout pas refreshStatus() ici : il réécrivait aussitôt le bandeau en
+    // « n modif. non enregistrée » et effaçait la seule trace de l'échec.
+    $('#btnSave').disabled = false;
+    setTimeout(refreshStatus, 9000);
   }
+}
+/* Le calque distant, tel qu'il est en ligne, pour le comparer au nôtre.
+   Renvoie null si on ne sait pas lire — auquel cas on n'empêche pas d'écrire. */
+function opsDistantes(meta){
+  try {
+    if (!meta || !meta.content) return null;        // > 1 Mo : GitHub ne renvoie pas le contenu
+    const bin = atob(String(meta.content).replace(/\s+/g, ''));
+    const oct = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) oct[i] = bin.charCodeAt(i);
+    const txt = new TextDecoder().decode(oct);
+    const d = txt.indexOf('=', txt.indexOf('window.CJ_PATCH'));
+    const f = txt.lastIndexOf(';');
+    if (d < 0 || f < d) return null;
+    return JSON.stringify(JSON.parse(txt.slice(d+1, f)).ops || []);
+  } catch(e){ return null; }
 }
 $('#btnSave').onclick = save;
 
 /* ---------- réglages ---------- */
-function openCfg(){ $('#ghTok').value = cfg.gh; $('#cfg').showModal(); }
+function openCfg(){
+  $('#ghTok').value = cfg.gh;
+  // Le nom du dépôt était figé en dur, et ne suivait plus REPO : on envoyait
+  // l'utilisateur créer un jeton portant sur un dépôt qui n'est plus le bon.
+  const r = $('#cfgRepo'); if (r) r.textContent = REPO.split('/')[1];
+  if (!$('#cfg').open) $('#cfg').showModal();
+}
 $('#btnCfg').onclick = openCfg;
 $('#cfgClose').onclick = () => $('#cfg').close();
 $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); $('#cfg').close(); refreshStatus(); };
@@ -1005,6 +1173,7 @@ function contexte(){
   return L.join('\n');
 }
 $('#btnCtx').onclick = async () => {
+  viderEnAttente();
   try {
     await navigator.clipboard.writeText(contexte());
     status('contexte copié — colle-le dans Claude', 'ok');
@@ -1030,7 +1199,10 @@ function decrireOp(o){
     default:        return o.t;
   }
 }
-function poidsOp(o){ return JSON.stringify(o).length; }
+/* En français accentué, un « é » ou un « — » pèse 2 à 3 octets pour un seul
+   caractère : compter les caractères sous-estimait le poids réellement envoyé. */
+const OCTETS = new TextEncoder();
+function poidsOp(o){ return OCTETS.encode(JSON.stringify(o)).length; }
 function fmtPoids(n){ return n > 1048576 ? (n/1048576).toFixed(1)+' Mo' : Math.round(n/1024)+' Ko'; }
 
 window.majOps = majOps;
@@ -1039,6 +1211,10 @@ function majOps(){
   const c = $('#opsN'); c.textContent = n; c.classList.toggle('zero', !n);
 }
 function ouvrirOps(){
+  // Le bouton « révoquer » vit DANS ce dialogue et rappelle cette fonction :
+  // showModal() sur un <dialog> déjà ouvert lève InvalidStateError, ce qui
+  // interrompait le gestionnaire avant le loadDeck() — l'aperçu restait périmé.
+  const dejaOuvert = $('#dlgOps').open;
   const box = $('#opsList'); box.innerHTML = '';
   if (!S.ops.length) {
     box.innerHTML = '<div class="op"><span class="t" style="color:var(--grey)">Aucune modification en attente.</span></div>';
@@ -1066,19 +1242,19 @@ function ouvrirOps(){
     };
     d.append(num, txt, b); box.appendChild(d);
   });
-  const total = patchFile().length;
+  const total = OCTETS.encode(patchFile()).length;
   const mortes = S.ops.filter((o,i) => (S.applique||[])[i] && !(S.applique||[])[i].ok).length;
   $('#opsPoids').innerHTML = 'Poids du calque : <b>' + fmtPoids(total) + '</b>'
     + (total > 2*1048576 ? ' — commence à être lourd. Les images remplacées en sont la cause.' : '')
     + (mortes ? '<br><span style="color:#E8B33A">' + mortes + ' modification' + (mortes>1?'s':'')
        + ' ne s\'applique' + (mortes>1?'nt':'') + ' plus à rien — tu peux ' + (mortes>1?'les':'la')
        + ' révoquer sans rien perdre.</span>' : '');
-  $('#dlgOps').showModal();
+  if (!dejaOuvert) $('#dlgOps').showModal();
 }
-$('#btnOps').onclick = ouvrirOps;
+$('#btnOps').onclick = () => { viderEnAttente(); ouvrirOps(); };
 $('#opsClose').onclick = () => $('#dlgOps').close();
 $('#opsSave').onclick = () => { $('#dlgOps').close(); save(); };
-$('#btnHelp').onclick = () => $('#dlgHelp').showModal();
+$('#btnHelp').onclick = () => { if (!$('#dlgHelp').open) $('#dlgHelp').showModal(); };
 $('#helpClose').onclick = () => $('#dlgHelp').close();
 
 /* =========================================================
@@ -1109,16 +1285,28 @@ function propre(el){
 }
 
 function enregistrerBloc(el){
-  const sec = el.closest('section.slide'); if (!sec || !el.isConnected) return;
-  setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML });
+  const sec = el.closest('section.slide'); if (!sec || !el.isConnected) return false;
+  const chemin = pathOf(el, sec);
+  if (chemin === null) return false;
+  setOp({ t:'text', slide: sec.dataset.lbl, path: chemin, html: propre(el).innerHTML });
+  return true;
 }
+/* Rend true si l'op a bien été enregistrée. Les appelants qui ont déjà modifié
+   le DOM doivent défaire leur modification quand elle rend false : sinon
+   l'aperçu montre une chose et le calque en décrit une autre, et tous les
+   chemins enregistrés ensuite sur cette slide sont faux. */
 function enregistrerParent(el){
-  const sec = el.closest('section.slide'); if (!sec) return;
-  const parent = el.parentElement && el.parentElement !== sec ? el.parentElement : sec;
+  const sec = el.closest('section.slide'); if (!sec) return false;
+  // Quand el EST la section, son parent est <main> : on visait le deck entier,
+  // et pathOf remontait jusqu'à document. C'est la slide qu'il faut viser.
+  const parent = (el === sec || !el.parentElement || el.parentElement === sec) ? sec : el.parentElement;
+  const chemin = parent === sec ? '' : pathOf(parent, sec);
+  if (chemin === null) { console.warn('chemin hors slide, op abandonnée', parent); return false; }
   const html = propre(parent).innerHTML;
   if (html.length > 700*1024 && !confirm('Ce bloc contient des images intégrées ('
-      + Math.round(html.length/1048576*10)/10 + ' Mo).\nL\'enregistrer alourdira d\'autant le calque.\n\nContinuer ?')) return;
-  setOp({ t:'text', slide: sec.dataset.lbl, path: parent === sec ? '' : pathOf(parent, sec), html });
+      + Math.round(html.length/1048576*10)/10 + ' Mo).\nL\'enregistrer alourdira d\'autant le calque.\n\nContinuer ?')) return false;
+  setOp({ t:'text', slide: sec.dataset.lbl, path: chemin, html });
+  return true;
 }
 
 /* ---------- barre flottante ---------- */
@@ -1150,7 +1338,12 @@ function majBarre(){
   if (!blocActif) { bar.classList.remove('on'); fermerPanneau(); return; }
   const sel = S.doc.getSelection();
   const estTexte = blocActif.hasAttribute('data-cj-ed');
-  const texteSelectionne = estTexte && sel && !sel.isCollapsed && blocActif.contains(sel.anchorNode);
+  // Les deux extrémités doivent être dans le bloc. En ne testant que l'ancre, une
+  // sélection qui débordait sur le paragraphe voisin activait les boutons : la
+  // mise en forme fusionnait les deux blocs, et seul le premier était enregistré
+  // — au rechargement, le texte du second réapparaissait, en double.
+  const texteSelectionne = estTexte && sel && !sel.isCollapsed
+        && blocActif.contains(sel.anchorNode) && blocActif.contains(sel.focusNode);
   ['gras','ital','rouge','net'].forEach(a =>
     bar.querySelector('[data-a="'+a+'"]').disabled = !texteSelectionne);
   bar.querySelector('[data-a="typo"]').disabled = !estTexte;
@@ -1160,6 +1353,10 @@ function majBarre(){
   bar.querySelector('[data-a="bas"]').disabled  = !u.nextElementSibling;
   bar.querySelector('[data-a="moins"]').disabled = (u.parentElement === sec && sec.children.length <= 1);
   placerBarre();
+  // Le panneau restait ouvert sur les valeurs du bloc PRÉCÉDENT : on croyait
+  // réduire un titre de 48 px, on réduisait la note de 14 px qu'on venait de
+  // cliquer. Il suit désormais le bloc actif, valeurs et position.
+  if (!panneau.hidden && panneau._bloc !== blocActif) { majPanneau(); placerPanneau(true); }
 }
 
 /* ---------- actions ---------- */
@@ -1173,12 +1370,21 @@ function envelopper(classe){
   catch(_) { sp.appendChild(r.extractContents()); r.insertNode(sp); }
   sel.removeAllRanges();
 }
+/* Aplatir la sélection en texte brut emportait les <br> et les <a href> avec la
+   mise en forme : une adresse sur deux lignes redevenait une ligne, un lien
+   devenait du texte mort, sans un mot. On déballe la mise en forme, et elle
+   seule. */
+const HABILLAGE = new Set(['B','I','EM','STRONG','SPAN','U','MARK','SMALL','SUP','SUB','FONT']);
 function nettoyerMiseEnForme(){
   const sel = S.doc.getSelection(); if (!sel || sel.isCollapsed) return;
   const r = sel.getRangeAt(0);
   const frag = r.extractContents();
-  const txt = S.doc.createTextNode(frag.textContent);
-  r.insertNode(txt);
+  const deballe = n => {
+    [...n.children].forEach(deballe);
+    if (HABILLAGE.has(n.tagName)) n.replaceWith(...n.childNodes);
+  };
+  [...frag.children].forEach(deballe);
+  r.insertNode(frag);
   sel.removeAllRanges();
 }
 /* Cliquer un texte sélectionne une FEUILLE (le numéro d'une ligne, le titre
@@ -1213,7 +1419,10 @@ function cloneVide(u){
   const w = S.doc.createTreeWalker(c, NodeFilter.SHOW_TEXT);
   const tn = []; let t; while ((t = w.nextNode())) tn.push(t);
   tn.forEach(n => { if (n.nodeValue.trim()) n.nodeValue = n.parentElement.children.length ? '' : '…'; });
-  if (!c.textContent.trim()) c.textContent = '…';
+  // Un filet ou une pastille n'ont pas de texte : leur coller « … » le publiait
+  // au milieu du décor. On ne pose l'amorce que si l'original en avait un.
+  if (!c.textContent.trim() && u.textContent.trim()) c.textContent = '…';
+  c.removeAttribute('data-cj-obj');   // le clone sera réévalué par armEditables
   return c;
 }
 
@@ -1224,21 +1433,36 @@ bar.addEventListener('click', e => {
   const sec = blocActif.closest('section.slide');
   let cible = blocActif;
 
-  if (a === 'gras')  { try { S.doc.execCommand('bold'); } catch(_){ envelopper('') ; } }
-  if (a === 'ital')  { try { S.doc.execCommand('italic'); } catch(_){} }
-  if (a === 'rouge') envelopper('red');
+  // execCommand rend false quand il refuse d'agir ; il ne lève pas. Le catch ne
+  // se déclenchait donc jamais, et le repli envelopper('') posait de toute façon
+  // un span sans classe — donc sans gras. On enregistrait une op pour rien.
+  let agi = true;
+  if (a === 'gras')  agi = !!S.doc.execCommand('bold');
+  if (a === 'ital')  agi = !!S.doc.execCommand('italic');
+  // « red » était l'accent de CHONG JI. Ici la charte est or, et la classe .or
+  // existe déjà dans le deck (30 emplois) : la mise en couleur tient donc aussi
+  // sur la page publiée. La classe .red, elle, n'était définie nulle part —
+  // le bouton enregistrait une modification qui ne changeait rien à l'écran.
+  if (a === 'rouge') envelopper('or');
   if (a === 'net')   nettoyerMiseEnForme();
 
   const u = unite(blocActif);
-  if (a === 'haut' && u.previousElementSibling) u.parentElement.insertBefore(u, u.previousElementSibling);
-  if (a === 'bas'  && u.nextElementSibling)     u.parentElement.insertBefore(u.nextElementSibling, u);
+  // L'ordre vit dans le parent de l'UNITÉ déplacée, pas dans celui du bloc
+  // cliqué. Quand on clique le libellé d'un <li>, blocActif est un <span> et
+  // u le <li> : on enregistrait l'innerHTML du <span>, jamais le nouvel ordre
+  // du <ul>. Au rechargement l'item déplacé écrasait son voisin.
+  let ancre = null;
+  if (a === 'haut' && u.previousElementSibling) { u.parentElement.insertBefore(u, u.previousElementSibling); ancre = u; }
+  if (a === 'bas'  && u.nextElementSibling)     { u.parentElement.insertBefore(u.nextElementSibling, u);     ancre = u; }
   if (a === 'copie') {
     const c = u.cloneNode(true);
     c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
     u.after(c); cible = c;
   }
   if (a === 'plus')  { const c = cloneVide(u); u.after(c); cible = c; }
-  if (a === 'image') { apresQuoi = u; $('#filePick').value = ''; $('#filePick').click(); return; }
+  // pending doit être relâché : laissé en place par un sélecteur abandonné, il
+  // détournait le fichier suivant vers l'ancienne image au lieu de l'insérer ici.
+  if (a === 'image') { pending = null; apresQuoi = u; $('#filePick').value = ''; $('#filePick').click(); return; }
   if (a === 'moins') {
     if (!confirm('Supprimer « ' + (u.textContent.trim().slice(0,46) || u.tagName.toLowerCase()) + ' » ?')) return;
     const par = u.parentElement, voisin = u.nextElementSibling || u.previousElementSibling;
@@ -1251,13 +1475,15 @@ bar.addEventListener('click', e => {
   if (a === 'image') return;
   if (a === 'typo') {
     panneau.hidden = !panneau.hidden;
-    if (!panneau.hidden) { majPanneau(); placerPanneau(); }
+    if (!panneau.hidden) { majPanneau(); placerPanneau(true); }
+    else delete panneau.dataset.pose;
     return;
   }
   if (['gras','ital','rouge','net'].indexOf(a) >= 0) {
+    if (!agi) { majBarre(); return; }          // rien n'a bougé : pas d'op, pas de snapshot
     enregistrerBloc(blocActif);
   } else {
-    enregistrerParent(cible === blocActif ? blocActif : cible);
+    enregistrerParent(ancre || (cible === blocActif ? blocActif : cible));
     delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
     armEditables(sec);
   }
@@ -1298,7 +1524,7 @@ function chercher(){
   return trouves;
 }
 $('#rrQ').addEventListener('input', chercher);
-$('#btnRR').onclick = ouvrirRR;
+$('#btnRR').onclick = () => { viderEnAttente(); ouvrirRR(); };
 $('#rrClose').onclick = () => $('#dlgRR').close();
 $('#rrGo').onclick = () => {
   const q = $('#rrQ').value, r = $('#rrR').value;
@@ -1307,44 +1533,70 @@ $('#rrGo').onclick = () => {
   if (!cibles.length) return;
   snapshot();
   const rx = new RegExp(echapRx(q), 'gi');
+  // Dans le second argument de replace, « $& », « $` », « $' » et « $$ » sont
+  // des motifs de substitution : taper « $& » réinsérait le texte trouvé.
+  const litteral = r.replace(/\$/g, '$$$$');
   let n = 0;
   cibles.forEach(({sec, el}) => {
     // on ne touche qu'aux nœuds de texte : le balisage interne reste intact
     const w = S.doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let node, change = false;
     while ((node = w.nextNode())) {
-      if (rx.test(node.nodeValue)) { rx.lastIndex = 0; node.nodeValue = node.nodeValue.replace(rx, r); change = true; }
+      if (rx.test(node.nodeValue)) { rx.lastIndex = 0; node.nodeValue = node.nodeValue.replace(rx, litteral); change = true; }
       rx.lastIndex = 0;
     }
     if (change) { setOp({ t:'text', slide: sec.dataset.lbl, path: pathOf(el, sec), html: propre(el).innerHTML }, true); n++; }
   });
   refreshStatus();
   $('#dlgRR').close();
-  status(n + ' bloc' + (n>1?'s':'') + ' modifié' + (n>1?'s':''), 'dirty');
+  // Une occurrence coupée par une balise (« Bon<em>jour</em> ») est comptée par
+  // chercher(), qui lit le texte concaténé, mais aucun nœud de texte ne la
+  // contient entière : elle n'est pas remplacée. Autant le dire.
+  const rate = cibles.length - n;
+  status(n + ' bloc' + (n>1?'s':'') + ' modifié' + (n>1?'s':'')
+       + (rate > 0 ? ' — ' + rate + ' occurrence' + (rate>1?'s':'') + ' à cheval sur une balise, non remplacée' + (rate>1?'s':'') : ''),
+       rate > 0 ? 'err' : 'dirty');
   setTimeout(refreshStatus, 3000);
 };
 
 /* ---------- vue code de la slide ---------- */
-const MED = { liste: [], index: new Map() };
-function jeton(v){ let i = MED.index.get(v); if (i === undefined) { i = MED.liste.push(v)-1; MED.index.set(v, i); } return '«MÉDIA'+i+'»'; }
+/* Le préfixe est tiré au sort à chaque ouverture : figé, il pouvait heurter un
+   « «MÉDIA0» » réellement présent dans le texte de la slide, que rendreMedias
+   aurait alors remplacé par une image, en silence. */
+const MED = { liste: [], index: new Map(), prefixe: 'MÉDIA' };
+function jeton(v){ let i = MED.index.get(v); if (i === undefined) { i = MED.liste.push(v)-1; MED.index.set(v, i); } return '«'+MED.prefixe+i+'»'; }
 function masquerMedias(html){
   return html
     .replace(/<svg\b[\s\S]*?<\/svg>/gi, m => m.length > 1200 ? jeton(m) : m)
     .replace(/(data:[a-z0-9.+\/-]+;base64,)([A-Za-z0-9+\/=]{60,})/gi, m => jeton(m));
 }
-function rendreMedias(html){ return String(html).replace(/«MÉDIA(\d+)»/g, (m,i) => MED.liste[+i] ?? m); }
+function rxJeton(){ return new RegExp('«' + MED.prefixe + '(\\d+)»', 'g'); }
+function rendreMedias(html){ return String(html).replace(rxJeton(), (m,i) => MED.liste[+i] ?? m); }
 $('#btnCode').onclick = () => {
+  viderEnAttente();
   const sec = curSec(); if (!sec) return;
-  $('#codeTxt').value = masquerMedias(propre(sec).innerHTML);
-  $('#dlgCode').showModal();
+  const brut = propre(sec).innerHTML;
+  // On choisit un préfixe que la slide ne contient pas déjà.
+  MED.liste = []; MED.index = new Map(); MED.prefixe = 'MÉDIA';
+  while (brut.indexOf('«' + MED.prefixe) >= 0) MED.prefixe += Math.floor(Math.random()*10);
+  $('#codeTxt').value = masquerMedias(brut);
+  $('#codeTxt').dataset.origine = $('#codeTxt').value;   // pour ne rien enregistrer si rien ne change
+  if (!$('#dlgCode').open) $('#dlgCode').showModal();
 };
 $('#codeClose').onclick = () => $('#dlgCode').close();
 $('#codeGo').onclick = () => {
   const sec = curSec(); if (!sec) return;
+  // Ouvrir puis Appliquer sans rien toucher ajoutait une op de slide entière,
+  // consommait une annulation et alourdissait le calque pour rien.
+  if ($('#codeTxt').value === $('#codeTxt').dataset.origine) { $('#dlgCode').close(); return; }
   const html = rendreMedias($('#codeTxt').value);
-  if (/«MÉDIA\d+»/.test(html)) { alert('Un jeton «MÉDIA n» ne correspond à rien. Vérifie les numéros.'); return; }
+  if (rxJeton().test(html)) { alert('Un jeton «' + MED.prefixe + ' n» ne correspond à rien. Vérifie les numéros.'); return; }
   setOp({ t:'text', slide: sec.dataset.lbl, path:'', html });
   sec.innerHTML = html;
+  // Tout ce qui pointait dans l'ancienne slide pointe maintenant dans le vide :
+  // la barre, le panneau et le cadre d'image doivent lâcher prise.
+  blocActif = null; imgActive = null;
+  fermerPanneau(); bar.classList.remove('on'); cadre.classList.remove('on');
   delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
   armEditables(sec);
   $('#dlgCode').close();
@@ -1380,22 +1632,58 @@ function majPanneau(){
   $('#vLh').textContent = (c.lh / c.fs).toFixed(2);
   $('#vW').textContent = c.w;
 }
-function placerPanneau(){
+/* Le panneau est posé à l'OUVERTURE, et n'y revient plus. Le replacer à chaque
+   réglage le faisait glisser sous le curseur : agrandir le texte élargissait le
+   bloc, le panneau suivait son bord droit de 29 px, et le deuxième clic sur « + »
+   tombait à côté. Un bouton qui se dérobe quand on l'utilise n'est pas un bouton. */
+function placerPanneau(force){
   if (panneau.hidden) return;
-  const r = bar.getBoundingClientRect();
-  panneau.style.left = Math.max(8, Math.min(innerWidth - 254, r.left)) + 'px';
-  panneau.style.top = (r.bottom + 6) + 'px';
+  if (!force && panneau.dataset.pose) return;
+  panneau.dataset.pose = '1';
+  panneau._bloc = blocActif;
+  const rb = bar.getBoundingClientRect();
+  const w = panneau.offsetWidth || 246, h = panneau.offsetHeight || 215;
+  const plafond = $('.stagebar').getBoundingClientRect().bottom + 6;
+  const borne = (v, min, max) => Math.max(min, Math.min(Math.max(min, max), v));
+
+  // Le bloc réglé, ramené en coordonnées écran.
+  let bloc = null;
+  if (blocActif && blocActif.isConnected) {
+    const r = blocActif.getBoundingClientRect();
+    const box = $('#frameBox').getBoundingClientRect(), k = S.echelle || 1;
+    bloc = { g: box.left + r.left*k,            h: box.top + r.top*k,
+             d: box.left + (r.left+r.width)*k,  b: box.top + (r.top+r.height)*k };
+  }
+  const recouvre = (x, y) => bloc && x < bloc.d && x + w > bloc.g && y < bloc.b && y + h > bloc.h;
+
+  let x = borne(rb.left, 8, innerWidth - w - 8), y = rb.bottom + 6;
+  // La barre se pose au-dessus du bloc ; le panneau, juste dessous, retombait
+  // donc pile sur lui. On réglait la taille d'un texte devenu invisible.
+  if (recouvre(x, y)) {
+    if (bloc.d + 10 + w <= innerWidth - 8)      x = bloc.d + 10;   // à droite du bloc
+    else if (bloc.g - 10 - w >= 8)              x = bloc.g - 10 - w;  // à gauche
+    else                                        y = bloc.b + 10;   // faute de côté, dessous
+  }
+  panneau.style.left = borne(x, 8, innerWidth - w - 8) + 'px';
+  panneau.style.top  = borne(y, plafond, innerHeight - h - 8) + 'px';
 }
-function fermerPanneau(){ panneau.hidden = true; }
+function fermerPanneau(){ panneau.hidden = true; delete panneau.dataset.pose; }
 
 function appliquerTypo(t){
-  if (!blocActif) return;
+  // Reconstruire une slide depuis la vue Code détache blocActif du document :
+  // styleCourant rendait NaN et closest('section.slide') null — le gestionnaire
+  // mourait sur un TypeError, sans rien enregistrer et sans rien dire.
+  if (!blocActif || !blocActif.isConnected) { fermerPanneau(); return; }
   const el = blocActif, c = styleCourant(el);
+  const avant = el.getAttribute('style') || '';
   const poser = (prop, val) => el.style.setProperty(prop, val);
 
   if (t === 'fs+' || t === 'fs-') {
     const k = t === 'fs+' ? 1.08 : 1/1.08;
-    poser('font-size', enVw(c.fs * k) + 'vw');
+    // Sans borne, quelques clics sur « − » arrivaient à 0vw : styleCourant relit
+    // alors 0, et « + » recalcule 0 × 1,08 = 0. Le bloc devenait irrécupérable.
+    const px = Math.min(160, Math.max(6, c.fs * k));
+    poser('font-size', enVw(px) + 'vw');
     // l'interligne suit la taille, sinon le bloc se disloque
     if (!el.style.lineHeight) poser('line-height', (c.lh / c.fs).toFixed(2));
   }
@@ -1403,6 +1691,7 @@ function appliquerTypo(t){
   if (t === 'w+' || t === 'w-') {
     const paliers = [200,300,400,500,600,700,800,900];
     let i = paliers.findIndex(x => x >= c.w);
+    if (i < 0) i = paliers.length - 1;          // graisse au-delà du barème (fonte variable)
     i = Math.max(0, Math.min(paliers.length - 1, i + (t === 'w+' ? 1 : -1)));
     poser('font-weight', paliers[i]);
   }
@@ -1413,18 +1702,27 @@ function appliquerTypo(t){
   if (t === 'maj') poser('text-transform', 'uppercase');
   if (t === 'min') poser('text-transform', 'lowercase');
   if (t === 'cap') poser('text-transform', 'none');
-  if (t === 'raz') el.removeAttribute('style');
+  // Le deck se sert massivement du style inline pour sa mise en page
+  // (margin-top, max-width, color…). Tout effacer emportait la mise en page
+  // d'origine, définitivement dans le calque. On ne retire que ce que ce
+  // panneau sait poser.
+  if (t === 'raz') ['font-size','line-height','font-weight','text-align','text-transform']
+                     .forEach(prop => el.style.removeProperty(prop));
 
+  const apres = el.getAttribute('style') || '';
   const sec = el.closest('section.slide');
-  setOp({ t:'attr', slide: sec.dataset.lbl, path: pathOf(el, sec),
-          name:'style', value: el.getAttribute('style') || '' });
-  majPanneau(); placerBarre(); placerPanneau();
+  // Deux clics sur le même alignement empilaient deux états identiques dans la
+  // pile d'annulation : l'undo semblait ensuite « ne rien faire » plusieurs fois.
+  if (apres !== avant && sec) {
+    setOp({ t:'attr', slide: sec.dataset.lbl, path: pathOf(el, sec), name:'style', value: apres });
+  }
+  majPanneau(); placerBarre();   // le panneau, lui, reste où il est
 }
 panneau.addEventListener('mousedown', e => e.preventDefault());
 panneau.addEventListener('click', e => {
   const b = e.target.closest('button'); if (b) appliquerTypo(b.dataset.t);
 });
-addEventListener('resize', placerPanneau);
+addEventListener('resize', () => placerPanneau(true));
 
 /* =========================================================
    DIAPORAMA ET TÉLÉCHARGEMENT
@@ -1434,17 +1732,23 @@ addEventListener('resize', placerPanneau);
    on passe par sessionStorage, comme l'aperçu. Un onglet nommé, pour ne pas
    en empiler un à chaque clic. */
 $('#btnDiapo').onclick = () => {
+  viderEnAttente();
   // localStorage et non sessionStorage : un onglet ouvert avec noopener
   // n'hérite pas du second, et le diaporama affichait alors le deck d'origine.
+  // Si l'écriture échoue, l'ANCIENNE valeur reste en place : le diaporama
+  // rejouerait alors un état périmé — ni l'édition en cours, ni la version
+  // publiée. On efface plutôt la clé, et on n'ouvre pas l'onglet.
   try {
     const etat = JSON.stringify(S.ops);
-    sessionStorage.setItem('cj_preview_ops', etat);
+    try { sessionStorage.setItem('cj_preview_ops', etat); } catch(e){}
     localStorage.setItem('cj_preview_ops', etat);
   } catch(e){
     console.warn(e);
+    try { localStorage.removeItem('cj_preview_ops'); } catch(_){}
     alert("Tes modifications sont trop lourdes pour être transmises au diaporama "
-        + "— des images remplacées, probablement.\n\nEnregistre d'abord : le diaporama "
-        + "lira alors la version publiée.");
+        + "— des images remplacées, probablement.\n\nEnregistre d'abord, puis relance "
+        + "le diaporama : il lira la version publiée.");
+    return;
   }
   const a = document.createElement('a');
   a.href = 'contre-champ.html?preview=1&plein=1';
@@ -1458,17 +1762,29 @@ $('#btnDiapo').onclick = () => {
    précisément le jour où on en a besoin. */
 async function embarquerPolices(html){
   const m = html.match(/<link href="(https:\/\/fonts\.googleapis\.com\/css2[^"]+)" rel="stylesheet">/);
-  if (!m) return html;
-  let css = await fetch(m[1]).then(r => r.ok ? r.text() : Promise.reject(r.status));
+  // Rendre le html tel quel laissait croire à un fichier autonome qui ne l'était
+  // pas : il aurait cherché Google Fonts, et se serait affiché en police de
+  // substitution le jour où il n'y a pas de réseau. Mieux vaut le dire.
+  if (!m) throw new Error('lien de polices introuvable dans le deck');
+  let css = await fetch(m[1], { signal: AbortSignal.timeout(10000) })
+                  .then(r => r.ok ? r.text() : Promise.reject(new Error('polices : HTTP '+r.status)));
   const urls = [...new Set([...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g)].map(x => x[1]))];
   for (const u of urls) {
-    const buf = await fetch(u).then(r => r.arrayBuffer());
+    const buf = await fetch(u, { signal: AbortSignal.timeout(10000) }).then(r => r.arrayBuffer());
     const b = new Uint8Array(buf);
     let bin = '';
     for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i+0x8000));
     css = css.split(u).join('data:font/woff2;base64,' + btoa(bin));
   }
-  return html.replace(m[0], '<style>\n/* polices embarquées — le fichier fonctionne hors ligne */\n' + css + '\n</style>');
+  const fini = html
+    .replace(m[0], '<style>\n/* polices embarquées — le fichier fonctionne hors ligne */\n' + css + '\n</style>')
+    // les preconnect ne servent plus à rien : autant ne pas faire chercher un
+    // domaine injoignable au navigateur d'une salle sans réseau
+    .replace(/[ \t]*<link rel="preconnect"[^>]*fonts\.g[^>]*>\s*/gi, '');
+  // Dernier contrôle : plus aucune FEUILLE de style distante, sinon on annonce
+  // « hors ligne » un fichier qui n'en est pas un.
+  if (/fonts\.googleapis\.com\/css/.test(fini)) throw new Error('une feuille de polices distante subsiste');
+  return fini;
 }
 
 async function fabriquerFichier(){
@@ -1494,6 +1810,7 @@ async function fabriquerFichier(){
 }
 
 $('#btnDl').onclick = async () => {
+  viderEnAttente();
   const b = $('#btnDl'); b.disabled = true;
   status('fabrication du fichier…');
   try {

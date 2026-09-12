@@ -217,15 +217,15 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <button id="mView">Aperçu</button>
   </div>
   <div class="spacer"></div>
-  <span class="status" id="status">—</span>
+  <span class="status" id="status" role="status" aria-live="polite" aria-atomic="true">—</span>
   <button class="btn" id="btnDiapo" title="Lire la présentation en plein écran, animations comprises">▶ Diaporama</button>
   <button class="btn" id="btnDl" title="Télécharger un fichier HTML autonome, qui fonctionne sans réseau">↓ HTML</button>
   <button class="btn" id="btnRR" title="Rechercher et remplacer dans toutes les slides (⌘R)">Remplacer</button>
   <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
   <div class="paire">
-    <button class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
-    <button class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
+    <button aria-label="Annuler (⌘Z)" class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
+    <button aria-label="Rétablir (⌘⇧Z)" class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
   </div>
   <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Copier le contexte</button>
   <button class="btn" id="btnCfg">Réglages</button>
@@ -237,11 +237,11 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <section class="col" id="rail">
     <div class="railhead">
       <h2>Slides</h2>
-      <button class="iconbtn" id="btnAdd" title="Ajouter une slide après la slide courante">+</button>
+      <button aria-label="Ajouter une slide après la slide courante" class="iconbtn" id="btnAdd" title="Ajouter une slide après la slide courante">+</button>
     </div>
     <div class="search">
       <input id="q" type="search" placeholder="Filtrer les slides…" aria-label="Filtrer les slides" autocomplete="off">
-      <button class="clr" id="qClr" title="Effacer" hidden>✕</button>
+      <button aria-label="Effacer" class="clr" id="qClr" title="Effacer" hidden>✕</button>
     </div>
     <div id="list"></div>
   </section>
@@ -250,7 +250,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <div class="stagebar">
       <span class="lbl" id="curLbl">—</span>
       <span class="spacer" style="flex:1"></span>
-      <span class="hint" id="hint">Clique un texte pour l'éditer · clique une image pour la remplacer</span>
+      <span class="hint" id="hint">Clique un texte pour l'éditer · clique une image pour la déplacer ou l'agrandir</span>
     </div>
     <div id="frameWrap">
       <div id="frameBox"><iframe id="deck"></iframe></div>
@@ -307,14 +307,14 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <tr><td><span class="kbd">⌘R</span></td><td>rechercher et remplacer partout</td></tr>
     <tr><td><span class="kbd">⌘⇧Z</span></td><td>rétablir</td></tr>
     <tr><td>Clic dans un texte</td><td>fait apparaître la barre de mise en forme</td></tr>
-    <tr><td>Sélectionner des mots</td><td>gras, italique, accent rouge</td></tr>
+    <tr><td>Sélectionner des mots</td><td>gras (⌘B), italique (⌘I), accent or de la charte</td></tr>
     <tr><td>Barre → <b>↑ ↓ ⧉ ＋ ✕</b></td><td>déplacer, dupliquer, insérer, supprimer un bloc</td></tr>
     <tr><td>Bouton <b>Code</b></td><td>éditer le HTML de la slide</td></tr>
     <tr><td>Barre → <b>Aa</b></td><td>taille, interligne, graisse, alignement, casse du bloc</td></tr>
     <tr><td>Bouton <b>▶ Diaporama</b></td><td>lecture plein écran, animations comprises — <span class="kbd">F</span> bascule, <span class="kbd">Échap</span> sort</td></tr>
     <tr><td>Bouton <b>↓ HTML</b></td><td>fichier unique et autonome, polices embarquées : il fonctionne sans réseau</td></tr>
     <tr><td>Clic sur un texte</td><td>l'éditer directement</td></tr>
-    <tr><td>Clic sur une image</td><td>la remplacer par un fichier</td></tr>
+    <tr><td>Clic sur une image</td><td>la sélectionner : poignées pour l'agrandir, ⟳ pour la remplacer</td></tr>
     <tr><td>Double-clic sur un nom</td><td>renommer la slide</td></tr>
     <tr><td>Glisser dans la liste</td><td>réordonner</td></tr>
     <tr><td><b>◉</b> / <b>◌</b></td><td>masquer une slide sans la supprimer</td></tr>
@@ -327,11 +327,11 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <div id="cadre" aria-hidden="true">
   <span class="grip" id="gripDep">⤧ déplacer</span>
   <div class="outils">
-    <button data-i="gauche" title="Aligner à gauche">⇤</button>
-    <button data-i="centre" title="Centrer">⇹</button>
-    <button data-i="droite" title="Aligner à droite">⇥</button>
-    <button data-i="remplacer" title="Remplacer le fichier">⟳</button>
-    <button data-i="supprimer" title="Supprimer l'image">✕</button>
+    <button aria-label="Aligner à gauche" data-i="gauche" title="Aligner à gauche">⇤</button>
+    <button aria-label="Centrer" data-i="centre" title="Centrer">⇹</button>
+    <button aria-label="Aligner à droite" data-i="droite" title="Aligner à droite">⇥</button>
+    <button aria-label="Remplacer le fichier" data-i="remplacer" title="Remplacer le fichier">⟳</button>
+    <button aria-label="Supprimer l'image" data-i="supprimer" title="Supprimer l'image">✕</button>
   </div>
   <span class="taille" id="cadreTaille"></span>
   <span class="poignee" id="poigneeTaille"></span>
@@ -340,35 +340,35 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 
 <div id="typo" hidden>
   <div class="rang"><span class="et">Taille</span>
-    <button data-t="fs-">−</button><span class="val" id="vFs">—</span><button data-t="fs+">+</button></div>
+    <button data-t="fs-" title="Réduire la taille" aria-label="Réduire la taille">−</button><span class="val" id="vFs">—</span><button data-t="fs+" title="Augmenter la taille" aria-label="Augmenter la taille">+</button></div>
   <div class="rang"><span class="et">Interligne</span>
-    <button data-t="lh-">−</button><span class="val" id="vLh">—</span><button data-t="lh+">+</button></div>
+    <button data-t="lh-" title="Resserrer l'interligne" aria-label="Resserrer l'interligne">−</button><span class="val" id="vLh">—</span><button data-t="lh+" title="Aérer l'interligne" aria-label="Aérer l'interligne">+</button></div>
   <div class="rang"><span class="et">Graisse</span>
-    <button data-t="w-">−</button><span class="val" id="vW">—</span><button data-t="w+">+</button></div>
+    <button data-t="w-" title="Alléger la graisse" aria-label="Alléger la graisse">−</button><span class="val" id="vW">—</span><button data-t="w+" title="Épaissir la graisse" aria-label="Épaissir la graisse">+</button></div>
   <div class="rang"><span class="et">Alignement</span>
-    <button data-t="al-g" title="À gauche">⇤</button><button data-t="al-c" title="Centré">⇹</button>
-    <button data-t="al-d" title="À droite">⇥</button><button data-t="al-j" title="Justifié">≡</button></div>
+    <button aria-label="À gauche" data-t="al-g" title="À gauche">⇤</button><button aria-label="Centré" data-t="al-c" title="Centré">⇹</button>
+    <button aria-label="À droite" data-t="al-d" title="À droite">⇥</button><button aria-label="Justifié" data-t="al-j" title="Justifié">≡</button></div>
   <div class="rang"><span class="et">Casse</span>
-    <button data-t="maj" title="CAPITALES">AA</button><button data-t="min" title="minuscules">aa</button>
-    <button data-t="cap" title="Normal">Aa</button></div>
+    <button aria-label="CAPITALES" data-t="maj" title="CAPITALES">AA</button><button aria-label="minuscules" data-t="min" title="minuscules">aa</button>
+    <button aria-label="Normal" data-t="cap" title="Normal">Aa</button></div>
   <div class="rang fin"><button data-t="raz" class="large">Réinitialiser ce bloc</button></div>
 </div>
 
 <div id="bar" role="toolbar" aria-label="Mise en forme">
   <span class="lbl">Texte</span>
-  <button data-a="gras" title="Gras (⌘B)"><b>B</b></button>
-  <button data-a="ital" title="Italique (⌘I)"><i>I</i></button>
-  <button data-a="rouge" class="rouge" title="Accent or de la charte">A</button>
-  <button data-a="net" title="Retirer la mise en forme">⌫</button>
-  <button data-a="typo" title="Taille, interligne, alignement">Aa</button>
+  <button data-a="gras" aria-label="Gras" title="Gras (⌘B)"><b>B</b></button>
+  <button data-a="ital" aria-label="Italique" title="Italique (⌘I)"><i>I</i></button>
+  <button aria-label="Accent or de la charte" data-a="rouge" class="rouge" title="Accent or de la charte">A</button>
+  <button aria-label="Retirer la mise en forme" data-a="net" title="Retirer la mise en forme">⌫</button>
+  <button aria-label="Taille, interligne, alignement" data-a="typo" title="Taille, interligne, alignement">Aa</button>
   <span class="sep"></span>
   <span class="lbl">Bloc</span>
-  <button data-a="haut" title="Monter le bloc">↑</button>
-  <button data-a="bas" title="Descendre le bloc">↓</button>
-  <button data-a="copie" title="Dupliquer le bloc">⧉</button>
-  <button data-a="plus" title="Insérer un bloc du même type après">＋</button>
-  <button data-a="image" title="Insérer une image après ce bloc">▣</button>
-  <button data-a="moins" title="Supprimer le bloc">✕</button>
+  <button aria-label="Monter le bloc" data-a="haut" title="Monter le bloc">↑</button>
+  <button aria-label="Descendre le bloc" data-a="bas" title="Descendre le bloc">↓</button>
+  <button aria-label="Dupliquer le bloc" data-a="copie" title="Dupliquer le bloc">⧉</button>
+  <button aria-label="Insérer un bloc du même type après" data-a="plus" title="Insérer un bloc du même type après">＋</button>
+  <button aria-label="Insérer une image après ce bloc" data-a="image" title="Insérer une image après ce bloc">▣</button>
+  <button aria-label="Supprimer le bloc" data-a="moins" title="Supprimer le bloc">✕</button>
 </div>
 
 <dialog id="dlgRR"><div class="dlg">
@@ -633,6 +633,17 @@ function setupEdit(){
   S.doc.addEventListener('keydown', e => {
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = (e.key || '').toLowerCase();
+    // ⌘B et ⌘I sont annoncés par les info-bulles de la barre, mais personne ne
+    // les implémentait : on comptait sur le contenteditable natif, qui ne les
+    // honore pas partout et n'enregistre surtout aucune op. On passe par le
+    // bouton, donc par le même chemin que le clic — op comprise.
+    if (k === 'b' || k === 'i') {
+      e.preventDefault();
+      majBarre();
+      const b = bar.querySelector('[data-a="' + (k === 'b' ? 'gras' : 'ital') + '"]');
+      if (b && !b.disabled) b.click();
+      return;
+    }
     if (['s','r','f','z'].indexOf(k) < 0) return;
     if (k === 'r' && e.shiftKey) return;                       // ⌘⇧R : rechargement, au navigateur
     if (k === 'z' && e.target && e.target.isContentEditable) return;
@@ -1000,7 +1011,7 @@ function setMode(m){
   $('#mEdit').classList.toggle('on', m === 'edit');
   $('#mView').classList.toggle('on', m === 'view');
   $('#hint').textContent = m === 'edit'
-    ? "Clique un texte pour l'éditer · clique une image pour la remplacer"
+    ? "Clique un texte pour l'éditer · clique une image pour la déplacer ou l'agrandir"
     : "Aperçu réel — flèches, sommaire et animations fonctionnent";
   loadDeck();
 }

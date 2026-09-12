@@ -623,7 +623,7 @@ function setupEdit(){
     if (obj) { deselectionnerImage(); obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
     else { blocActif = null; majBarre(); }
   });
-  S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); placerPanneau(true); }, true);
+  S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); placerPanneau(); }, true);
 
   /* Les raccourcis sont écoutés par le document parent, et une touche pressée
      dans l'iframe n'y remonte pas : ⌘S, ⌘R et ⌘F étaient sans effet pendant
@@ -631,7 +631,11 @@ function setupEdit(){
      ⌘Z reste au navigateur tant qu'on est dans un bloc éditable : son annulation
      de frappe est plus fine que la nôtre, qui recharge tout le deck. */
   S.doc.addEventListener('keydown', e => {
-    if (!(e.metaKey || e.ctrlKey)) return;
+    // Sur macOS, ⌃B recule d'un caractère et ⌃F avance : ce sont des liaisons
+    // système dans un contenteditable. Les intercepter mettrait en gras au lieu
+    // de déplacer le curseur. On ne relaie donc que la touche Commande.
+    const pomme = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    if (!(pomme ? e.metaKey : e.ctrlKey)) return;
     const k = (e.key || '').toLowerCase();
     // ⌘B et ⌘I sont annoncés par les info-bulles de la barre, mais personne ne
     // les implémentait : on comptait sur le contenteditable natif, qui ne les
@@ -646,7 +650,10 @@ function setupEdit(){
     }
     if (['s','r','f','z'].indexOf(k) < 0) return;
     if (k === 'r' && e.shiftKey) return;                       // ⌘⇧R : rechargement, au navigateur
-    if (k === 'z' && e.target && e.target.isContentEditable) return;
+    // Seul ⌘Z revient au navigateur dans un bloc éditable : son annulation de
+    // frappe est plus fine que la nôtre. ⌘⇧Z, lui, n'a pas d'équivalent utile
+    // côté navigateur et doit atteindre le Rétablir de l'éditeur.
+    if (k === 'z' && !e.shiftKey && e.target && e.target.isContentEditable) return;
     e.preventDefault();
     dispatchEvent(new KeyboardEvent('keydown', {
       key: e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey
@@ -686,6 +693,7 @@ function armEditables(sec){
 function showSlide(i){
   const ss = sections(); if (!ss.length) return;
   if (typeof blocActif !== 'undefined') { blocActif = null; const b = $('#bar'); if (b) b.classList.remove('on'); }
+  if (window.fermerPanneau) fermerPanneau();   // il réglait un bloc qu'on ne voit plus
   if (typeof imgActive !== 'undefined') { imgActive = null; const c = $('#cadre'); if (c) c.classList.remove('on'); }
   S.cur = Math.max(0, Math.min(ss.length-1, i));
   const sec0 = ss[S.cur];
@@ -948,7 +956,14 @@ $('#filePick').onchange = async e => {
       const fig = figureImage(src);
       apresQuoi.after(fig);
       const sec = fig.closest('section.slide');
-      enregistrerParent(fig);
+      // C'est ici que le garde-fou de poids se déclenche pour de bon : un bloc
+      // de texte ne pèse jamais 700 Ko, une photo si. Refuser l'enregistrement
+      // sans retirer la figure laissait l'aperçu et le calque en désaccord.
+      if (!enregistrerParent(fig)) {
+        fig.remove(); apresQuoi = null;
+        status('image non enregistrée — annulée', 'err'); setTimeout(refreshStatus, 3500);
+        return;
+      }
       delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed');
       armEditables(sec);
       selectionnerImage(fig.querySelector('img'));
@@ -973,17 +988,28 @@ function toDataURL(file){
       // Le décodage sert de contrôle de type : accept="image/*" n'est qu'un
       // filtre de boîte de dialogue, et un PDF ou un HEIC renommé passait tel
       // quel dans le calque, pour un carré vide sur le deck publié.
+      // Rastériser un SVG n'a aucun sens — et beaucoup de SVG sans width/height
+      // intrinsèques ne se décodent pas comme image : ils étaient refusés avec
+      // un message qui listait justement le SVG parmi les formats sûrs.
+      if (/^image\/svg/i.test(file.type)) return res(rd.result);
       const img = new Image();
       img.onload = () => {
         if (file.size < 800*1024) return res(rd.result);   // assez léger : on garde l'original
         const M = 2200, k = Math.min(1, M/Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, c.width, c.height);
         // Le JPEG n'a pas de couche alpha : un logo détouré ressortait sur fond
-        // noir. Ce qui peut être transparent reste en PNG.
-        const alpha = /^data:image\/(png|gif|webp|svg)/i.test(rd.result);
-        res(alpha ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85));
+        // noir. Mais ré-encoder en PNG tout ce qui PEUT être transparent rendait
+        // une photo PNG plus lourde que l'original — à l'opposé du but. On
+        // regarde donc les pixels : transparence réelle ou non.
+        let transparent = false;
+        try {
+          const d = ctx.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < d.length; i += 4) if (d[i] < 255) { transparent = true; break; }
+        } catch(e){ transparent = /^data:image\/(png|gif|webp)/i.test(rd.result); }
+        res(transparent ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = () => rej(new Error("ce fichier n'est pas une image que le navigateur sait lire"));
       img.src = rd.result;
@@ -1098,7 +1124,9 @@ async function gh(path, opt){
 function diagnostic(err){
   // Pas de code HTTP du tout : la requête n'est jamais partie.
   if (!err.statut) return "Pas de réponse de GitHub — vérifie ta connexion.\n\n"
-                        + "Rien n'a été envoyé : tes modifications sont intactes à l'écran.";
+                        + "Tes modifications sont intactes à l'écran. Si la coupure est survenue"
+                        + " pendant l'envoi, l'écriture a pu aboutir malgré tout : recharge la page"
+                        + " pour voir où en est le calque avant de réessayer.";
   if (err.statut === 403 && /rate limit|abuse|secondary/i.test(err.message||''))
     return "GitHub a mis l'enregistrement en attente : trop d'écritures rapprochées.\n\n"
          + "Patiente une minute et recommence. Tes modifications sont intactes.";
@@ -1135,7 +1163,16 @@ async function save(){
     // GitHub : le SHA transmis est toujours à jour, le 409 ne survient jamais,
     // et ce qu'un autre poste a publié entre-temps est écrasé sans un mot.
     // On compare donc nous-mêmes le calque distant à celui d'où l'on est parti.
-    if (distant !== null && distant !== S.base) {
+    // undefined = on n'a pas pu lire le calque distant (fichier > 1 Mo : l'API
+    // omet son contenu). C'est justement le cas où il y a le plus à perdre :
+    // on le dit, au lieu d'écrire par-dessus en silence.
+    if (distant === undefined && !confirm(
+        "Le calque dépasse la taille que GitHub renvoie d'un coup : impossible de vérifier"
+        + " si quelqu'un a publié depuis que tu as ouvert l'éditeur.\n\n"
+        + "Enregistrer maintenant écraserait son travail.\n\nContinuer quand même ?")) {
+      S.busy = false; $('#btnSave').disabled = false; refreshStatus(); return;
+    }
+    if (distant && distant !== S.base) {
       S.busy = false;
       status('conflit — rien n\'a été écrit', 'err');
       alert("Le calque a changé sur GitHub depuis l'ouverture de l'éditeur"
@@ -1148,7 +1185,7 @@ async function save(){
     }
 
     const body = {
-      message: 'Deck : ' + S.ops.length + ' modification(s) — via éditeur',
+      message: 'Deck : ' + JSON.parse(instantane).length + ' modification(s) — via éditeur',
       content: contenu,
       ...(sha ? { sha } : {})
     };
@@ -1179,7 +1216,7 @@ async function save(){
    Renvoie null si on ne sait pas lire — auquel cas on n'empêche pas d'écrire. */
 function opsDistantes(meta){
   try {
-    if (!meta || !meta.content) return null;        // > 1 Mo : GitHub ne renvoie pas le contenu
+    if (!meta || !meta.content) return undefined;   // > 1 Mo : GitHub omet le contenu — on ne SAIT pas
     const bin = atob(String(meta.content).replace(/\s+/g, ''));
     const oct = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) oct[i] = bin.charCodeAt(i);
@@ -1273,7 +1310,12 @@ function ouvrirOps(){
       d.classList.add('morte');
       const m = document.createElement('span'); m.className = 'w';
       m.textContent = ' — ne s\'applique plus à rien';
-      m.title = sort.err || "La slide ou le bloc visé n'existe plus. Tu peux révoquer cette modification sans rien perdre.";
+      // « sans rien perdre » n'est vrai que pour les ops qui ne portent pas de
+      // contenu : une op « add » morte contient tout le HTML d'une slide.
+      const porteuse = ['add','del','order'].indexOf(o.t) >= 0;
+      m.title = sort.err || (porteuse
+        ? "La cible n'existe plus. Cette modification porte du contenu ou un ordre : la révoquer le supprimera définitivement du calque."
+        : "La slide ou le bloc visé n'existe plus. Tu peux révoquer cette modification sans rien perdre.");
       txt.appendChild(m);
     }
     const b = document.createElement('button'); b.textContent = 'révoquer';
@@ -1286,12 +1328,20 @@ function ouvrirOps(){
     d.append(num, txt, b); box.appendChild(d);
   });
   const total = OCTETS.encode(patchFile()).length;
-  const mortes = S.ops.filter((o,i) => (S.applique||[])[i] && !(S.applique||[])[i].ok).length;
+  const inertes = S.ops.filter((o,i) => (S.applique||[])[i] && !(S.applique||[])[i].ok);
+  const mortes = inertes.length;
+  // Une op « add » morte porte le HTML complet d'une slide, une op « order » un
+  // ordre entier : les révoquer perd du travail. On ne promet pas l'inverse.
+  const porteuses = inertes.filter(o => ['add','del','order'].indexOf(o.t) >= 0).length;
   $('#opsPoids').innerHTML = 'Poids du calque : <b>' + fmtPoids(total) + '</b>'
     + (total > 2*1048576 ? ' — commence à être lourd. Les images remplacées en sont la cause.' : '')
     + (mortes ? '<br><span style="color:#E8B33A">' + mortes + ' modification' + (mortes>1?'s':'')
-       + ' ne s\'applique' + (mortes>1?'nt':'') + ' plus à rien — tu peux ' + (mortes>1?'les':'la')
-       + ' révoquer sans rien perdre.</span>' : '');
+       + ' ne s\'applique' + (mortes>1?'nt':'') + ' plus à rien.'
+       + (porteuses
+          ? ' Attention : ' + porteuses + ' d\'entre elle' + (porteuses>1?'s':'')
+            + ' porte' + (porteuses>1?'nt':'') + ' du contenu ou un ordre de slides — les révoquer le supprime.'
+          : ' Tu peux ' + (mortes>1?'les':'la') + ' révoquer sans rien perdre.')
+       + '</span>' : '');
   if (!dejaOuvert) $('#dlgOps').showModal();
 }
 $('#btnOps').onclick = () => { viderEnAttente(); ouvrirOps(); };
@@ -1399,7 +1449,7 @@ function majBarre(){
   // Le panneau restait ouvert sur les valeurs du bloc PRÉCÉDENT : on croyait
   // réduire un titre de 48 px, on réduisait la note de 14 px qu'on venait de
   // cliquer. Il suit désormais le bloc actif, valeurs et position.
-  if (!panneau.hidden && panneau._bloc !== blocActif) { majPanneau(); placerPanneau(true); }
+  if (!panneau.hidden && panneau._bloc !== blocActif) { majPanneau(); placerPanneau(); }
 }
 
 /* ---------- actions ---------- */
@@ -1472,6 +1522,7 @@ function cloneVide(u){
 bar.addEventListener('mousedown', e => e.preventDefault());   // ne pas perdre la sélection
 bar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !blocActif) return;
+  viderEnAttente();   // la frappe en cours doit exister avant qu'on remanie le bloc
   const a = b.dataset.a;
   const sec = blocActif.closest('section.slide');
   let cible = blocActif;
@@ -1480,7 +1531,10 @@ bar.addEventListener('click', e => {
   // en décrirait une autre — et tous les chemins enregistrés ensuite sur cette
   // slide seraient faux. On garde donc de quoi défaire.
   const conteneur = unite(blocActif).parentElement || sec;
-  const avantManip = conteneur.innerHTML;
+  // Sérialiser à chaque clic — ⌘B compris — coûtait plusieurs mégaoctets sur une
+  // slide illustrée. Seules les branches qui remanient le DOM en ont besoin.
+  const MUTENT = ['haut','bas','copie','plus','moins'];
+  const avantManip = MUTENT.indexOf(b.dataset.a) >= 0 ? conteneur.innerHTML : null;
 
   // execCommand rend false quand il refuse d'agir ; il ne lève pas. Le catch ne
   // se déclenchait donc jamais, et le repli envelopper('') posait de toute façon
@@ -1524,8 +1578,7 @@ bar.addEventListener('click', e => {
   if (a === 'image') return;
   if (a === 'typo') {
     panneau.hidden = !panneau.hidden;
-    if (!panneau.hidden) { majPanneau(); placerPanneau(true); }
-    else delete panneau.dataset.pose;
+    if (!panneau.hidden) { majPanneau(); placerPanneau(); }
     return;
   }
   if (['gras','ital','rouge','net'].indexOf(a) >= 0) {
@@ -1533,7 +1586,8 @@ bar.addEventListener('click', e => {
     enregistrerBloc(blocActif);
   } else {
     if (!enregistrerParent(ancre || (cible === blocActif ? blocActif : cible))) {
-      conteneur.innerHTML = avantManip;        // rien n'a été enregistré : rien ne doit rester
+      if (avantManip !== null) conteneur.innerHTML = avantManip;   // rien n'a été enregistré : rien ne doit rester
+      deselectionnerImage();                   // le cadre pointait dans l'arbre qu'on vient de remplacer
       cible = null;
       status('modification annulée — rien n\'a été enregistré', 'err');
       setTimeout(refreshStatus, 3500);
@@ -1686,14 +1740,14 @@ function majPanneau(){
   $('#vLh').textContent = (c.lh / c.fs).toFixed(2);
   $('#vW').textContent = c.w;
 }
-/* Le panneau est posé à l'OUVERTURE, et n'y revient plus. Le replacer à chaque
-   réglage le faisait glisser sous le curseur : agrandir le texte élargissait le
-   bloc, le panneau suivait son bord droit de 29 px, et le deuxième clic sur « + »
-   tombait à côté. Un bouton qui se dérobe quand on l'utilise n'est pas un bouton. */
-function placerPanneau(force){
+/* Le panneau se replace quand le bloc réglé change, au défilement et au
+   redimensionnement de la fenêtre — jamais pendant un réglage. C'est le retrait
+   de l'appel en fin d'appliquerTypo qui l'obtient : le replacer à chaque réglage
+   le faisait glisser sous le curseur, agrandir le texte élargissait le bloc, le
+   panneau suivait son bord droit de 29 px, et le deuxième clic sur « + » tombait
+   à côté. Un bouton qui se dérobe quand on l'utilise n'est pas un bouton. */
+function placerPanneau(){
   if (panneau.hidden) return;
-  if (!force && panneau.dataset.pose) return;
-  panneau.dataset.pose = '1';
   panneau._bloc = blocActif;
   const rb = bar.getBoundingClientRect();
   const w = panneau.offsetWidth || 246, h = panneau.offsetHeight || 215;
@@ -1721,7 +1775,7 @@ function placerPanneau(force){
   panneau.style.left = borne(x, 8, innerWidth - w - 8) + 'px';
   panneau.style.top  = borne(y, plafond, innerHeight - h - 8) + 'px';
 }
-function fermerPanneau(){ panneau.hidden = true; delete panneau.dataset.pose; }
+function fermerPanneau(){ panneau.hidden = true; }
 
 function appliquerTypo(t){
   // Reconstruire une slide depuis la vue Code détache blocActif du document :
@@ -1736,7 +1790,8 @@ function appliquerTypo(t){
     const k = t === 'fs+' ? 1.08 : 1/1.08;
     // Sans borne, quelques clics sur « − » arrivaient à 0vw : styleCourant relit
     // alors 0, et « + » recalcule 0 × 1,08 = 0. Le bloc devenait irrécupérable.
-    const px = Math.min(160, Math.max(6, c.fs * k));
+    const brut = c.fs * k;   // NaN sur un bloc display:none — Math.max ne le rattrape pas
+    const px = Number.isFinite(brut) ? Math.min(160, Math.max(6, brut)) : 16;
     poser('font-size', enVw(px) + 'vw');
     // l'interligne suit la taille, sinon le bloc se disloque
     if (!el.style.lineHeight) poser('line-height', (c.lh / c.fs).toFixed(2));
@@ -1776,7 +1831,7 @@ panneau.addEventListener('mousedown', e => e.preventDefault());
 panneau.addEventListener('click', e => {
   const b = e.target.closest('button'); if (b) appliquerTypo(b.dataset.t);
 });
-addEventListener('resize', () => placerPanneau(true));
+addEventListener('resize', () => placerPanneau());
 
 /* =========================================================
    DIAPORAMA ET TÉLÉCHARGEMENT
@@ -1837,7 +1892,10 @@ async function embarquerPolices(html){
     .replace(/[ \t]*<link rel="preconnect"[^>]*fonts\.g[^>]*>\s*/gi, '');
   // Dernier contrôle : plus aucune FEUILLE de style distante, sinon on annonce
   // « hors ligne » un fichier qui n'en est pas un.
-  if (/fonts\.googleapis\.com\/css/.test(fini)) throw new Error('une feuille de polices distante subsiste');
+  // Sur le <link> lui-même, pas sur tout le document : une slide qui citerait
+  // cette adresse dans son texte aurait fait annoncer « polices non embarquées ».
+  if (/<link[^>]+fonts\.googleapis\.com\/css/i.test(fini))
+    throw new Error('une feuille de polices distante subsiste');
   return fini;
 }
 
@@ -1933,9 +1991,14 @@ $('#poigneeTaille').addEventListener('pointerdown', e => {
     fig.style.width = pct + '%';
     placerCadre();
   };
+  const largeurAvant = fig.style.width;
   const fin = () => {
     removeEventListener('pointermove', bouge); removeEventListener('pointerup', fin);
-    enregistrerParent(fig);
+    if (!enregistrerParent(fig)) {
+      fig.style.width = largeurAvant; placerCadre();
+      status('largeur non enregistrée — rétablie', 'err'); setTimeout(refreshStatus, 3000);
+      return;
+    }
     status('largeur : ' + fig.style.width, 'dirty'); setTimeout(refreshStatus, 2000);
   };
   addEventListener('pointermove', bouge); addEventListener('pointerup', fin);
@@ -1973,9 +2036,14 @@ $('#gripDep').addEventListener('pointerdown', e => {
     repere.classList.remove('on');
     if (choix) {
       const sec = fig.closest('section.slide');
+      const voisinAvant = fig.nextElementSibling, parentAvant = fig.parentElement;
       if (choix.avant) sec.insertBefore(fig, choix.avant); else sec.appendChild(fig);
-      enregistrerParent(fig);
-      status('image déplacée', 'dirty'); setTimeout(refreshStatus, 2000);
+      if (!enregistrerParent(fig)) {
+        parentAvant.insertBefore(fig, voisinAvant);   // remis d'où il venait
+        status('déplacement non enregistré — annulé', 'err'); setTimeout(refreshStatus, 3000);
+      } else {
+        status('image déplacée', 'dirty'); setTimeout(refreshStatus, 2000);
+      }
     }
     placerCadre();
   };
@@ -1986,6 +2054,7 @@ $('#gripDep').addEventListener('pointerdown', e => {
 cadre.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !imgActive) return;
   const fig = figureDe(imgActive), i = b.dataset.i;
+  const mgAvant = [fig.style.marginLeft, fig.style.marginRight];
   if (i === 'gauche') { fig.style.marginLeft = '0';    fig.style.marginRight = 'auto'; }
   if (i === 'centre') { fig.style.marginLeft = 'auto'; fig.style.marginRight = 'auto'; }
   if (i === 'droite') { fig.style.marginLeft = 'auto'; fig.style.marginRight = '0'; }
@@ -1993,13 +2062,21 @@ cadre.addEventListener('click', e => {
   if (i === 'supprimer') {
     if (!confirm('Supprimer cette image ?')) return;
     const sec = fig.closest('section.slide'), par = fig.parentElement;
+    const voisin = fig.nextElementSibling;
     fig.remove(); deselectionnerImage();
-    enregistrerParent(par.firstElementChild || sec);
+    if (!enregistrerParent(par.firstElementChild || sec)) {
+      par.insertBefore(fig, voisin);
+      status('suppression non enregistrée — annulée', 'err'); setTimeout(refreshStatus, 3000);
+      return;
+    }
     delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed'); armEditables(sec);
     status('image supprimée', 'dirty'); setTimeout(refreshStatus, 2000);
     return;
   }
-  enregistrerParent(fig);
+  if (!enregistrerParent(fig)) {
+    fig.style.marginLeft = mgAvant[0]; fig.style.marginRight = mgAvant[1];
+    status('alignement non enregistré — rétabli', 'err'); setTimeout(refreshStatus, 3000);
+  }
   placerCadre();
 });
 

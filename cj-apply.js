@@ -65,19 +65,26 @@
       return true;
     },
     order: function (o) {
+      /* On résout TOUT avant de toucher au DOM. Réordonner puis lever laissait le
+         deck à moitié remanié — les slides listées à la fin, les autres en tête —
+         et rien ne le défaisait. */
+      var trouvees = [], absentes = [];
+      o.slides.forEach(function (l) { var s = slideOf(l); if (s) trouvees.push(s); else absentes.push(l); });
+      if (absentes.length) throw new Error('ordre non appliqué, slides introuvables : ' + absentes.join(', '));
+      /* Et une slide ajoutée à la source après coup n'est pas dans o.slides :
+         elle resterait en tête du deck. Un ordre partiel n'est pas un ordre. */
+      var total = main.querySelectorAll('section.slide').length;
+      if (trouvees.length !== total)
+        throw new Error('ordre non appliqué : ' + (total - trouvees.length) + ' slide(s) hors de la liste');
       /* « Couverture » porte class="slide active" en dur dans le deck, et le
          goSlide(0) d'ouverture ne retire la classe qu'à slides[0]. Après un
          réordonnancement, slides[0] n'est plus la couverture : deux sections
          restaient actives, superposées, et les premières slides devenaient
-         invisibles derrière la couverture. On repart d'une ardoise nette. */
+         invisibles derrière. On repart d'une ardoise nette — goSlide(0), appelé
+         juste après par le script de navigation, en réactivera une. */
       main.querySelectorAll('section.slide.active').forEach(function (x) { x.classList.remove('active'); });
-      var n = 0, absentes = [];
-      o.slides.forEach(function (l) { var s = slideOf(l); if (s) { main.appendChild(s); n++; } else absentes.push(l); });
-      /* Une slide ajoutée à la source après coup n'est pas dans o.slides : les
-         autres sont ré-appendues dans l'ordre, elle reste devant — en tête du
-         deck. Un ordre partiel n'est pas un ordre : on le signale. */
-      if (absentes.length) throw new Error('ordre incomplet, slides absentes : ' + absentes.join(', '));
-      return n === main.querySelectorAll('section.slide').length;
+      trouvees.forEach(function (s) { main.appendChild(s); });
+      return true;
     },
 
     /* Ops par sélecteur : portée au document entier, pas seulement aux slides.
@@ -107,9 +114,10 @@
         for (var p = n.parentNode; p && p !== racine; p = p.parentNode) {
           // nodeName d'un élément SVG est en minuscules : on écarte tout l'arbre
           if (IGNORE[p.nodeName] || p.nodeName === 'svg' || p.ownerSVGElement) return NodeFilter.FILTER_REJECT;
-          /* Réécrire le nodeValue d'un bloc en cours d'édition ramène le curseur
-             en tête : dans l'aperçu, l'éditeur arme contenteditable au load,
-             pendant que les passes différées tournent encore. */
+          /* Ceinture et bretelles : les passes différées ne tournent plus dans
+             l'aperçu (voir plus bas), et celles qui restent précèdent l'armement
+             des blocs. Si l'ordre changeait, réécrire le nodeValue d'un bloc en
+             cours d'édition ramènerait le curseur en tête de paragraphe. */
           if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
         }
         return /[ ][:;!?»]|«[ ]|[A-Za-zÀ-ÿ]'[A-Za-zÀ-ÿ]/.test(n.nodeValue)

@@ -110,6 +110,16 @@ body.vign{--rail:250px}
 .mini-vide{position:absolute;inset:0;display:grid;place-items:center;color:var(--grey);
   font-family:var(--ui);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 
+/* ---------- archive des versions ---------- */
+#versions{max-height:46vh;overflow-y:auto;margin-top:12px}
+.vers{display:flex;align-items:center;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.vers:last-child{border-bottom:0}
+.vers>div{flex:1;min-width:0}
+.vers b{display:block;font-family:var(--ui);font-size:12.5px;font-weight:600}
+.vers span{display:block;color:var(--grey);font-size:11px;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vers .btn{flex:none;padding:5px 10px;font-size:11.5px}
+
 /* ---------- galerie de gabarits ---------- */
 .galerie{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
 .gab{background:none;border:1px solid var(--line);border-radius:6px;padding:0;cursor:pointer;
@@ -268,6 +278,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
   <div class="paire">
+  <button class="btn" id="btnVers" title="Revenir à une version antérieure">Versions</button>
     <button aria-label="Annuler (⌘Z)" class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
     <button aria-label="Rétablir (⌘⇧Z)" class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
   </div>
@@ -321,6 +332,12 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 
 
 
+
+  <label style="display:flex;align-items:center;gap:9px;margin-top:16px;cursor:pointer">
+    <input type="checkbox" id="autoOn" style="width:auto;margin:0">
+    <span>Enregistrer automatiquement, 90 s après la dernière modification</span>
+  </label>
+  <div class="help">Chaque enregistrement laisse une version dans l’archive, récupérable à tout moment. En cas de conflit — quelqu’un a publié depuis un autre poste — l’automatique se désarme et te rend la main : c’est à toi d’arbitrer.</div>
 
   <div class="warn">Ce jeton reste dans ce navigateur. À refaire une fois sur chaque Mac — garde-le dans ton trousseau, GitHub ne le réaffiche jamais.</div>
 
@@ -433,6 +450,13 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   </div>
 </div></dialog>
 
+<dialog id="dlgVers"><div class="dlg">
+  <h3>ARCHIVE DES VERSIONS</h3>
+  <p>Chaque enregistrement laisse une version. Tu peux revenir à n’importe laquelle : l’état actuel reste récupérable par ↶.</p>
+  <div id="versions"></div>
+  <div class="row"><button class="btn" id="versClose">Fermer</button></div>
+</div></dialog>
+
 <dialog id="dlgGab"><div class="dlg">
   <h3>NOUVELLE SLIDE</h3>
   <p>Choisis une structure. Ce sont celles qu'emploie déjà le deck — le style suivra tout seul.</p>
@@ -469,7 +493,8 @@ const S = {
   ops:  (window.CJ_PATCH && window.CJ_PATCH.ops) ? JSON.parse(JSON.stringify(window.CJ_PATCH.ops)) : [],
   base: JSON.stringify((window.CJ_PATCH && window.CJ_PATCH.ops) || []),
   undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1,
-  vue: (() => { try { return localStorage.getItem('cj_vue') || 'vign'; } catch(e){ return 'vign'; } })()
+  vue: (() => { try { return localStorage.getItem('cj_vue') || 'vign'; } catch(e){ return 'vign'; } })(),
+  auto: (() => { try { return localStorage.getItem('cj_auto') !== '0'; } catch(e){ return true; } })()
 };
 const cfg = {
   get gh(){ try { return localStorage.getItem('cj_gh') || ''; } catch(e){ return ''; } },
@@ -516,6 +541,7 @@ function setOp(op, quiet){
   // op parfaitement saine. On préfère ne rien affirmer jusqu'au prochain aperçu.
   S.applique = null;
   refreshStatus();
+  if (window.programmerAuto) programmerAuto();
 }
 
 /* ---------- repérage dans le deck ----------
@@ -1512,10 +1538,13 @@ function diagnostic(err){
     default:  return err.message;
   }
 }
-async function save(){
+async function save(silencieuse){
   viderEnAttente();
   if (!dirty() || S.busy) return;
-  if (!cfg.gh) { alert('Il manque le jeton GitHub. Ouvre Réglages.'); return openCfg(); }
+  if (!cfg.gh) {
+    if (silencieuse) { status('enregistrement auto en attente du jeton', 'err'); return; }
+    alert('Il manque le jeton GitHub. Ouvre Réglages.'); return openCfg();
+  }
   S.busy = true; $('#btnSave').disabled = true; status('enregistrement…');
   try {
     // Ce que l'on s'apprête à envoyer, figé maintenant. Ce qui sera modifié
@@ -1538,6 +1567,10 @@ async function save(){
     // undefined = on n'a pas pu lire le calque distant (fichier > 1 Mo : l'API
     // omet son contenu). C'est justement le cas où il y a le plus à perdre :
     // on le dit, au lieu d'écrire par-dessus en silence.
+    // Une sauvegarde automatique ne pose pas de question : elle se désarme et
+    // rend la main. C'est à l'utilisateur d'arbitrer un conflit, pas au minuteur.
+    if (distant === undefined && silencieuse) { S.busy = false; armerAuto(false, 'calque trop gros pour être vérifié'); refreshStatus(); return; }
+    if (distant && distant !== S.base && silencieuse) { S.busy = false; armerAuto(false, 'le calque a changé sur GitHub'); refreshStatus(); return; }
     if (distant === undefined && !confirm(
         "Le calque dépasse la taille que GitHub renvoie d'un coup : impossible de vérifier"
         + " si quelqu'un a publié depuis que tu as ouvert l'éditeur.\n\n"
@@ -1576,7 +1609,8 @@ async function save(){
   } catch(err){
     S.busy = false;
     status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
-    alert('Enregistrement impossible\n\n' + diagnostic(err));
+    if (!silencieuse) alert('Enregistrement impossible\n\n' + diagnostic(err));
+    else armerAuto(false, 'échec de l\'enregistrement automatique');
     console.error(err);
     // Surtout pas refreshStatus() ici : il réécrivait aussitôt le bandeau en
     // « n modif. non enregistrée » et effaçait la seule trace de l'échec.
@@ -1601,9 +1635,81 @@ function opsDistantes(meta){
 }
 $('#btnSave').onclick = save;
 
+/* ============================================================
+   ENREGISTREMENT AUTOMATIQUE — et l'archive qui va avec.
+
+   Automatique seul serait imprudent : chaque sauvegarde est un commit, et
+   surtout on n'arbitre plus rien. D'où les trois garde-fous : un délai après
+   la DERNIÈRE modification (on n'enregistre pas au milieu d'une phrase), un
+   désarmement immédiat au moindre conflit — c'est à l'utilisateur de trancher,
+   pas au minuteur — et l'archive, qui rend chaque état antérieur récupérable.
+   L'archive n'a rien coûté : c'est l'historique Git de patch.js, déjà tenu.
+   ============================================================ */
+const DELAI_AUTO = 90000;   // 90 s après la dernière modification
+let minuteurAuto = null;
+
+function armerAuto(actif, pourquoi){
+  S.auto = !!actif;
+  try { localStorage.setItem('cj_auto', S.auto ? '1' : '0'); } catch(e){}
+  const c = $('#autoOn'); if (c) c.checked = S.auto;
+  clearTimeout(minuteurAuto); minuteurAuto = null;
+  if (!actif && pourquoi) {
+    status('enregistrement auto désarmé — ' + pourquoi, 'err');
+    setTimeout(refreshStatus, 8000);
+  }
+}
+function programmerAuto(){
+  if (!S.auto || !cfg.gh) return;
+  clearTimeout(minuteurAuto);
+  minuteurAuto = setTimeout(() => { if (dirty() && !S.busy) save(true); }, DELAI_AUTO);
+}
+
+/* ---------- archive des versions ---------- */
+async function ouvrirVersions(){
+  const box = $('#versions');
+  box.innerHTML = '<p class="note">Lecture de l\'historique…</p>';
+  if (!$('#dlgVers').open) $('#dlgVers').showModal();
+  if (!cfg.gh) { box.innerHTML = '<p class="note">Il faut le jeton GitHub pour lire l\'archive. Ouvre Réglages.</p>'; return; }
+  try {
+    const liste = await gh('commits?path=' + FILE + '&per_page=25');
+    if (!liste.length) { box.innerHTML = '<p class="note">Aucune version enregistrée pour l\'instant.</p>'; return; }
+    box.innerHTML = '';
+    liste.forEach(c => {
+      const d = document.createElement('div'); d.className = 'vers';
+      const q = new Date(c.commit.author.date);
+      const t = document.createElement('div');
+      const b1 = document.createElement('b');
+      b1.textContent = q.toLocaleString('fr-FR', {dateStyle:'medium', timeStyle:'short'});
+      const sp = document.createElement('span');
+      sp.textContent = (c.commit.message || '').split('\n')[0].slice(0,90);
+      t.append(b1, sp);
+      const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'restaurer';
+      b.onclick = () => restaurerVersion(c.sha, q);
+      d.append(t, b); box.appendChild(d);
+    });
+  } catch(err){
+    box.textContent = 'Impossible de lire l\'archive : ' + (err.message || err);
+  }
+}
+async function restaurerVersion(sha, quand){
+  if (!confirm('Revenir à la version du ' + quand.toLocaleString('fr-FR')
+      + ' ?\n\nL\'état actuel reste récupérable par ↶, mais il sera remplacé à l\'écran.')) return;
+  try {
+    const c = await gh('contents/' + FILE + '?ref=' + sha);
+    const ops = opsDistantes(c);
+    if (!ops) throw new Error('version illisible');
+    viderEnAttente(); snapshot();
+    S.ops = JSON.parse(ops);
+    $('#dlgVers').close();
+    loadDeck(); refreshStatus();
+    status('version du ' + quand.toLocaleDateString('fr-FR') + ' restaurée — pense à enregistrer', 'dirty');
+  } catch(err){ alert('Restauration impossible\n\n' + (err.message || err)); }
+}
+
 /* ---------- réglages ---------- */
 function openCfg(){
   $('#ghTok').value = cfg.gh;
+  $('#autoOn').checked = S.auto;
   // Le nom du dépôt était figé en dur, et ne suivait plus REPO : on envoyait
   // l'utilisateur créer un jeton portant sur un dépôt qui n'est plus le bon.
   const r = $('#cfgRepo'); if (r) r.textContent = REPO.split('/')[1];
@@ -1611,6 +1717,9 @@ function openCfg(){
 }
 $('#btnCfg').onclick = openCfg;
 $('#cfgClose').onclick = () => $('#cfg').close();
+$('#btnVers').onclick = ouvrirVersions;
+$('#versClose').onclick = () => $('#dlgVers').close();
+$('#autoOn').onchange = e => armerAuto(e.target.checked);
 $('#cfgSave').onclick = () => { cfg.gh = $('#ghTok').value.trim(); $('#cfg').close(); refreshStatus(); };
 /* Claude vit dans sa propre fenêtre (claude.ai refuse d'être intégré : x-frame-options).
    Ce bouton lui donne le contexte : où tu en es, et les règles du dépôt. */

@@ -1872,6 +1872,15 @@ armerAuto(S.auto);
    sans passer par le cache. */
 (async function verite(){
   try {
+    /* On attend que l'aperçu ait fini son PREMIER chargement. Sans cette
+       attente, loadDeck() rechargeait l'iframe en plein chargement : le
+       document restait vide, l'éditeur s'ouvrait sur zéro slide, et tout le
+       travail semblait avoir disparu. */
+    await new Promise(res => {
+      if (S.doc && S.doc.querySelector('section.slide')) return res();
+      frame.addEventListener('load', res, { once:true });
+      setTimeout(res, 12000);                       // jamais bloqué indéfiniment
+    });
     const t = await fetch('patch.js?t=' + Date.now(), { cache:'no-store' }).then(r => r.ok ? r.text() : null);
     if (!t) return;
     const d = t.indexOf('=', t.indexOf('window.CJ_PATCH')), f = t.lastIndexOf(';');

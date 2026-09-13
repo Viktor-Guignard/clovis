@@ -3,13 +3,19 @@
    Ne pas éditer à la main sauf si tu sais ce que tu fais. */
 window.CJ_PATCH = {
  "version": 1,
- "updated": "2026-09-13T17:13:20.522Z",
+ "updated": "2026-09-13T17:41:49.446Z",
  "ops": [
   {
    "t": "text",
    "slide": "Couverture",
    "path": "",
    "html": "\n  \n  \u003cdiv class=\"cover\"\u003e\n    \u003cspan class=\"eyebrow r\"\u003e\u003cspan class=\"dot\"\u003e\u003c/span\u003eProjet professionnel · TS2 · 2026 — 2027\u003c/span\u003e\n    \u003ch1 class=\"titre r d1\"\u003eCONTRE\u003cbr\u003eCHAMP\u003c/h1\u003e\n    \u003cdiv class=\"regle r d2\"\u003e\u003c/div\u003e\n    \u003cp class=\"lead r d2\"\u003eArts martiaux et cinéma&nbsp;:\u003cbr\u003eun siècle d’\u003cem\u003einfluences croisées\u003c/em\u003e.\u003c/p\u003e\n    \u003cp class=\"note r d3\" style=\"margin-top:clamp(18px,3vh,34px)\"\u003eEssai illustré · 208 pages · Clovis\u003c/p\u003e\n  \u003c/div\u003e\n"
+  },
+  {
+   "t": "text",
+   "slide": "Fin",
+   "path": "",
+   "html": "\n  \n  \u003cdiv class=\"cover\"\u003e\n    \u003cspan class=\"eyebrow r\"\u003e\u003cspan class=\"dot\"\u003e\u003c/span\u003eMerci\u003c/span\u003e\n    \u003ch1 class=\"titre r d1\" style=\"font-size:clamp(40px,7vw,96px)\"\u003eDES QUESTIONS\u003cbr\u003e?\u003c/h1\u003e\n    \u003cdiv class=\"regle r d2\"\u003e\u003c/div\u003e\n    \u003cp class=\"lead r d3\" style=\"max-width:46ch\"\u003e\n      Prochaine étape&nbsp;: le \u003cem\u003echemin de fer folioté\u003c/em\u003e et les premières doubles pages types.\n    \u003c/p\u003e\n    \u003cp class=\"note r d4\" style=\"margin-top:clamp(20px,3vh,36px)\"\u003eCONTRE-CHAMP · Projet professionnel TS2 · Clovis · 2026 — 2027\u003c/p\u003e\n  \u003c/div\u003e\n"
   }
  ]
 };

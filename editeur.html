@@ -726,7 +726,11 @@ function setupEdit(){
     if (html) {
       const t = S.doc.createElement('template');
       t.innerHTML = html;
+      // Déballer un <script> garderait son TEXTE : coller depuis une page web
+      // déposait du code en clair au milieu du paragraphe. Inerte, mais visible.
+      const JETER = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TITLE','HEAD']);
       const deballe = n => {
+        if (JETER.has(n.tagName)) { n.remove(); return; }
         [...n.children].forEach(deballe);
         if (!COLLE_OK.has(n.tagName)) { n.replaceWith(...n.childNodes); return; }
         [...n.attributes].forEach(a => {
@@ -735,6 +739,8 @@ function setupEdit(){
           n.removeAttribute(a.name);
         });
         if (n.tagName === 'SPAN' && !n.attributes.length) n.replaceWith(...n.childNodes);
+        // un lien dont l'adresse a été refusée n'est plus un lien
+        else if (n.tagName === 'A' && !n.getAttribute('href')) n.replaceWith(...n.childNodes);
       };
       [...t.content.children].forEach(deballe);
       frag = t.content;

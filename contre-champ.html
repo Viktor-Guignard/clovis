@@ -226,9 +226,12 @@ body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
   html,body{height:auto;overflow:visible;background:#fff}
   body::after,footer,.nav,#cursor,#invite{display:none!important}
   main#stage{height:auto;overflow:visible}
+  /* Sans print-color-adjust, le navigateur n'imprime pas les fonds : les sept
+     slides sombres seraient sorties blanc sur blanc, illisibles. */
   section.slide{position:relative;inset:auto;opacity:1!important;visibility:visible!important;
     display:flex!important;height:100vh;overflow:hidden;break-after:page;page-break-after:always;
-    transition:none!important;animation:none!important}
+    transition:none!important;animation:none!important;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact}
   section.slide *{animation:none!important;transition:none!important}
   section.slide:last-child{break-after:auto;page-break-after:auto}
   section.slide.skip{display:none!important}   /* une masquée reste hors du PDF */

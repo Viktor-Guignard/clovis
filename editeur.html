@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CONTRE-CHAMP — Éditeur</title>
+<title>Éditeur · CONTRE-CHAMP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23121212'/%3E%3Crect x='5' y='6' width='9' height='20' fill='%23B9893F'/%3E%3Crect x='17' y='6' width='10' height='9' fill='%23F2EEE4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -27,7 +28,7 @@ body{font-family:var(--body);background:var(--ink);color:var(--bone);font-size:1
 header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 12px;
   min-height:52px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
 @media(max-width:1320px){ button.btn{padding:7px 10px;font-size:12px} header{gap:6px} }
-@media(max-width:1000px){ .brand{font-size:16px} .status{min-width:0} }
+@media(max-width:1000px){ .brand{font-size:16px;text-decoration:none;color:inherit} .status{min-width:0} }
 .brand{font-family:var(--display);font-size:19px;letter-spacing:.5px;line-height:1}
 .brand span{color:var(--or)}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
@@ -76,6 +77,38 @@ section.col{min-width:0;min-height:0;display:flex;flex-direction:column}
 .item .act:hover{color:var(--or);background:var(--panel)}
 .item .act[data-a="del"]{margin-left:5px}
 .item .act[data-a="del"]:hover{color:#E4573D;background:rgba(228,87,61,.12)}
+
+/* ---------- trieuse de diapositives ----------
+   Le rail listait des noms : reconnaître une slide supposait de se rappeler
+   comment on l'avait appelée. Il montre maintenant ce qu'elle contient. */
+body.vign{--rail:250px}
+@media (max-width:1320px){ body.vign{--rail:230px} }
+@media (max-width:980px){  body.vign{--rail:206px} }
+.vign #list{padding:8px}
+.vign .item{display:block;padding:0;margin-bottom:10px;border-radius:6px;position:relative}
+.vign .item .cadre{position:relative;border:1px solid var(--line);border-radius:5px;overflow:hidden;
+  background:var(--paper);aspect-ratio:16/10}
+.vign .item.cur .cadre{border-color:var(--or);box-shadow:0 0 0 1px var(--or)}
+.vign .item:hover .cadre{border-color:var(--grey)}
+.vign .item.hidden .cadre{opacity:.42}
+.vign .item.hidden .cadre::after{content:"masquée";position:absolute;inset:auto 0 0 0;text-align:center;
+  font-family:var(--ui);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  background:rgba(18,18,18,.78);color:var(--bone);padding:3px 0}
+.vign .item .pied{display:flex;align-items:center;gap:6px;padding:5px 2px 0}
+.vign .item .nm{font-size:11.5px}
+.vign .item.drop{border-top:0}
+.vign .item.drop .cadre{box-shadow:0 -3px 0 var(--or)}
+/* les actions passent en surimpression : elles ne volent plus de place à l'image */
+.vign .item .act{position:absolute;top:4px;background:rgba(18,18,18,.74);border-radius:4px}
+.vign .item .act[data-a="skip"]{right:58px}
+.vign .item .act[data-a="dup"]{right:31px}
+.vign .item .act[data-a="del"]{right:4px;margin-left:0}
+.vign .item:hover .act,.vign .item.cur .act{display:grid}
+.vign .chap{padding:14px 4px 6px}
+/* la vignette : une boîte de 1600x1000 ramenée à la largeur du rail */
+.mini{transform-origin:top left;pointer-events:none;position:absolute;top:0;left:0}
+.mini-vide{position:absolute;inset:0;display:grid;place-items:center;color:var(--grey);
+  font-family:var(--ui);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .nm[contenteditable="true"]{background:var(--ink);outline:1px solid var(--or);border-radius:3px;padding:1px 4px;text-overflow:clip;cursor:text}
 .item.masque{display:none}
 .chap.vide{display:none}
@@ -211,7 +244,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 <body>
 
 <header>
-  <div class="brand">CONTRE<span>-CHAMP</span></div>
+  <a class="brand" href="index.html" title="Retour à l'accueil">CONTRE<span>-CHAMP</span></a>
   <div class="seg">
     <button id="mEdit" class="on">Édition</button>
     <button id="mView">Aperçu</button>
@@ -237,6 +270,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <section class="col" id="rail">
     <div class="railhead">
       <h2>Slides</h2>
+      <button aria-label="Basculer entre vignettes et liste" class="iconbtn" id="btnVue" title="Basculer entre vignettes et liste">▦</button>
       <button aria-label="Ajouter une slide après la slide courante" class="iconbtn" id="btnAdd" title="Ajouter une slide après la slide courante">+</button>
     </div>
     <div class="search">
@@ -413,7 +447,8 @@ const $ = s => document.querySelector(s);
 const S = {
   ops:  (window.CJ_PATCH && window.CJ_PATCH.ops) ? JSON.parse(JSON.stringify(window.CJ_PATCH.ops)) : [],
   base: JSON.stringify((window.CJ_PATCH && window.CJ_PATCH.ops) || []),
-  undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1
+  undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1,
+  vue: (() => { try { return localStorage.getItem('cj_vue') || 'vign'; } catch(e){ return 'vign'; } })()
 };
 const cfg = {
   get gh(){ try { return localStorage.getItem('cj_gh') || ''; } catch(e){ return ''; } },
@@ -536,6 +571,10 @@ function viderEnAttente(el){
   blocs.forEach(consignerSaisie);
 }
 
+document.body.classList.toggle('vign', S.vue === 'vign');
+$('#btnVue').textContent = S.vue === 'vign' ? '☰' : '▦';
+$('#btnVue').title = S.vue === 'vign' ? 'Passer en liste' : 'Passer en vignettes';
+
 function loadDeck(){
   viderEnAttente();
   $('#veil').classList.remove('gone');
@@ -570,6 +609,7 @@ frame.addEventListener('load', () => {
   const mortes = S.applique.filter(r => r && !r.ok).length;
   if (mortes) console.info(mortes + ' modification(s) sans effet — voir le bouton Modifications');
   if (S.mode === 'edit') setupEdit();
+  feuilleMini = null; feuilleMiniTexte = null;   // le deck vient d'être rechargé : sa feuille aussi
   buildRail();
   showSlide(Math.min(S.cur, sections().length-1));
   fitFrame();
@@ -742,6 +782,94 @@ addEventListener('resize', fitFrame);
 /* Numérotation de PRÉSENTATION : une slide masquée ne porte pas de folio,
    et ne décale pas celui des suivantes. Sans quoi l'éditeur et le diaporama
    annonçaient deux numéros différents pour la même slide. */
+/* ============================================================
+   VIGNETTES — de vraies miniatures des slides dans le rail.
+
+   Le deck vit dans une iframe ; ses styles ne peuvent pas être versés tels
+   quels dans le document de l'éditeur sans le repeindre entièrement. Chaque
+   vignette est donc un shadow root, qui isole. Une SEULE feuille de style
+   construite une fois est adoptée par les 52 : un seul travail d'analyse.
+
+   Deux réécritures sont nécessaires sur cette feuille :
+   - « :root » ne désigne rien dans un shadow root : il devient « :host » ;
+   - les unités vw et vh se mesureraient sur la fenêtre de l'éditeur et non
+     sur la scène du deck. La scène fait 1600x1000 : 1vw vaut donc 16px et
+     1vh vaut 10px. On les fige, sinon les corps de texte seraient faux.
+   ============================================================ */
+let feuilleMini = null, feuilleMiniTexte = null, observateurMini = null;
+
+function cssDeck(){
+  try { return [...S.doc.querySelectorAll('style')].map(x => x.textContent).join('\n'); }
+  catch(e){ return ''; }
+}
+function construireFeuille(){
+  const brut = cssDeck(); if (!brut) return null;
+  const fige = brut
+    .replace(/:root\b/g, ':host')
+    .replace(/(\d*\.?\d+)vw\b/g, (m,n) => (parseFloat(n)*16).toFixed(2) + 'px')
+    .replace(/(\d*\.?\d+)dvh\b/g, (m,n) => (parseFloat(n)*10).toFixed(2) + 'px')
+    .replace(/(\d*\.?\d+)vh\b/g, (m,n) => (parseFloat(n)*10).toFixed(2) + 'px')
+    + `
+    :host{display:block;width:1600px;height:1000px;background:var(--paper);overflow:hidden}
+    section.slide{opacity:1!important;visibility:visible!important;display:flex!important;
+      overflow:hidden!important;transition:none!important;animation:none!important}
+    section.slide *{animation:none!important;transition:none!important}`;
+  feuilleMiniTexte = fige;
+  if (typeof CSSStyleSheet === 'undefined' || !('replaceSync' in CSSStyleSheet.prototype)) return null;
+  try {
+    const f = new CSSStyleSheet(); f.replaceSync(fige);
+    // Les requêtes de média se mesureraient sur la fenêtre de l'éditeur :
+    // une fenêtre étroite restylerait des vignettes larges de 1600 px.
+    for (let i = f.cssRules.length - 1; i >= 0; i--) {
+      const r = f.cssRules[i];
+      if (r.type === CSSRule.MEDIA_RULE && /max-width/.test(r.conditionText || '')) f.deleteRule(i);
+    }
+    return f;
+  } catch(e){ console.warn('vignettes : feuille non adoptable', e); return null; }
+}
+
+function peindreVignette(cadre){
+  if (cadre.dataset.peinte) return;
+  const sec = sections()[+cadre.closest('.item').dataset.i];
+  if (!sec) return;
+  if (feuilleMini === null && feuilleMiniTexte === null) feuilleMini = construireFeuille();
+  cadre.dataset.peinte = '1';
+  const boite = document.createElement('div');
+  boite.className = 'mini';
+  const ombre = boite.attachShadow({ mode:'open' });
+  if (feuilleMini) ombre.adoptedStyleSheets = [feuilleMini];
+  else if (feuilleMiniTexte) { const st = document.createElement('style'); st.textContent = feuilleMiniTexte; ombre.appendChild(st); }
+  const clone = propre(sec);
+  clone.classList.remove('skip', 'active');   // une slide masquée doit rester visible ICI
+  ombre.appendChild(clone);
+  const vide = cadre.querySelector('.mini-vide'); if (vide) vide.remove();
+  cadre.appendChild(boite);
+  redimensionnerVignette(cadre);
+}
+function redimensionnerVignette(cadre){
+  const b = cadre.querySelector('.mini'); if (!b) return;
+  b.style.transform = 'scale(' + (cadre.clientWidth / 1600) + ')';
+}
+/* Une seule instance d'observateur : on ne peint que ce qui approche de l'écran.
+   Peindre 52 slides d'un coup bloquait le fil pendant une seconde. */
+function observerVignettes(){
+  if (observateurMini) observateurMini.disconnect();
+  observateurMini = new IntersectionObserver(entrees => {
+    entrees.forEach(e => { if (e.isIntersecting) { peindreVignette(e.target); observateurMini.unobserve(e.target); } });
+  }, { root: $('#list'), rootMargin: '400px 0px' });
+  $('#list').querySelectorAll('.cadre').forEach(c => observateurMini.observe(c));
+}
+addEventListener('resize', () => { if (S.vue === 'vign') $('#list').querySelectorAll('.cadre').forEach(redimensionnerVignette); });
+
+function basculerVue(v){
+  S.vue = v || (S.vue === 'vign' ? 'liste' : 'vign');
+  document.body.classList.toggle('vign', S.vue === 'vign');
+  $('#btnVue').textContent = S.vue === 'vign' ? '☰' : '▦';
+  $('#btnVue').title = S.vue === 'vign' ? 'Passer en liste' : 'Passer en vignettes';
+  try { localStorage.setItem('cj_vue', S.vue); } catch(e){}
+  buildRail(); showSlide(S.cur);
+}
+
 function buildRail(){
   const list = $('#list'); list.innerHTML = '';
   list.setAttribute('role','listbox');
@@ -762,7 +890,19 @@ function buildRail(){
     const nm = document.createElement('span');
     nm.className = 'nm'; nm.title = 'Double-clic pour renommer';
     nm.textContent = s.dataset.lbl || 'sans titre';   // textContent : aucun échappement à faire
-    it.append(num, nm);
+
+    if (S.vue === 'vign') {
+      // La miniature n'est peinte qu'à l'approche de l'écran : d'ici là, une
+      // case vide qui garde la place et ne fait pas sauter le défilement.
+      const cadre = document.createElement('div'); cadre.className = 'cadre';
+      const attente = document.createElement('div'); attente.className = 'mini-vide'; attente.textContent = '…';
+      cadre.appendChild(attente);
+      const pied = document.createElement('div'); pied.className = 'pied';
+      pied.append(num, nm);
+      it.append(cadre, pied);
+    } else {
+      it.append(num, nm);
+    }
 
     [['skip', masquee ? '◌' : '◉', masquee ? 'Réafficher dans la présentation' : 'Masquer de la présentation'],
      ['dup',  '⧉', 'Dupliquer'],
@@ -775,6 +915,7 @@ function buildRail(){
     list.appendChild(it);
   });
   filtrer();
+  if (S.vue === 'vign') observerVignettes();
 }
 
 /* ---------- filtre du rail ---------- */
@@ -903,6 +1044,7 @@ const TPL = (lbl, chap) => `<section class="slide" data-chapter="${chap}" data-l
   <h2 class="title r d1">NOUVELLE SLIDE</h2>
   <p class="note r d2">Clique ce texte pour l'écrire. Demande à Claude si tu veux une mise en page particulière.</p>
 </section>`;
+$('#btnVue').onclick = () => basculerVue();
 $('#btnAdd').onclick = () => {
   // Après avoir tout supprimé, curSec() est undefined et le bouton ne faisait
   // plus rien : le deck devenait irrécupérable autrement que par ↶.

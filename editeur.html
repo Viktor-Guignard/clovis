@@ -27,9 +27,12 @@ body{font-family:var(--body);background:var(--ink);color:var(--bone);font-size:1
    à disparaître. Rien ne peut plus être coupé, quelle que soit la largeur. */
 header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 12px;
   min-height:52px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
-@media(max-width:1320px){ button.btn{padding:7px 10px;font-size:12px} header{gap:6px} }
-@media(max-width:1000px){ .brand{font-size:16px;text-decoration:none;color:inherit} .status{min-width:0} }
-.brand{font-family:var(--display);font-size:19px;letter-spacing:.5px;line-height:1}
+/* 1500 et non 1320 : avec quinze commandes, l'en-tête réclamait 1485 px et
+   se repliait sur deux lignes dès 1440 — la taille d'un MacBook Air —
+   coûtant 45 px de surface d'édition pour rien. */
+@media(max-width:1500px){ button.btn{padding:7px 9px;font-size:12px} header{gap:6px} }
+@media(max-width:1000px){ .brand{font-size:16px} .status{min-width:0} }
+.brand{font-family:var(--display);font-size:19px;letter-spacing:.5px;line-height:1;text-decoration:none;color:inherit}
 .brand span{color:var(--or)}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{background:none;border:0;color:var(--grey);font-family:var(--ui);font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer}
@@ -277,12 +280,12 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   <button class="btn" id="btnRR" title="Rechercher et remplacer dans toutes les slides (⌘R)">Remplacer</button>
   <button class="btn" id="btnCode" title="Éditer le HTML de la slide courante">Code</button>
   <button class="btn" id="btnOps" title="Voir et révoquer les modifications en attente">Modifications<span class="count zero" id="opsN">0</span></button>
-  <div class="paire">
   <button class="btn" id="btnVers" title="Revenir à une version antérieure">Versions</button>
+  <div class="paire">
     <button aria-label="Annuler (⌘Z)" class="btn" id="btnUndo" title="Annuler (⌘Z)">↶</button>
     <button aria-label="Rétablir (⌘⇧Z)" class="btn" id="btnRedo" title="Rétablir (⌘⇧Z)">↷</button>
   </div>
-  <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Copier le contexte</button>
+  <button class="btn" id="btnCtx" title="Copie où tu en es (slide, chapitre, règles du dépôt) pour le coller dans la fenêtre Claude">Contexte</button>
   <button class="btn" id="btnCfg">Réglages</button>
   <button class="btn prim" id="btnSave" disabled>Enregistrer</button>
   <button class="btn" id="btnHelp" title="Raccourcis et mode d'emploi" aria-label="Aide">?</button>
@@ -821,7 +824,9 @@ function setupEdit(){
       // s'en charge, avec son assainisseur. Le relayer ici le rendait
       // inatteignable au geste normal, puisqu'un curseur simple n'est pas
       // une sélection — donc la garde ci-dessous ne se déclenchait jamais.
-      if (k === 'v' && e.target && e.target.isContentEditable) return;
+      // Même règle pour c et x : le curseur posé dans un texte, sans rien de
+      // sélectionné, ⌘C copiait la SLIDE entière et écrasait le presse-papier.
+      if (e.target && e.target.isContentEditable) return;
       const sl = S.doc.getSelection();
       if (sl && !sl.isCollapsed && String(sl).trim()) return;
     } else if (['s','r','f','z'].indexOf(k) < 0) return;
@@ -935,7 +940,9 @@ addEventListener('resize', fitFrame);
 let feuilleMini = null, feuilleMiniTexte = null, observateurMini = null;
 
 function cssDeck(){
-  try { return [...S.doc.querySelectorAll('style')].map(x => x.textContent).join('\n'); }
+  // Pas #cj-edit-css : c'est la feuille de l'ÉDITEUR, injectée dans l'iframe.
+  // Les vignettes n'étaient pas identiques entre Édition et Aperçu.
+  try { return [...S.doc.querySelectorAll('style:not(#cj-edit-css)')].map(x => x.textContent).join('\n'); }
   catch(e){ return ''; }
 }
 function construireFeuille(){
@@ -1647,11 +1654,11 @@ async function save(silencieuse){
     // on le dit, au lieu d'écrire par-dessus en silence.
     // Une sauvegarde automatique ne pose pas de question : elle se désarme et
     // rend la main. C'est à l'utilisateur d'arbitrer un conflit, pas au minuteur.
-    if (distant === undefined && silencieuse) { S.busy = false; armerAuto(false, 'calque trop gros pour être vérifié'); refreshStatus(); return; }
-    if (distant && distant !== S.base && silencieuse) { S.busy = false; armerAuto(false, 'le calque a changé sur GitHub'); refreshStatus(); return; }
+    if (distant === undefined && silencieuse) { S.busy = false; armerAuto(false, 'calque trop gros pour être vérifié'); return; }
+    if (distant && distant !== S.base && silencieuse) { S.busy = false; armerAuto(false, 'le calque a changé sur GitHub'); return; }
     // null = on n'a pas su relire le calque distant. En manuel c'est un risque
     // assumé ; en automatique, écrire à l'aveugle ne l'est pas.
-    if (distant === null && silencieuse) { S.busy = false; armerAuto(false, 'calque distant illisible', true); refreshStatus(); return; }
+    if (distant === null && silencieuse) { S.busy = false; armerAuto(false, 'calque distant illisible', true); return; }
     if (distant === undefined && !confirm(
         "Le calque dépasse la taille que GitHub renvoie d'un coup : impossible de vérifier"
         + " si quelqu'un a publié depuis que tu as ouvert l'éditeur.\n\n"
@@ -1747,8 +1754,11 @@ function armerAuto(actif, pourquoi, passager){
   const c = $('#autoOn'); if (c) c.checked = S.auto;
   clearTimeout(minuteurAuto); minuteurAuto = null;
   if (!actif && pourquoi) {
+    // Les appelants enchaînaient refreshStatus(), qui réécrivait le bandeau
+    // aussitôt : l'automatique s'arrêtait sans que rien ne l'annonce.
+    $('#btnSave').disabled = !dirty();
     status('enregistrement auto désarmé — ' + pourquoi, 'err');
-    setTimeout(refreshStatus, 8000);
+    setTimeout(refreshStatus, 9000);
   }
 }
 function programmerAuto(){

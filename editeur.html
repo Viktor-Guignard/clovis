@@ -362,6 +362,9 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <tr><td>Clic sur une image</td><td>la sélectionner : poignées pour l'agrandir, ⟳ pour la remplacer</td></tr>
     <tr><td>Double-clic sur un nom</td><td>renommer la slide</td></tr>
     <tr><td>Glisser dans la liste</td><td>réordonner</td></tr>
+    <tr><td>▦</td><td>basculer entre vignettes et liste</td></tr>
+    <tr><td>Bouton +</td><td>nouvelle slide, à partir d'un gabarit du deck</td></tr>
+    <tr><td>⌘C / ⌘X / ⌘V</td><td>copier, couper, coller un bloc — ou une slide si le rail a le focus. Sur des mots sélectionnés, c'est le copier-coller normal du navigateur.</td></tr>
     <tr><td><b>◉</b> / <b>◌</b></td><td>masquer une slide sans la supprimer</td></tr>
   </table>
   <p style="margin-top:16px">Pour une refonte, une réécriture ou une nouvelle slide : <b>Copier le contexte</b>, puis colle dans la fenêtre Claude.</p>
@@ -681,6 +684,44 @@ function setupEdit(){
     if (obj) { deselectionnerImage(); obj.classList.add('cj-choisi'); blocActif = obj; majBarre(); }
     else { blocActif = null; majBarre(); }
   });
+  /* Coller depuis Word ou une page web injectait son balisage tel quel —
+     <span style="font-family:Calibri;mso-…">, des <div>, des couleurs — droit
+     dans l'op, donc dans le deck publié. propre() ne retire que les marqueurs
+     de l'éditeur, jamais le balisage étranger. On ne garde que l'habillage
+     que la barre sait elle-même poser. */
+  const COLLE_OK = new Set(['B','STRONG','I','EM','U','BR','A','SUP','SUB','SPAN']);
+  S.doc.addEventListener('paste', e => {
+    const cible = e.target.closest && e.target.closest('[data-cj-ed]');
+    if (!cible) return;
+    e.preventDefault();
+    const dt = e.clipboardData; if (!dt) return;
+    const html = dt.getData('text/html');
+    let frag;
+    if (html) {
+      const t = S.doc.createElement('template');
+      t.innerHTML = html;
+      const deballe = n => {
+        [...n.children].forEach(deballe);
+        if (!COLLE_OK.has(n.tagName)) { n.replaceWith(...n.childNodes); return; }
+        [...n.attributes].forEach(a => {
+          // seul href survit, et seulement s'il mène quelque part de sûr
+          if (a.name === 'href' && n.tagName === 'A' && /^(https?:|mailto:|#)/i.test(a.value)) return;
+          n.removeAttribute(a.name);
+        });
+        if (n.tagName === 'SPAN' && !n.attributes.length) n.replaceWith(...n.childNodes);
+      };
+      [...t.content.children].forEach(deballe);
+      frag = t.content;
+    } else {
+      frag = S.doc.createDocumentFragment();
+      frag.appendChild(S.doc.createTextNode(dt.getData('text/plain') || ''));
+    }
+    const sel = S.doc.getSelection(); if (!sel || !sel.rangeCount) return;
+    const r = sel.getRangeAt(0); r.deleteContents(); r.insertNode(frag);
+    sel.collapseToEnd();
+    programmerSaisie(cible);
+  });
+
   S.doc.addEventListener('scroll', () => { placerBarre(); placerCadre(); placerPanneau(); }, true);
 
   /* Les raccourcis sont écoutés par le document parent, et une touche pressée
@@ -706,7 +747,12 @@ function setupEdit(){
       if (b && !b.disabled) b.click();
       return;
     }
-    if (['s','r','f','z'].indexOf(k) < 0) return;
+    // c/x/v ne sont relayés que si RIEN n'est sélectionné : sur des mots
+    // sélectionnés, copier des mots reste le travail du navigateur.
+    if ('cxv'.includes(k)) {
+      const sl = S.doc.getSelection();
+      if (sl && !sl.isCollapsed && String(sl).trim()) return;
+    } else if (['s','r','f','z'].indexOf(k) < 0) return;
     if (k === 'r' && e.shiftKey) return;                       // ⌘⇧R : rechargement, au navigateur
     // Seul ⌘Z revient au navigateur dans un bloc éditable : son annulation de
     // frappe est plus fine que la nôtre. ⌘⇧Z, lui, n'a pas d'équivalent utile
@@ -1328,10 +1374,91 @@ addEventListener('keydown', e => {
   if ((e.metaKey||e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault(); (e.shiftKey ? $('#btnRedo') : $('#btnUndo')).click();
   }
+  /* ⌘C, ⌘X, ⌘V. Sur une SÉLECTION DE TEXTE on ne touche à rien : c'est au
+     navigateur de copier des mots. C'est quand rien n'est sélectionné que le
+     geste porte sur le bloc — ou, si le rail a le focus, sur la slide. */
+  if ((e.metaKey||e.ctrlKey) && 'cxv'.includes((e.key||'').toLowerCase())) {
+    const k = e.key.toLowerCase();
+    const surRail = !!(e.target.closest && e.target.closest('#list .item'));
+    let selTexte = false;
+    try { const sl = S.doc.getSelection(); selTexte = sl && !sl.isCollapsed && String(sl).trim(); } catch(_){}
+    if (!selTexte || surRail) {
+      if (k === 'c') { e.preventDefault(); surRail ? copierSlide(sections()[+e.target.closest('.item').dataset.i]) : (blocActif ? copierBloc(false) : copierSlide()); }
+      if (k === 'x' && !surRail && blocActif) { e.preventDefault(); copierBloc(true); }
+      if (k === 'v') { e.preventDefault(); coller(); }
+    }
+  }
   if ((e.metaKey||e.ctrlKey) && e.key === 'r') { e.preventDefault(); ouvrirRR(); }
   if ((e.metaKey||e.ctrlKey) && e.key === 'f') { e.preventDefault(); $('#q').focus(); $('#q').select(); }
   if (e.key === 'Escape' && $('#q').value) { $('#q').value = ''; filtrer(); }
 });
+
+/* ============================================================
+   PRESSE-PAPIER — copier un bloc d'une slide et le coller dans une autre,
+   copier une slide entière et la reposer ailleurs. Aucun nouveau type d'op :
+   un bloc collé, c'est une op « text » sur le parent ; une slide collée,
+   c'est une op « add ». Le vocabulaire existant suffisait.
+   ============================================================ */
+let presse = null;   // { quoi:'bloc'|'slide', html, nom }
+
+function copierBloc(couper){
+  if (!blocActif || !blocActif.isConnected) return false;
+  const u = unite(blocActif);
+  presse = { quoi:'bloc', html: propre(u).outerHTML, nom: (u.textContent||'').trim().slice(0,32) || u.tagName.toLowerCase() };
+  if (couper) {
+    const par = u.parentElement, voisin = u.nextElementSibling || u.previousElementSibling, sec = u.closest('section.slide');
+    const avant = par.innerHTML;
+    u.remove();
+    if (!enregistrerParent(voisin || par)) { par.innerHTML = avant; status('coupe non enregistrée — annulée', 'err'); return false; }
+    delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed'); armEditables(sec);
+    blocActif = null; majBarre();
+  }
+  // On copie l'UNITÉ — la même que celle sur laquelle agissent ↑ ↓ ⧉ ✕ — et
+  // non le seul mot cliqué. Autant l'annoncer : « bloc copié » ne disait pas
+  // lequel, et sur une couverture l'unité est toute la composition.
+  status((couper ? 'coupé' : 'copié') + ' : « ' + presse.nom + ' » — ⌘V pour coller', 'dirty');
+  setTimeout(refreshStatus, 2600);
+  return true;
+}
+function copierSlide(sec){
+  sec = sec || curSec(); if (!sec) return false;
+  const c = propre(sec); c.classList.remove('active');
+  presse = { quoi:'slide', html: c.outerHTML, nom: sec.dataset.lbl || 'slide' };
+  status('slide « ' + presse.nom + ' » copiée — ⌘V pour la coller', 'dirty');
+  setTimeout(refreshStatus, 2600);
+  return true;
+}
+function coller(){
+  if (!presse) { status('rien à coller', 'err'); setTimeout(refreshStatus, 2000); return; }
+  if (presse.quoi === 'slide') {
+    const apres = curSec();
+    const t = S.doc.createElement('template');
+    t.innerHTML = presse.html.trim();
+    const nu = t.content.firstElementChild; if (!nu) return;
+    nu.dataset.lbl = uniqLbl(presse.nom);        // deux slides ne peuvent pas porter le même nom
+    nu.classList.remove('active');
+    setOp(apres ? { t:'add', after: apres.dataset.lbl, html: nu.outerHTML } : { t:'add', html: nu.outerHTML });
+    if (apres) apres.after(nu); else (S.doc.querySelector('main') || S.doc.body).appendChild(nu);
+    buildRail(); showSlide(sections().indexOf(nu));
+    status('slide collée', 'dirty'); setTimeout(refreshStatus, 2600);
+    return;
+  }
+  // un bloc : après le bloc actif, sinon à la fin de la slide courante
+  const sec = curSec(); if (!sec) return;
+  const ancre = (blocActif && blocActif.isConnected) ? unite(blocActif) : null;
+  const t = S.doc.createElement('template'); t.innerHTML = presse.html.trim();
+  const nu = t.content.firstElementChild; if (!nu) return;
+  const par = ancre ? ancre.parentElement : sec;
+  const avant = par.innerHTML;
+  if (ancre) ancre.after(nu); else sec.appendChild(nu);
+  if (!enregistrerParent(nu)) {
+    par.innerHTML = avant;
+    status('collage non enregistré — annulé', 'err'); setTimeout(refreshStatus, 3000); return;
+  }
+  delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed'); armEditables(sec);
+  blocActif = null; majBarre();
+  status('bloc collé', 'dirty'); setTimeout(refreshStatus, 2600);
+}
 
 /* ---------- enregistrement sur GitHub ---------- */
 function patchFile(){

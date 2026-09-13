@@ -1413,9 +1413,13 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   }
   function annulerSaisie(){ saisie = ''; clearTimeout(minuteurSaisie); montrerSaisie(); }
   window.__annulerSaisie = annulerSaisie;   // goSlide, défini plus haut, doit pouvoir l'appeler
+  const dansEditeur = (() => { try { return window.top !== window.self; } catch(e){ return true; } })();
   addEventListener('keydown', e => {
     if (e.target.isContentEditable) return;          // ne pas voler les flèches à l'éditeur
     if (e.metaKey || e.ctrlKey || e.altKey) return;  // ⌘← ⌘F et compagnie appartiennent au navigateur
+    // Dans l'aperçu de l'éditeur, un « z » ou un chiffre après un clic sur une
+    // image ferait sauter l'iframe dans le dos du parent, dont S.cur diverge.
+    if (dansEditeur && !/^(Arrow|Page|Home|End)/.test(e.key)) return;
 
     if (/^[0-9]$/.test(e.key)) {
       e.preventDefault();
@@ -1518,12 +1522,16 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     try { window.close(); } catch (e) {}
     if (window.closed) return;
     const inv = $('#invite');
-    if (inv) {
-      inv.hidden = false;
-      inv.innerHTML = '<div><strong>Diaporama terminé.</strong><br>'
-        + 'Ferme cet onglet pour revenir à l\'éditeur — il t\'attend avec tes modifications.<br>'
-        + '<span style="opacity:.6">Ou appuie sur F pour repartir en plein écran.</span></div>';
-    }
+    if (!inv) return;
+    inv.hidden = false;
+    inv.innerHTML = '<div><strong>Diaporama terminé.</strong><br>'
+      + 'Ferme cet onglet pour revenir à l\'éditeur — il t\'attend avec tes modifications.<br>'
+      + '<span style="opacity:.6">Ou clique ici pour repartir en plein écran.</span></div>';
+    /* L'écouteur d'origine était posé en { once:true } et s'était déjà retiré :
+       rien ne remettait ce voile à hidden. Il couvrait toute la fenêtre, et
+       repartir en plein écran par « f » le laissait devant la présentation.
+       Seul un rechargement s'en sortait — en pleine soutenance. */
+    inv.onclick = () => { inv.hidden = true; basculerPlein(); };
   }
 
   /* ---------- chronomètre ----------
@@ -1563,6 +1571,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     const plein = !!(document.fullscreenElement || document.webkitFullscreenElement);
     document.body.classList.toggle('diapo', plein);
     if (plein) {
+      const inv = $('#invite'); if (inv) inv.hidden = true;   // jamais de voile en plein écran
       aEtePlein = true; document.body.classList.add('aEteEnDiapo');
       eveiller(); tenirEveille(true);
       // Entrer en plein écran, c'est commencer à parler : le chronomètre part

@@ -1600,7 +1600,14 @@ async function gh(path, opt){
   const r = await fetch('https://api.github.com/repos/'+REPO+'/'+path, {
     ...opt, headers: { Authorization:'Bearer '+cfg.gh, Accept:'application/vnd.github+json', ...(opt&&opt.headers) }
   });
-  if (!r.ok) { const e = new Error('GitHub ' + r.status + ' — ' + (await r.text()).slice(0,200)); e.statut = r.status; throw e; }
+  if (!r.ok) {
+    const brut = await r.text();
+    let dit = brut.slice(0,300);
+    try { const j = JSON.parse(brut); dit = j.message || dit; } catch(_){}
+    const e = new Error('GitHub ' + r.status + ' — ' + dit);
+    e.statut = r.status; e.dit = dit;              // ce que GitHub répond, mot pour mot
+    throw e;
+  }
   return r.json();
 }
 /* Messages parlants : chaque code HTTP a une cause précise et une seule action à faire. */
@@ -1616,12 +1623,26 @@ function diagnostic(err){
   switch (err.statut) {
     case 401: return "Jeton refusé — il a peut-être expiré. Refais-en un dans Réglages.";
     case 404: return "Le jeton ne voit pas le dépôt « " + REPO + " ».\nDans GitHub : Repository access → Only select repositories → " + REPO.split('/')[1] + ".";
-    case 403: return "Le jeton n'a pas le droit d'écrire.\nDans GitHub : Permissions → Contents → Read and write.";
+    case 403: return "Le jeton n'a pas le droit d'écrire.\n\n"
+        + "Dans GitHub, sur la page du jeton :\n"
+        + "• Repository access → Only select repositories → " + REPO.split('/')[1] + "\n"
+        + "• Repository permissions → Contents → Read and write\n"
+        + "  (« Repository permissions », PAS « Account permissions » — c'est le piège habituel)\n\n"
+        + "Un jeton déjà créé peut être modifié : ouvre-le et clique « Update token ». "
+        + "Si tu changes les permissions d'un jeton existant, elles prennent effet tout de suite.";
     case 409: return "Le calque a changé sur GitHub depuis que tu as ouvert l'éditeur — Claude a probablement publié entre-temps.\n\nRecharge la page (⌘⇧R) pour repartir de la version à jour. Tes modifications en cours seraient perdues : copie-les d'abord si elles comptent.";
     case 413:
     case 422: return "GitHub a refusé le contenu. Le calque est trop lourd — regarde son poids dans Modifications, et retire les images les plus grosses.";
     default:  return err.message;
   }
+}
+/* Notre message dit quoi faire ; celui de GitHub dit ce qui cloche. Les deux
+   valent mieux qu'un seul — le second nomme la permission exacte qui manque. */
+function diagnosticComplet(err){
+  const n = diagnostic(err);
+  return err.dit && n.indexOf(err.dit) < 0
+       ? n + '\n\n— — —\nCe que répond GitHub : « ' + err.dit + ' » (code ' + (err.statut||'—') + ')'
+       : n;
 }
 async function save(silencieuse){
   viderEnAttente();
@@ -1698,7 +1719,7 @@ async function save(silencieuse){
   } catch(err){
     S.busy = false;
     status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
-    if (!silencieuse) alert('Enregistrement impossible\n\n' + diagnostic(err));
+    if (!silencieuse) alert('Enregistrement impossible\n\n' + diagnosticComplet(err));
     else armerAuto(false, 'échec réseau — réarme-le dans Réglages', true);
     console.error(err);
     // Surtout pas refreshStatus() ici : il réécrivait aussitôt le bandeau en
@@ -1801,7 +1822,7 @@ async function ouvrirVersions(){
       d.append(t, b); box.appendChild(d);
     });
   } catch(err){
-    box.textContent = 'Impossible de lire l\'archive.\n' + diagnostic(err);
+    box.textContent = 'Impossible de lire l\'archive.\n' + diagnosticComplet(err);
   }
 }
 async function restaurerVersion(sha, quand){

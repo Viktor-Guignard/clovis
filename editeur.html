@@ -1689,11 +1689,13 @@ async function save(silencieuse){
     if (distant && distant !== S.base) {
       S.busy = false;
       status('conflit — rien n\'a été écrit', 'err');
-      alert("Le calque a changé sur GitHub depuis l'ouverture de l'éditeur"
-          + " — Claude ou un autre poste a publié entre-temps.\n\n"
+      alert("Le calque publié ne correspond pas à celui d'où tu es parti.\n\n"
+          + "Deux causes possibles : quelqu'un a publié depuis un autre poste, ou"
+          + " ton navigateur avait gardé en cache une version périmée de patch.js"
+          + " (GitHub Pages le garde jusqu'à dix minutes).\n\n"
           + "Rien n'a été envoyé : tes modifications sont intactes à l'écran."
-          + "\n\nCopie-les si elles comptent, puis recharge avec ⌘⇧R pour repartir"
-          + " de la version à jour.");
+          + "\n\nRecharge avec ⌘⇧R — l'éditeur relit alors le calque sans le cache."
+          + " Copie d'abord tes modifications si elles comptent.");
       $('#btnSave').disabled = false;
       return;
     }
@@ -1862,6 +1864,32 @@ $('#cfgClose').onclick = () => $('#cfg').close();
 // window.armerAuto d'un bloc antérieur était toujours fausse — la case
 // affichait « décoché » pendant que l'automatique tournait.
 armerAuto(S.auto);
+/* GitHub Pages sert patch.js avec cache-control: max-age=600. Le <script>
+   du haut de page peut donc livrer un calque VIEUX de dix minutes : S.base
+   décrit alors un état antérieur à ce qui est réellement publié, et le
+   contrôle de concurrence voit un conflit à chaque enregistrement — en
+   accusant un autre poste qui n'existe pas. On relit la vérité au démarrage,
+   sans passer par le cache. */
+(async function verite(){
+  try {
+    const t = await fetch('patch.js?t=' + Date.now(), { cache:'no-store' }).then(r => r.ok ? r.text() : null);
+    if (!t) return;
+    const d = t.indexOf('=', t.indexOf('window.CJ_PATCH')), f = t.lastIndexOf(';');
+    if (d < 0 || f < d) return;
+    const frais = JSON.parse(t.slice(d+1, f)).ops || [];
+    if (!Array.isArray(frais)) return;
+    const fraisTxt = JSON.stringify(frais);
+    if (fraisTxt === S.base) return;                       // le cache disait vrai
+    if (JSON.stringify(S.ops) !== S.base) {                // du travail en cours : on ne touche à rien
+      status('le calque publié a changé — recharge avant d\'enregistrer', 'err');
+      return;
+    }
+    S.ops = JSON.parse(fraisTxt); S.base = fraisTxt;
+    loadDeck(); refreshStatus();
+    console.info('calque relu sans le cache : ' + frais.length + ' modification(s)');
+  } catch(e){ /* hors ligne, ou fichier absent : on garde ce qu'on a */ }
+})();
+
 $('#btnVers').onclick = ouvrirVersions;
 $('#versClose').onclick = () => $('#dlgVers').close();
 $('#autoOn').onchange = e => armerAuto(e.target.checked);

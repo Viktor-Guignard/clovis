@@ -494,7 +494,11 @@ const S = {
   base: JSON.stringify((window.CJ_PATCH && window.CJ_PATCH.ops) || []),
   undo: [], redo: [], cur: 0, doc: null, mode: 'edit', sha: null, busy: false, echelle: 1,
   vue: (() => { try { return localStorage.getItem('cj_vue') || 'vign'; } catch(e){ return 'vign'; } })(),
-  auto: (() => { try { return localStorage.getItem('cj_auto') !== '0'; } catch(e){ return true; } })()
+  /* Désarmé par défaut : une fonction qui écrit toute seule dans un dépôt
+     distant ne s'active pas sans qu'on le lui demande. Et la case affichait
+     « décoché » pendant que l'automatique tournait — désaccord dans le sens
+     le plus dangereux. */
+  auto: (() => { try { return localStorage.getItem('cj_auto') === '1'; } catch(e){ return false; } })()
 };
 const cfg = {
   get gh(){ try { return localStorage.getItem('cj_gh') || ''; } catch(e){ return ''; } },
@@ -1577,6 +1581,9 @@ async function save(silencieuse){
     // rend la main. C'est à l'utilisateur d'arbitrer un conflit, pas au minuteur.
     if (distant === undefined && silencieuse) { S.busy = false; armerAuto(false, 'calque trop gros pour être vérifié'); refreshStatus(); return; }
     if (distant && distant !== S.base && silencieuse) { S.busy = false; armerAuto(false, 'le calque a changé sur GitHub'); refreshStatus(); return; }
+    // null = on n'a pas su relire le calque distant. En manuel c'est un risque
+    // assumé ; en automatique, écrire à l'aveugle ne l'est pas.
+    if (distant === null && silencieuse) { S.busy = false; armerAuto(false, 'calque distant illisible', true); refreshStatus(); return; }
     if (distant === undefined && !confirm(
         "Le calque dépasse la taille que GitHub renvoie d'un coup : impossible de vérifier"
         + " si quelqu'un a publié depuis que tu as ouvert l'éditeur.\n\n"
@@ -1596,7 +1603,8 @@ async function save(silencieuse){
     }
 
     const body = {
-      message: 'Deck : ' + JSON.parse(instantane).length + ' modification(s) — via éditeur',
+      message: (silencieuse ? 'auto' : 'Deck') + ' : ' + JSON.parse(instantane).length
+             + ' modification(s) — via éditeur',
       content: contenu,
       ...(sha ? { sha } : {})
     };
@@ -1616,7 +1624,7 @@ async function save(silencieuse){
     S.busy = false;
     status(err.statut === 409 ? 'conflit — recharge la page' : 'échec de l\'enregistrement', 'err');
     if (!silencieuse) alert('Enregistrement impossible\n\n' + diagnostic(err));
-    else armerAuto(false, 'échec de l\'enregistrement automatique');
+    else armerAuto(false, 'échec réseau — réarme-le dans Réglages', true);
     console.error(err);
     // Surtout pas refreshStatus() ici : il réécrivait aussitôt le bandeau en
     // « n modif. non enregistrée » et effaçait la seule trace de l'échec.
@@ -1639,7 +1647,10 @@ function opsDistantes(meta){
     return JSON.stringify(JSON.parse(txt.slice(d+1, f)).ops || []);
   } catch(e){ return null; }
 }
-$('#btnSave').onclick = save;
+// onclick = save passait le PointerEvent comme argument « silencieuse ».
+// Un événement est truthy : TOUT clic manuel s'exécutait en mode silencieux,
+// donc sans jamais montrer l'erreur, et pouvait désarmer l'automatique.
+$('#btnSave').onclick = () => save();
 
 /* ============================================================
    ENREGISTREMENT AUTOMATIQUE — et l'archive qui va avec.
@@ -1651,12 +1662,20 @@ $('#btnSave').onclick = save;
    pas au minuteur — et l'archive, qui rend chaque état antérieur récupérable.
    L'archive n'a rien coûté : c'est l'historique Git de patch.js, déjà tenu.
    ============================================================ */
-const DELAI_AUTO = 90000;   // 90 s après la dernière modification
+/* Cinq minutes, pas 90 secondes : une sauvegarde est un commit, et GitHub Pages
+   ne reconstruit qu'une dizaine de fois par heure. À 90 s, une heure de travail
+   produisait quarante versions toutes semblables — l'archive se noyait dans son
+   propre bruit, et les enregistrements manuels, les seuls qui correspondent à
+   une intention, sortaient de la fenêtre des 25 dernières. */
+const DELAI_AUTO = 300000;   // 5 min après la dernière modification
 let minuteurAuto = null;
 
-function armerAuto(actif, pourquoi){
+function armerAuto(actif, pourquoi, passager){
   S.auto = !!actif;
-  try { localStorage.setItem('cj_auto', S.auto ? '1' : '0'); } catch(e){}
+  // Une coupure de trois secondes ne doit pas désactiver la fonction pour
+  // toujours, sur tous les rechargements : seul un désarmement décidé — par
+  // l'utilisateur ou par un conflit réel — est mémorisé.
+  if (!passager) { try { localStorage.setItem('cj_auto', S.auto ? '1' : '0'); } catch(e){} }
   const c = $('#autoOn'); if (c) c.checked = S.auto;
   clearTimeout(minuteurAuto); minuteurAuto = null;
   if (!actif && pourquoi) {
@@ -1667,7 +1686,12 @@ function armerAuto(actif, pourquoi){
 function programmerAuto(){
   if (!S.auto || !cfg.gh) return;
   clearTimeout(minuteurAuto);
-  minuteurAuto = setTimeout(() => { if (dirty() && !S.busy) save(true); }, DELAI_AUTO);
+  minuteurAuto = setTimeout(() => {
+    // Une frappe en cours (tampon non vide) ou un enregistrement en vol :
+    // on ne coupe pas la phrase, on repasse dans dix secondes.
+    if (enAttente.size || S.busy) { minuteurAuto = setTimeout(programmerAuto, 10000); return; }
+    if (dirty()) save(true); else minuteurAuto = null;
+  }, DELAI_AUTO);
 }
 
 /* ---------- archive des versions ---------- */
@@ -1677,12 +1701,17 @@ async function ouvrirVersions(){
   if (!$('#dlgVers').open) $('#dlgVers').showModal();
   if (!cfg.gh) { box.innerHTML = '<p class="note">Il faut le jeton GitHub pour lire l\'archive. Ouvre Réglages.</p>'; return; }
   try {
-    const liste = await gh('commits?path=' + FILE + '&per_page=25');
+    const liste = await gh('commits?path=' + encodeURIComponent(FILE) + '&per_page=100');
     if (!liste.length) { box.innerHTML = '<p class="note">Aucune version enregistrée pour l\'instant.</p>'; return; }
     box.innerHTML = '';
     liste.forEach(c => {
+      // Un seul commit sans auteur levait, et le catch effaçait toutes les
+      // entrées déjà construites : l'archive entière devenait inaccessible.
+      const quand = c.commit && (c.commit.author || c.commit.committer);
+      if (!quand || !quand.date) return;
+      const q = new Date(quand.date);
+      if (isNaN(q)) return;
       const d = document.createElement('div'); d.className = 'vers';
-      const q = new Date(c.commit.author.date);
       const t = document.createElement('div');
       const b1 = document.createElement('b');
       b1.textContent = q.toLocaleString('fr-FR', {dateStyle:'medium', timeStyle:'short'});
@@ -1694,7 +1723,7 @@ async function ouvrirVersions(){
       d.append(t, b); box.appendChild(d);
     });
   } catch(err){
-    box.textContent = 'Impossible de lire l\'archive : ' + (err.message || err);
+    box.textContent = 'Impossible de lire l\'archive.\n' + diagnostic(err);
   }
 }
 async function restaurerVersion(sha, quand){
@@ -1704,8 +1733,15 @@ async function restaurerVersion(sha, quand){
     const c = await gh('contents/' + FILE + '?ref=' + sha);
     const ops = opsDistantes(c);
     if (!ops) throw new Error('version illisible');
+    const v = JSON.parse(ops);
+    if (!Array.isArray(v)) throw new Error('cette version n’a pas un format lisible');
+    if (!v.length && !confirm('Cette version ne contient AUCUNE modification.\n\n'
+        + 'La restaurer effacera tout le calque — le deck reviendra à son état d’origine.\n\nContinuer ?')) return;
+    // Un minuteur d'enregistrement automatique armé avant la restauration
+    // publierait la vieille version 90 s plus tard, pendant qu'on la juge.
+    clearTimeout(minuteurAuto); minuteurAuto = null;
     viderEnAttente(); snapshot();
-    S.ops = JSON.parse(ops);
+    S.ops = v;
     $('#dlgVers').close();
     loadDeck(); refreshStatus();
     status('version du ' + quand.toLocaleDateString('fr-FR') + ' restaurée — pense à enregistrer', 'dirty');
@@ -1723,6 +1759,10 @@ function openCfg(){
 }
 $('#btnCfg').onclick = openCfg;
 $('#cfgClose').onclick = () => $('#cfg').close();
+// Ici, et pas plus haut : armerAuto vit dans ce bloc de script, et la garde
+// window.armerAuto d'un bloc antérieur était toujours fausse — la case
+// affichait « décoché » pendant que l'automatique tournait.
+armerAuto(S.auto);
 $('#btnVers').onclick = ouvrirVersions;
 $('#versClose').onclick = () => $('#dlgVers').close();
 $('#autoOn').onchange = e => armerAuto(e.target.checked);

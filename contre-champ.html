@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="patch.js"></script>
 <script src="cj-early.js"></script>
-<title>CONTRE-CHAMP — Présentation du projet</title>
+<title>Deck · CONTRE-CHAMP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F2EEE4'/%3E%3Crect x='6' y='9' width='20' height='14' fill='%23121212'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#0E0E0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -181,6 +182,10 @@ body.chrome-sombre footer{color:#7C7669}
    l'écran sur un 1024 de vidéoprojecteur. Elle se comprime désormais, les
    pastilles avec elle — c'est elle qui absorbe le manque de place. */
 .prog{display:flex;gap:3px;flex:1 1 auto;min-width:0;pointer-events:auto}
+/* Invisible mais cliquable : en diaporama non réveillé, la barre restait une
+   cible pleine largeur au bord bas de l'écran, là où le pointeur se repose. */
+body.diapo:not(.eveille) .prog,body.diapo:not(.eveille) .nav{pointer-events:none}
+#cnt-cur.saisie{color:var(--or);font-weight:600}
 /* La pastille ne mesurait que 3 px de haut : impossible à viser. Le trait
    reste fin — background-clip le confine à la boîte de contenu — mais la
    zone cliquable fait 19 px grâce au rembourrage. */
@@ -194,11 +199,30 @@ body.chrome-sombre .prog i.on{background:var(--or);background-clip:content-box}
 footer .lbl{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 footer .cnt{font-variant-numeric:tabular-nums;flex:none;pointer-events:auto}
 .nav{display:flex;gap:6px;flex:none;pointer-events:auto;margin-left:4px}
+/* Le deck ouvert directement depuis l'accueil n'avait aucune sortie : pas de
+   lien, pas de barre de défilement, et l'accueil remplacé dans le même onglet. */
+.nav #accueil{display:grid;place-items:center;text-decoration:none;color:inherit}
+body.diapo .nav #accueil{display:none}
 .nav button{width:30px;height:30px;border:1px solid var(--trait);background:transparent;color:inherit;
   border-radius:3px;cursor:pointer;font-size:15px;line-height:1;font-family:var(--serif)}
 .nav button:hover{border-color:var(--or);color:var(--or)}
 body.chrome-sombre .nav button{border-color:#33302B;color:#BDB6A6}
-@media print{footer,.nav{display:none}}
+/* À l'impression, toutes les slides sont empilées et visibles : sans cela,
+   ⌘P ne rendait qu'UNE page — la slide active — les 51 autres étant en
+   position:absolute, opacity:0, visibility:hidden. Un dossier de soutenance
+   réclame un PDF ; c'est le seul chemin pour l'obtenir. */
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff}
+  body::after,footer,.nav,#cursor,#invite{display:none!important}
+  main#stage{height:auto;overflow:visible}
+  section.slide{position:relative;inset:auto;opacity:1!important;visibility:visible!important;
+    display:flex!important;height:100vh;overflow:hidden;break-after:page;page-break-after:always;
+    transition:none!important;animation:none!important}
+  section.slide *{animation:none!important;transition:none!important}
+  section.slide:last-child{break-after:auto;page-break-after:auto}
+  section.slide.skip{display:none!important}   /* une masquée reste hors du PDF */
+  @page{size:1600px 1000px;margin:0}
+}
 
 /* ---------- diaporama ---------- */
 /* En diaporama, c'est le curseur PERSONNALISÉ qui s'efface après trois
@@ -1288,6 +1312,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <div class="lbl" id="pied-lbl">Couverture</div>
   <div class="cnt"><span id="cnt-cur">01</span> / <span id="cnt-tot">--</span></div>
   <div class="nav">
+    <a href="index.html" id="accueil" title="Retour à l'accueil" aria-label="Retour à l'accueil">⌂</a>
     <button id="plein" aria-label="Plein écran (F)" title="Plein écran · F">⛶</button>
     <button id="prev" aria-label="Slide précédente">‹</button>
     <button id="next" aria-label="Slide suivante">›</button>
@@ -1328,17 +1353,53 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     lbl.textContent = slides[n].dataset.lbl || '';
     cur.textContent = String(n+1).padStart(2,'0');
     document.body.classList.toggle('chrome-sombre', slides[n].classList.contains('sombre'));
+    // Le titre d'onglet ne suivait jamais : deux onglets ouverts sur le deck
+    // étaient indiscernables, et on ne savait pas où l'on en était en revenant.
+    document.title = (slides[n].dataset.lbl || 'Slide ' + (n+1)) + ' · CONTRE-CHAMP';
+    // Une ancre dans l'URL : on reprend où l'on était après un rechargement,
+    // et on peut envoyer au jury un lien vers une slide précise.
+    try { history.replaceState(null, '', '#s' + (n+1)); } catch(e){}
+    if (i !== n) precedent = i;
     i = n;
+    // Avancer au clavier doit montrer le folio : le pied ne se réveillait qu'à
+    // la souris, donc jamais pendant qu'on parle en avançant à la flèche.
+    if (document.body.classList.contains('diapo')) eveiller();
   };
+  let precedent = 0;
 
   $('#prev').onclick = () => goSlide(i-1);
   $('#next').onclick = () => goSlide(i+1);
+  /* Aller à la slide 41 supposait quarante appuis sur la flèche, ou viser une
+     pastille de 11 px. On tape le numéro, et Entrée. Le nombre en cours
+     s'affiche dans le pied à la place du folio. */
+  let saisie = '', minuteurSaisie = null;
+  function montrerSaisie(){
+    cur.textContent = saisie ? '→' + saisie : String(i+1).padStart(2,'0');
+    cur.classList.toggle('saisie', !!saisie);
+  }
+  function annulerSaisie(){ saisie = ''; clearTimeout(minuteurSaisie); montrerSaisie(); }
   addEventListener('keydown', e => {
     if (e.target.isContentEditable) return;          // ne pas voler les flèches à l'éditeur
+    if (e.metaKey || e.ctrlKey || e.altKey) return;  // ⌘← ⌘F et compagnie appartiennent au navigateur
+
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      saisie = (saisie + e.key).slice(-3); montrerSaisie(); eveiller();
+      clearTimeout(minuteurSaisie); minuteurSaisie = setTimeout(annulerSaisie, 4000)   // on tape un numéro en parlant : 2,5 s était trop court;
+      return;
+    }
+    if (saisie && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      if (e.key === 'Enter') goSlide(parseInt(saisie,10) - 1);
+      annulerSaisie(); return;
+    }
     if (['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)) { e.preventDefault(); goSlide(i+1); }
     if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key))          { e.preventDefault(); goSlide(i-1); }
     if (e.key === 'Home') { e.preventDefault(); goSlide(0); }
     if (e.key === 'End')  { e.preventDefault(); goSlide(slides.length-1); }
+    // revenir d'où l'on venait après un saut : un clic manqué sur la barre de
+    // progression était sans retour.
+    if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); goSlide(precedent); }
   });
 
   // balayage tactile, pour l'iPad
@@ -1400,6 +1461,9 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   $('#plein').onclick = basculerPlein;
   addEventListener('keydown', e => {
     if (e.target.isContentEditable) return;
+    // ⌘F ouvre la recherche du navigateur : le capter faisait sortir du plein
+    // écran par réflexe, et donc — avant correction — tuait la session.
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'f' || e.key === 'F') { e.preventDefault(); basculerPlein(); }
   });
 
@@ -1408,9 +1472,21 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
      en fallait deux. On écoute donc la SORTIE du plein écran elle-même. */
   const lanceDepuisEditeur = /[?&]plein=1/.test(location.search);
   let aEtePlein = false;
+  /* L'onglet est ouvert par l'éditeur avec rel="noopener" : sans ouvreur, le
+     navigateur REFUSE window.close(). Le repli s'exécutait donc toujours, et
+     l'onglet du diaporama se rechargeait en second éditeur — deux éditeurs sur
+     le même document, dont un périmé, tous deux avec Enregistrer actif.
+     Une sortie de plein écran, désormais, ne fait que sortir du plein écran. */
   function quitterDiaporama(){
     try { window.close(); } catch (e) {}
-    if (!window.closed) location.href = 'editeur.html';
+    if (window.closed) return;
+    const inv = $('#invite');
+    if (inv) {
+      inv.hidden = false;
+      inv.innerHTML = '<div><strong>Diaporama terminé.</strong><br>'
+        + 'Ferme cet onglet pour revenir à l\'éditeur — il t\'attend avec tes modifications.<br>'
+        + '<span style="opacity:.6">Ou appuie sur F pour repartir en plein écran.</span></div>';
+    }
   }
 
   let sommeil = null;
@@ -1422,16 +1498,38 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   function majDiapo(){
     const plein = !!(document.fullscreenElement || document.webkitFullscreenElement);
     document.body.classList.toggle('diapo', plein);
-    if (plein) { aEtePlein = true; eveiller(); }
+    if (plein) { aEtePlein = true; eveiller(); tenirEveille(true); }
     else {
-      clearTimeout(sommeil); document.body.classList.remove('eveille');
-      // sortir du plein écran, c'est sortir du diaporama : un seul Échap suffit
+      clearTimeout(sommeil); document.body.classList.remove('eveille'); tenirEveille(false);
+      /* On ne quitte plus au premier Échap : « f », ⌘F, un réflexe, ou un
+         changement de résolution au branchement du projecteur suffisaient à
+         sortir du plein écran — et donc, avant, à perdre la présentation. */
       if (lanceDepuisEditeur && aEtePlein) quitterDiaporama();
     }
   }
+  /* L'écran s'éteignait sur une slide commentée quatre minutes : sans souris
+     ni clavier, le Mac se met en veille — et sur certains réglages la sortie
+     de veille fait perdre le plein écran. */
+  let verrou = null;
+  async function tenirEveille(actif){
+    try {
+      if (actif && !verrou && navigator.wakeLock) verrou = await navigator.wakeLock.request('screen');
+      else if (!actif && verrou) { await verrou.release(); verrou = null; }
+    } catch(e){ /* non pris en charge ou refusé : sans conséquence */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && document.body.classList.contains('diapo')) tenirEveille(true);
+  });
   document.addEventListener('fullscreenchange', majDiapo);
   document.addEventListener('webkitfullscreenchange', majDiapo);
   addEventListener('mousemove', () => { if (document.body.classList.contains('diapo')) eveiller(); });
+  // Viser une pastille, s'arrêter pour lire, et voir la barre s'effacer sous le
+  // curseur : le pied ne s'endort plus tant que le pointeur y est.
+  const pied = $('#pied');
+  if (pied) {
+    pied.addEventListener('mouseenter', () => { clearTimeout(sommeil); document.body.classList.add('eveille'); });
+    pied.addEventListener('mouseleave', () => { if (document.body.classList.contains('diapo')) eveiller(); });
+  }
 
   // ouvert depuis l'éditeur en mode diaporama : on attend le premier geste
   if (/[?&]plein=1/.test(location.search)) {
@@ -1456,7 +1554,12 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     });
   }
 
-  goSlide(0);
+  // Reprise sur l'ancre : un rechargement accidentel, ou un lien envoyé au
+  // jury, doit ramener à la bonne slide et non à la couverture.
+  (function(){
+    const m = /^#s(\d+)$/.exec(location.hash || '');
+    goSlide(m ? Math.min(slides.length, Math.max(1, parseInt(m[1],10))) - 1 : 0);
+  })();
 })();
 </script>
 </body>

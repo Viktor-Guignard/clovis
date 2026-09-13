@@ -109,6 +109,17 @@ body.vign{--rail:250px}
 .mini{transform-origin:top left;pointer-events:none;position:absolute;top:0;left:0}
 .mini-vide{position:absolute;inset:0;display:grid;place-items:center;color:var(--grey);
   font-family:var(--ui);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- galerie de gabarits ---------- */
+.galerie{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.gab{background:none;border:1px solid var(--line);border-radius:6px;padding:0;cursor:pointer;
+  text-align:left;color:inherit;overflow:hidden;display:flex;flex-direction:column}
+.gab:hover{border-color:var(--or)}
+.gab .apercu{position:relative;aspect-ratio:16/10;background:var(--paper);overflow:hidden;
+  border-bottom:1px solid var(--line)}
+.gab .txt{padding:8px 10px 10px}
+.gab .txt b{display:block;font-family:var(--ui);font-size:12.5px;font-weight:600}
+.gab .txt span{display:block;color:var(--grey);font-size:11px;line-height:1.4;margin-top:3px}
 .nm[contenteditable="true"]{background:var(--ink);outline:1px solid var(--or);border-radius:3px;padding:1px 4px;text-overflow:clip;cursor:text}
 .item.masque{display:none}
 .chap.vide{display:none}
@@ -417,6 +428,13 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
     <button class="btn" id="rrClose">Fermer</button>
     <button class="btn prim" id="rrGo" disabled>Remplacer</button>
   </div>
+</div></dialog>
+
+<dialog id="dlgGab"><div class="dlg">
+  <h3>NOUVELLE SLIDE</h3>
+  <p>Choisis une structure. Ce sont celles qu'emploie déjà le deck — le style suivra tout seul.</p>
+  <div class="galerie" id="galerie"></div>
+  <div class="row"><button class="btn" id="gabClose">Annuler</button></div>
 </div></dialog>
 
 <dialog id="dlgCode"><div class="dlg">
@@ -1039,24 +1057,109 @@ function dupSlide(sec){
   sec.after(clone);
   buildRail(); showSlide(sections().indexOf(clone));
 }
-const TPL = (lbl, chap) => `<section class="slide" data-chapter="${chap}" data-lbl="${lbl}">
-  <span class="eyebrow r"><span class="dot"></span>${chap}</span>
-  <h2 class="title r d1">NOUVELLE SLIDE</h2>
-  <p class="note r d2">Clique ce texte pour l'écrire. Demande à Claude si tu veux une mise en page particulière.</p>
+/* ============================================================
+   GABARITS — le bouton « + » fabriquait une page blanche, et son titre
+   portait la classe « title », que la feuille de styles du deck n'a jamais
+   définie : elle ne connaît que « titre ». Chaque slide créée naissait donc
+   sans style. Les six structures ci-dessous sont relevées dans le deck
+   lui-même — elles couvrent 36 de ses 52 slides.
+   ============================================================ */
+const GABARITS = [
+  { id:'cols3', nom:'Trois blocs', dit:'Un titre, trois blocs numérotés — la structure la plus employée du deck',
+    corps: () => `
+  <div class="cols c3 r d2">
+    <div class="bloc"><div class="num">01</div><h3>Premier point</h3>
+      <p class="note">Clique ce texte pour l'écrire.</p></div>
+    <div class="bloc"><div class="num">02</div><h3>Deuxième point</h3>
+      <p class="note">Clique ce texte pour l'écrire.</p></div>
+    <div class="bloc"><div class="num">03</div><h3>Troisième point</h3>
+      <p class="note">Clique ce texte pour l'écrire.</p></div>
+  </div>` },
+  { id:'cols2', nom:'Deux colonnes', dit:'Un titre et deux colonnes qui se répondent',
+    corps: () => `
+  <div class="cols c2 r d2">
+    <div><h3>À gauche</h3><p class="note">Clique ce texte pour l'écrire.</p></div>
+    <div><h3 class="or">À droite</h3><p class="note">Clique ce texte pour l'écrire.</p></div>
+  </div>` },
+  { id:'liste', nom:'Liste numérotée', dit:'Un déroulé, un sommaire, une suite d’étapes',
+    corps: () => `
+  <ul class="liste r d2">
+    <li><span class="k">01</span><span class="v"><strong>Première ligne</strong> — son explication</span><span class="t">détail</span></li>
+    <li><span class="k">02</span><span class="v"><strong>Deuxième ligne</strong> — son explication</span><span class="t">détail</span></li>
+    <li><span class="k">03</span><span class="v"><strong>Troisième ligne</strong> — son explication</span><span class="t">détail</span></li>
+  </ul>
+  <p class="note r d3">Une remarque sous la liste.</p>` },
+  { id:'fiche', nom:'Tableau', dit:'Intitulé à gauche, contenu à droite — pour un récapitulatif',
+    corps: () => `
+  <table class="fiche r d2">
+    <tr><td>Premier intitulé</td><td>Ce qu'il recouvre.</td></tr>
+    <tr><td>Deuxième intitulé</td><td>Ce qu'il recouvre.</td></tr>
+    <tr><td>Troisième intitulé</td><td>Ce qu'il recouvre.</td></tr>
+  </table>
+  <p class="note r d3">Une remarque sous le tableau.</p>` },
+  { id:'lead', nom:'Chapô et note', dit:'Une phrase d’accroche en grand, puis un paragraphe',
+    corps: () => `
+  <p class="lead r d2">La phrase qui porte l'idée de la slide.</p>
+  <p class="note r d3">Le paragraphe qui la développe.</p>` },
+  { id:'nu', nom:'Titre seul', dit:'Une ouverture de partie, ou une respiration',
+    corps: () => `
+  <p class="lead r d2">Une seule phrase.</p>` },
+];
+const TPL = (lbl, chap, gab) => {
+  const g = GABARITS.find(x => x.id === gab) || GABARITS[0];
+  return `<section class="slide" data-chapter="${chap}" data-lbl="${lbl}">
+  <span class="eyebrow r"><span class="dot"></span>${chap || 'Nouvelle section'}</span>
+  <h2 class="titre r d1">NOUVELLE SLIDE</h2>${g.corps()}
 </section>`;
+};
 $('#btnVue').onclick = () => basculerVue();
-$('#btnAdd').onclick = () => {
+function ouvrirGalerie(){
+  const box = $('#galerie'); box.innerHTML = '';
+  GABARITS.forEach(g => {
+    const b = document.createElement('button');
+    b.className = 'gab'; b.dataset.g = g.id;
+    const ap = document.createElement('div'); ap.className = 'apercu';
+    const txt = document.createElement('div'); txt.className = 'txt';
+    const nom = document.createElement('b'); nom.textContent = g.nom;
+    const dit = document.createElement('span'); dit.textContent = g.dit;
+    txt.append(nom, dit); b.append(ap, txt); box.appendChild(b);
+    // Le même moteur que les vignettes du rail : l'aperçu est la slide réelle,
+    // pas un schéma dessiné à côté qui finirait par mentir.
+    apercuGabarit(ap, g);
+  });
+  if (!$('#dlgGab').open) $('#dlgGab').showModal();
+}
+function apercuGabarit(hote, g){
+  if (feuilleMini === null && feuilleMiniTexte === null) feuilleMini = construireFeuille();
+  const t = document.createElement('template');
+  t.innerHTML = TPL('Aperçu', (curSec() && curSec().dataset.chapter) || '', g.id).trim();
+  const sec = t.content.firstElementChild; if (!sec) return;
+  const boite = document.createElement('div'); boite.className = 'mini';
+  const ombre = boite.attachShadow({ mode:'open' });
+  if (feuilleMini) ombre.adoptedStyleSheets = [feuilleMini];
+  else if (feuilleMiniTexte) { const st = document.createElement('style'); st.textContent = feuilleMiniTexte; ombre.appendChild(st); }
+  ombre.appendChild(sec);
+  hote.appendChild(boite);
+  requestAnimationFrame(() => { boite.style.transform = 'scale(' + (hote.clientWidth / 1600) + ')'; });
+}
+function creerSlide(gab){
   // Après avoir tout supprimé, curSec() est undefined et le bouton ne faisait
   // plus rien : le deck devenait irrécupérable autrement que par ↶.
   const sec = curSec();
   const lbl = uniqLbl('Nouvelle slide');
-  const html = TPL(lbl, sec ? (sec.dataset.chapter || '') : 'Ouverture');
+  const html = TPL(lbl, sec ? (sec.dataset.chapter || '') : 'Ouverture', gab);
   setOp(sec ? { t:'add', after: sec.dataset.lbl, html } : { t:'add', html });
   const t = S.doc.createElement('template'); t.innerHTML = html.trim();
   const nu = t.content.firstElementChild;
   if (sec) sec.after(nu); else (S.doc.querySelector('main') || S.doc.body).appendChild(nu);
   buildRail(); showSlide(sections().indexOf(nu));
-};
+}
+$('#btnAdd').onclick = ouvrirGalerie;
+$('#gabClose').onclick = () => $('#dlgGab').close();
+$('#galerie').addEventListener('click', e => {
+  const b = e.target.closest('.gab'); if (!b) return;
+  $('#dlgGab').close(); creerSlide(b.dataset.g);
+});
 
 /* ---------- remplacement d'image ---------- */
 let pending = null;      // image à remplacer

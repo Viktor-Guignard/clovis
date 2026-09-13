@@ -96,8 +96,12 @@ table.fiche{width:100%;border-collapse:collapse;margin-top:clamp(14px,2.2vh,24px
 table.fiche td{padding:10px 6px;border-bottom:1px solid var(--trait);vertical-align:top;line-height:1.45}
 .sombre table.fiche td{border-bottom-color:#2C2A26}
 table.fiche td:first-child{width:34%;font-family:var(--display);font-weight:600;font-size:.86em;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gris-txt)}
 table.fiche tr:last-child td{border-bottom:0}
+table.fiche td.eur{width:15%;text-align:right;white-space:nowrap;font-family:var(--display);
+  font-weight:600;font-variant-numeric:tabular-nums}
+table.fiche tr.somme td{border-top:1.5px solid var(--ink);border-bottom:0;padding-top:12px}
+table.fiche tr.somme td:first-child{color:var(--ink)}
 
 /* figures */
 .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:clamp(12px,1.8vw,26px);margin-top:clamp(16px,2.4vh,28px)}
@@ -171,7 +175,7 @@ html,body{cursor:none}
    désormais dans le pied lui-même, en bout de ligne. */
 footer{position:fixed;left:0;right:0;bottom:0;min-height:46px;display:flex;align-items:center;gap:14px;
   padding:6px clamp(18px,3vw,42px);font-family:var(--display);font-size:11px;letter-spacing:.13em;
-  text-transform:uppercase;color:var(--gris);z-index:20;pointer-events:none}
+  text-transform:uppercase;color:var(--gris-txt);z-index:20;pointer-events:none}
 body.chrome-sombre footer{color:#7C7669}
 /* 52 pastilles à 13 px font 830 px : la barre poussait les flèches hors de
    l'écran sur un 1024 de vidéoprojecteur. Elle se comprime désormais, les
@@ -524,7 +528,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <li><span class="k">07</span><span class="v"><strong>Lexique visuel</strong> — 40 plans décomposés</span><span class="t">p. 175 · 24 p.</span></li>
     <li><span class="k">08</span><span class="v"><strong>Annexes</strong> — chronologie, filmographie, index, crédits</span><span class="t">p. 199 · 10 p.</span></li>
   </ul>
-  <p class="note r d3" style="margin-top:clamp(14px,2vh,22px);color:var(--gris)">
+  <p class="note r d3" style="margin-top:clamp(14px,2vh,22px);color:var(--gris-txt)">
     4 p. liminaires (faux-titre, titre, copyright) + 204 p. de contenu = <strong>208 pages</strong>, soit 13 cahiers de 16. Le livre se termine exactement en fin de cahier — aucune page perdue.
   </p>
 </section>
@@ -668,7 +672,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <tr><td>Correcteur d’épreuves</td><td>Externe, deux tours. <em>Au feuillet.</em></td></tr>
     <tr><td>Traducteur</td><td>Ponctuel : titres et citations chinois, japonais, thaï. Translittérations à homogénéiser. <em>Au forfait.</em></td></tr>
   </table>
-  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,20px);color:var(--gris)">
+  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,20px);color:var(--gris-txt)">
     Statuts juridiques, modes de rémunération et répartition des droits : tableau complet et contrats types en annexe du dossier.
   </p>
 </section>
@@ -677,11 +681,11 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <span class="eyebrow r"><span class="dot"></span>Positionnement</span>
   <h2 class="titre r d1">CE QUE CE LIVRE<br>N’EST PAS</h2>
   <div class="cols c3 r d2">
-    <div class="bloc"><h3 style="color:var(--gris)">Pas une encyclopédie</h3>
+    <div class="bloc"><h3 style="color:var(--gris-txt)">Pas une encyclopédie</h3>
       <p class="note">On ne couvre pas tout. On suit une thèse : l’influence circule dans les deux sens. Les films cités servent la démonstration.</p></div>
-    <div class="bloc"><h3 style="color:var(--gris)">Pas une biographie</h3>
+    <div class="bloc"><h3 style="color:var(--gris-txt)">Pas une biographie</h3>
       <p class="note">Les figures sont des points de bascule, pas des destins. Bruce Lee occupe 28 pages parce qu’il change l’image, pas parce qu’il fascine.</p></div>
-    <div class="bloc"><h3 style="color:var(--gris)">Pas un manuel</h3>
+    <div class="bloc"><h3 style="color:var(--gris-txt)">Pas un manuel</h3>
       <p class="note">Aucune technique enseignée. Le lecteur n’a pas besoin de pratiquer — il a besoin de savoir regarder.</p></div>
   </div>
   <div class="cols c2 r d3" style="margin-top:clamp(20px,3vh,34px)">
@@ -703,14 +707,14 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       <p class="note">Marché porté par trois vagues convergentes : la nostalgie des années 1970-1990, l’intérêt continu pour les cultures asiatiques, et le travail des éditeurs vidéo qui restaurent et remettent ces films en circulation.</p>
     </div>
     <div>
-      <h3 class="or">Ordres de grandeur <span style="color:var(--gris);font-weight:400">· hypothèse</span></h3>
+      <h3 class="or">Ordres de grandeur <span style="color:var(--gris-txt);font-weight:400">· hypothèse</span></h3>
       <table class="fiche" style="margin-top:10px">
         <tr><td>Prix moyen</td><td>29 à 45 €</td></tr>
         <tr><td>Tirage courant</td><td>2 500 à 5 000 ex.</td></tr>
         <tr><td>Pagination type</td><td>160 à 240 p.</td></tr>
         <tr><td>Format dominant</td><td>Grand format à la française</td></tr>
       </table>
-      <p class="note" style="margin-top:12px;color:var(--gris)">À consolider : Livres Hebdo, panel GfK, catalogues des éditeurs retenus.</p>
+      <p class="note" style="margin-top:12px;color:var(--gris-txt)">À consolider : Livres Hebdo, panel GfK, catalogues des éditeurs retenus.</p>
     </div>
   </div>
 </section>
@@ -732,7 +736,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       <h3 class="or">Ce qui manque</h3>
       <p class="note">Aucun de ces quatre formats ne permet de <strong>démontrer par l’image</strong>. Le monographique illustre ; l’encyclopédique inventorie ; l’album montre ; le livre de studio vend.</p>
       <p class="note">Le projet emprunte à un cinquième registre, venu d’ailleurs : le <strong>livre d’analyse visuelle</strong>, où la décomposition en planches fait argument — pratique courante en bande dessinée et en design, rare sur le cinéma en France.</p>
-      <p class="note" style="color:var(--gris)">C’est la brèche : un format connu du lecteur, appliqué à un sujet qui ne l’a jamais reçu.</p>
+      <p class="note" style="color:var(--gris-txt)">C’est la brèche : un format connu du lecteur, appliqué à un sujet qui ne l’a jamais reçu.</p>
     </div>
   </div>
 </section>
@@ -765,7 +769,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
         <li><span class="k">03</span><span class="v"><strong>Vente en ligne</strong></span><span class="t">~25 %</span></li>
         <li><span class="k">04</span><span class="v"><strong>Circuits spécialisés</strong> — festivals, boutiques de cinéma, clubs</span><span class="t">~10 %</span></li>
       </ul>
-      <p class="note" style="margin-top:10px;color:var(--gris)">Répartition indicative — hypothèse à valider.</p>
+      <p class="note" style="margin-top:10px;color:var(--gris-txt)">Répartition indicative — hypothèse à valider.</p>
     </div>
     <div>
       <h3 class="or">Deux saisons qui comptent</h3>
@@ -780,14 +784,16 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <span class="eyebrow r"><span class="dot"></span>Étude de concurrence</span>
   <h2 class="titre r d1">CE QUI EXISTE DÉJÀ</h2>
   <table class="fiche r d2">
-    <tr><td>Concurrence directe</td><td><strong>Aucun titre français</strong> ne traite l’influence réciproque pratique ↔ cinéma. C’est l’espace visé — et il faudra expliquer pourquoi il est vide.</td></tr>
-    <tr><td>Concurrence proche</td><td>Monographies d’acteurs — Bruce Lee surtout, souvent traduites, centrées sur l’homme et sa légende plutôt que sur l’image.</td></tr>
-    <tr><td>Concurrence élargie</td><td>Histoires du cinéma de Hong Kong et du cinéma asiatique : érudites, peu illustrées, réservées à un lectorat déjà convaincu.</td></tr>
-    <tr><td>Concurrence indirecte</td><td>Beaux livres « arts martiaux » — photographies de pratique, aucune lecture cinématographique.</td></tr>
-    <tr><td>Substituts</td><td>Chaînes vidéo et podcasts d’analyse de scènes d’action. Gratuits, très suivis — ils prouvent la demande <strong>et</strong> prennent une part de l’attention.</td></tr>
+    <tr><td>Il était une fois<br>le ciné Kung-Fu</td><td><strong>Flammarion, sept. 2026 · 312 p. · 39,90 €</strong><br>
+      F. et M. Armanet. Cinquante ans d’enquête et de rencontres, racontés. Le récit d’une saga, avec ses témoins — pas la lecture des plans. <em>Sorti cette rentrée : c’est le voisin de table.</em></td></tr>
+    <tr><td>Tigres et dragons<br>4 volumes</td><td><strong>Guy Trédaniel, 2000-2008 · ≈ 230 p./vol. · ≈ 23 €</strong><br>
+      C. Champclaux, critique à <em>Karaté Bushido</em>. La référence française du genre : érudition, filmographies, généalogies. Peu illustré, grand format épuisé.</td></tr>
+    <tr><td>Ultime combat<br>Arts martiaux d’Asie</td><td><strong>quai Branly / RMN, 2021 · 272 p. · 255 ill. · 18 €</strong><br>
+      Catalogue d’exposition, dir. J. Rousseau et S. du Mesnildot. Un musée national a fait le croisement — depuis les objets et les techniques, avec un volet cinéma.</td></tr>
+    <tr><td>Monographies<br>et substituts</td><td>Bruce Lee surtout, souvent traduites, centrées sur l’homme et sa légende. Et les chaînes d’analyse de scènes, gratuites et très suivies : elles prouvent la demande <strong>et</strong> prennent une part de l’attention.</td></tr>
   </table>
-  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,22px);color:var(--gris)">
-    À produire : tableau ordonné par niveau, avec titre, éditeur, année, prix, pagination et commentaire — une ligne par concurrent retenu.
+  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,22px);max-width:none">
+    <strong>Ce qu’aucun ne fait.</strong> Tous racontent, cataloguent ou exposent. Aucun ne <strong>décompose l’image</strong> — et aucun ne traite le sens inverse, ce que l’écran a rendu à la pratique. C’est la place de ce livre : non pas un sujet vacant, mais une <strong>méthode</strong> vacante sur un sujet déjà occupé.
   </p>
 </section>
 
@@ -821,9 +827,9 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   </div>
   <div class="cols c2 r d3" style="margin-top:clamp(20px,3vh,32px)">
     <div class="bloc"><h3>Persona · Camille, 31 ans</h3>
-      <p class="note">Monteuse. A vu <em>Tigre et Dragon</em> à 12 ans. « Je veux comprendre pourquoi ces plans tiennent, alors que les scènes d’action actuelles me laissent froide. »<br><span style="color:var(--gris)">Achète 2 à 3 beaux livres par an, autour de 35 €.</span></p></div>
+      <p class="note">Monteuse. A vu <em>Tigre et Dragon</em> à 12 ans. « Je veux comprendre pourquoi ces plans tiennent, alors que les scènes d’action actuelles me laissent froide. »<br><span style="color:var(--gris-txt)">Achète 2 à 3 beaux livres par an, autour de 35 €.</span></p></div>
     <div class="bloc"><h3>Persona · Malik, 38 ans</h3>
-      <p class="note">Professeur de wing-chun, 60 élèves. « Mes élèves arrivent à cause d’un film. Je voudrais un livre qui prenne ça au sérieux au lieu d’en rire. »<br><span style="color:var(--gris)">Prescripteur : offre des livres à son club.</span></p></div>
+      <p class="note">Professeur de wing-chun, 60 élèves. « Mes élèves arrivent à cause d’un film. Je voudrais un livre qui prenne ça au sérieux au lieu d’en rire. »<br><span style="color:var(--gris-txt)">Prescripteur : offre des livres à son club.</span></p></div>
   </div>
 </section>
 
@@ -864,7 +870,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       <h3 class="or">Le cinquième ton</h3>
       <p class="note">Un <strong>Pantone or</strong> sur les six ouvertures de partie et le marquage de couverture. Référence directe aux cartons-titres de la Shaw Brothers, et signal de repérage dans un livre épais.</p>
       <p class="note">Un cinquième groupe d’encrage sur une partie seulement des cahiers : à arbitrer avec l’imprimeur — le surcoût dépend de l’imposition retenue.</p>
-      <p class="note" style="color:var(--gris)">Procédure de contrôle : épreuve contractuelle certifiée + BAT machine sur le premier cahier.</p>
+      <p class="note" style="color:var(--gris-txt)">Procédure de contrôle : épreuve contractuelle certifiée + BAT machine sur le premier cahier.</p>
     </div>
   </div>
 </section>
@@ -923,7 +929,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
       </ul>
     </div>
   </div>
-  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px);color:var(--gris)">
+  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px);color:var(--gris-txt)">
     Contrôles envisagés : gamme de contrôle sur chaque feuille, densitomètre sur les aplats, vérification du repérage sur les bandes décomposées — c’est là que le défaut se verrait.
   </p>
 </section>
@@ -974,7 +980,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <li><span class="k">MARS</span><span class="v">Façonnage et embellissements · compte d’exploitation prévisionnel</span><span class="t">à venir</span></li>
     <li><span class="k">AVR</span><span class="v">Diffusion, promotion, argumentaire libraire · plan média</span><span class="t">à venir</span></li>
   </ul>
-  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,22px);color:var(--gris)">
+  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,22px);color:var(--gris-txt)">
     À produire pour le dossier : le même planning en Gantt, depuis l’étude de marché jusqu’à la livraison du produit fini.
   </p>
 </section>
@@ -991,7 +997,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <tr><td>Préparateur / correcteur</td><td>Statut d’indépendant ou de pigiste selon l’usage de l’éditeur. Rémunération <strong>au feuillet</strong>.</td></tr>
     <tr><td>Traducteur</td><td>Contrat de traduction, forfait, cession limitée aux extraits traduits.</td></tr>
   </table>
-  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,20px);color:var(--gris)">
+  <p class="note r d3" style="margin-top:clamp(12px,1.8vh,20px);color:var(--gris-txt)">
     À placer en annexe du dossier : un exemplaire rempli de chaque type de contrat.
   </p>
 </section>
@@ -1024,17 +1030,19 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <span class="eyebrow r"><span class="dot"></span>Économie · prix de revient</span>
   <h2 class="titre r d1">CE QUE ÇA COÛTE</h2>
   <table class="fiche r d2">
-    <tr><td>Frais éditoriaux</td><td>Préface, préparation de copie, corrections, traduction ponctuelle, à-valoir auteur</td></tr>
-    <tr><td>Iconographie</td><td>Honoraires iconographe + <strong>droits de reproduction</strong> — poste le plus incertain et le plus lourd</td></tr>
-    <tr><td>Création graphique</td><td>Conception maquette, gabarits, couverture</td></tr>
-    <tr><td>Exécution</td><td>Mise en pages des 208 pages sur gabarits validés</td></tr>
-    <tr><td>Prépresse</td><td>Photogravure, épreuves contractuelles, BAT</td></tr>
-    <tr><td>Fabrication</td><td>Impression 4 + 1 Pantone, papier, façonnage cousu, dos toilé, marquage</td></tr>
-    <tr><td>Promotion</td><td>Service de presse, argumentaire, achats d’espaces éventuels</td></tr>
-    <tr><td>Couche AR</td><td>Abonnement ZapWorks + animation des 12 schémas — poste distinct, arbitrable jusqu’en mars</td></tr>
+    <tr><td>Frais éditoriaux</td><td>Préface au forfait, préparation de copie et corrections sur 336 000 signes</td><td class="eur">4 700 €</td></tr>
+    <tr><td>Iconographe</td><td>Recherche, négociation, suivi des autorisations</td><td class="eur">5 000 €</td></tr>
+    <tr><td>Droits de reproduction</td><td><strong>≈ 200 visuels × 120 €</strong> — fourchette réelle de 60 à 200 € selon l’ayant droit. <em>Le poste qui décide du projet.</em></td><td class="eur">24 000 €</td></tr>
+    <tr><td>Prépresse</td><td>Photogravure, épreuve contractuelle, BAT machine</td><td class="eur">2 000 €</td></tr>
+    <tr><td>Fabrication</td><td>3 000 ex. × ≈ 5,50 € — 4 + 1 Pantone, cousu, dos toilé, marquage</td><td class="eur">16 500 €</td></tr>
+    <tr><td>Promotion</td><td>Service de presse, argumentaire libraire</td><td class="eur">2 500 €</td></tr>
+    <tr><td>Couche AR</td><td>Abonnement ZapWorks + animation des 12 schémas</td><td class="eur">3 500 €</td></tr>
+    <tr><td>Droits d’auteur</td><td>8 % du prix HT, proportionnels, sur 2 250 exemplaires écoulés</td><td class="eur">6 000 €</td></tr>
+    <tr class="somme"><td>Total décaissé</td><td>Coût de revient <strong>21,39 €</strong> par exemplaire imprimé — recette éditeur <strong>20,57 €</strong> par exemplaire vendu</td><td class="eur">64 200 €</td></tr>
   </table>
-  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px)">
-    Chaque poste est à chiffrer deux fois : un <strong>devis interne</strong> (coût prévisionnel) puis un <strong>devis fournisseur</strong> réel, avec analyse comparative et bon de commande. L’écart entre les deux est le principal enseignement de l’exercice.
+  <p class="note r d3" style="margin-top:clamp(10px,1.6vh,18px);max-width:none">
+    <strong>À 35 €, le compte ne tombe pas.</strong> Sur 2 250 exemplaires écoulés — 75 % du tirage, retours déduits — la recette atteint 46 300 € : <strong>− 17 900 €</strong>. Droits négociés au plus bas de la fourchette : − 5 900 €. Le projet ne bascule qu’à <strong>42 € et 60 € l’image</strong> : + 2 200 €. Texte, maquette et exécution sont l’apport de l’auteur, rémunéré en droits.
+    <span style="color:var(--gris-txt)">· hypothèses à remplacer par les devis avant le dossier final</span>
   </p>
 </section>
 
@@ -1054,16 +1062,16 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <div>
       <h3 class="or">Les paramètres qu’on tient</h3>
       <table class="fiche" style="margin-top:10px">
-        <tr><td>Prix public</td><td>35 € TTC <span style="color:var(--gris)">· hypothèse</span></td></tr>
-        <tr><td>Tirage</td><td>3 000 ex. <span style="color:var(--gris)">· hypothèse</span></td></tr>
-        <tr><td>Remise moyenne</td><td>≈ 38 % <span style="color:var(--gris)">· à confirmer</span></td></tr>
+        <tr><td>Prix public</td><td>35 € TTC <span style="color:var(--gris-txt)">· hypothèse</span></td></tr>
+        <tr><td>Tirage</td><td>3 000 ex. <span style="color:var(--gris-txt)">· hypothèse</span></td></tr>
+        <tr><td>Remise moyenne</td><td>≈ 38 % <span style="color:var(--gris-txt)">· à confirmer</span></td></tr>
         <tr><td>Droits d’auteur</td><td>Proportionnels, barème à négocier</td></tr>
         <tr><td>Période</td><td>3 ans</td></tr>
       </table>
     </div>
   </div>
-  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px);color:var(--gris)">
-    Le CEP chiffré est un livrable de mars. Ce qui est présenté ici, c’est sa structure et les paramètres retenus.
+  <p class="note r d3" style="margin-top:clamp(14px,2vh,24px);color:var(--gris-txt)">
+    Le CEP complet reste un livrable de mars : ce qui est chiffré ici — les coûts et le coût de revient unitaire — en est le socle, et il suffit déjà à dire que le prix doit remonter. Ce qui est présenté ici, c’est sa structure et les paramètres retenus.
   </p>
 </section>
 
@@ -1077,8 +1085,8 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     <div class="bloc"><div class="num">oct.</div><h3>Office</h3><p class="note">Après la rentrée littéraire, avant les fêtes.</p></div>
   </div>
   <div class="cols c2 r d3" style="margin-top:clamp(18px,2.8vh,30px)">
-    <div class="bloc"><h3>Pourquoi 35 € et pas 29</h3>
-      <p class="note">Le cousu, le dos toilé et le cinquième ton ne tiennent pas à 29 €. Descendre le prix voudrait dire abandonner l’ouverture à plat — c’est-à-dire le livre.</p></div>
+    <div class="bloc"><h3>Pourquoi pas 29 €, et pourquoi pas 42</h3>
+      <p class="note">Le cousu, le dos toilé et le cinquième ton ne tiennent pas à 29 € : descendre voudrait dire abandonner l’ouverture à plat, c’est-à-dire le livre. Mais le chiffrage des coûts montre que <strong>35 € ne couvre pas non plus</strong> — le segment supporte 42 €, et le façonnage le justifie. <em>Arbitrage à trancher avec l’éditeur.</em></p></div>
     <div class="bloc"><h3>Pourquoi 3 000 et pas 2 000</h3>
       <p class="note">En dessous, le coût unitaire d’impression et les droits fixes d’iconographie écrasent la marge. Le tirage est ce qui rend le projet possible, pas le prix.</p></div>
   </div>
@@ -1112,7 +1120,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <div class="cols c3 r d2">
     <div class="bloc"><h3 class="or">Premier choix · Capricci</h3>
       <p class="note">Catalogue de cinéma exigeant, format d’essai illustré maîtrisé, diffusion Harmonia Mundi. Sait défendre une thèse d’auteur sans la diluer.</p>
-      <p class="note" style="margin-top:8px;color:var(--gris)">Risque : tirages modestes, moyens iconographiques limités.</p></div>
+      <p class="note" style="margin-top:8px;color:var(--gris-txt)">Risque : tirages modestes, moyens iconographiques limités.</p></div>
     <div class="bloc"><h3>Alternative · Carlotta</h3>
       <p class="note">Éditeur vidéo devenu éditeur de livres. Public déjà acquis sur le cinéma asiatique restauré, et <strong>accès aux ayants droit</strong> par son activité d’éditeur vidéo — un atout décisif sur ce projet.</p></div>
     <div class="bloc"><h3>Alternative · Huginn &amp; Muninn</h3>
@@ -1138,7 +1146,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     </div>
     <div>
       <h3 class="or">Le circuit à ne pas manquer</h3>
-      <p class="note">Les <strong>clubs et fédérations</strong> d’arts martiaux représentent des centaines de milliers de licenciés en France, et aucun beau livre ne les adresse. Vente directe, partenariat de fédération, présence sur les grands rassemblements.</p>
+      <p class="note">Les <strong>clubs et fédérations</strong> d’arts martiaux comptent plus de <strong>780 000 licenciés</strong> pour les deux seules grandes fédérations — 530 000 au judo, 250 000 au karaté et disciplines associées <span style="color:var(--gris-txt)">· INJEP, 2024</span> — avant le taekwondo, l’aïkido et la boxe. Aucun beau livre ne les adresse. Vente directe, partenariat de fédération, présence sur les grands rassemblements.</p>
       <p class="note">C’est un canal que le segment ignore — donc un argument de négociation face à l’éditeur, et un poste de vente qui ne dépend pas de la place en rayon.</p>
     </div>
   </div>
@@ -1194,15 +1202,18 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <div class="cols c3 r d2">
     <div class="bloc"><div class="num">An 1</div><h3>La mise en place</h3>
       <p class="note">L’office et les fêtes. La majorité des ventes du premier tirage se joue entre octobre et janvier.</p>
-      <p class="note" style="color:var(--gris);margin-top:6px">Objectif : ≈ 55 % du tirage · hypothèse</p></div>
+      <p class="note" style="color:var(--gris-txt);margin-top:6px">Objectif : ≈ 55 % du tirage · hypothèse</p></div>
     <div class="bloc"><div class="num">An 2</div><h3>La vie de fonds</h3>
       <p class="note">Réassorts, prescription scolaire, ventes hors librairie par les clubs et les festivals.</p>
-      <p class="note" style="color:var(--gris);margin-top:6px">Objectif : ≈ 30 % · hypothèse</p></div>
+      <p class="note" style="color:var(--gris-txt);margin-top:6px">Objectif : ≈ 30 % · hypothèse</p></div>
     <div class="bloc"><div class="num">An 3</div><h3>L’écoulement</h3>
       <p class="note">Fin de tirage, décision de réimpression ou de solde selon le rythme constaté.</p>
-      <p class="note" style="color:var(--gris);margin-top:6px">Objectif : ≈ 15 % · hypothèse</p></div>
+      <p class="note" style="color:var(--gris-txt);margin-top:6px">Objectif : ≈ 15 % · hypothèse</p></div>
   </div>
-  <p class="note r d3" style="margin-top:clamp(18px,2.8vh,30px)">
+  <p class="note r d3" style="margin-top:clamp(14px,2.2vh,24px)">
+    <strong>Ces trois taux portent sur ce qui se vend, pas sur ce qui part.</strong> Un office de beau livre revient à 20-30 % : on retient un écoulement de <strong>75 % du tirage</strong>, soit ≈ 2 250 exemplaires, le reste en retours puis en solde ou en pilon. C’est ce chiffre-là qu’il faut confronter au coût de revient, pas les 3 000. <span style="color:var(--gris-txt)">· hypothèse</span>
+  </p>
+  <p class="note r d3" style="margin-top:clamp(10px,1.6vh,18px)">
     <strong>Date d’office : octobre.</strong> Après la rentrée littéraire, qui saturerait l’attention ; assez tôt pour que la prescription s’installe avant décembre ; et à distance des sorties cinéma d’action de l’été, dont le bruit desservirait un livre d’analyse.
   </p>
 </section>
@@ -1245,7 +1256,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
         <li><span class="k">~</span><span class="v">Planche comparative des couvertures</span></li>
       </ul>
     </div>
-    <div class="bloc"><h3 style="color:var(--gris)">À produire</h3>
+    <div class="bloc"><h3 style="color:var(--gris-txt)">À produire</h3>
       <ul class="liste">
         <li><span class="k">→</span><span class="v">Chemin de fer folioté</span></li>
         <li><span class="k">→</span><span class="v">Brief et recherches graphiques</span></li>

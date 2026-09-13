@@ -186,6 +186,17 @@ body.chrome-sombre footer{color:#7C7669}
    cible pleine largeur au bord bas de l'écran, là où le pointeur se repose. */
 body.diapo:not(.eveille) .prog,body.diapo:not(.eveille) .nav{pointer-events:none}
 #cnt-cur.saisie{color:var(--or);font-weight:600}
+/* Un chronomètre de l'ÉCOULÉ, pas un décompte : savoir qu'on est à 14:30 sur
+   la slide 30 vaut mieux que n'importe quelle barre de progression. Vingt
+   minutes se tiennent au ressenti, à condition de connaître le ressenti. */
+.chrono{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.08em;
+  font-variant-numeric:tabular-nums;background:none;border:1px solid var(--trait);
+  color:var(--gris-txt);border-radius:3px;padding:3px 8px;cursor:pointer;flex:none;pointer-events:auto}
+.chrono:hover{border-color:var(--or-txt);color:var(--or-txt)}
+.chrono.court{color:var(--or-txt);border-color:var(--or-txt)}
+.chrono.depasse{color:#B3452C;border-color:#B3452C}
+.chrome-sombre .chrono{border-color:#3A362F;color:#BDB6A6}
+.chrome-sombre .chrono.court{color:var(--or);border-color:var(--or)}
 /* La pastille ne mesurait que 3 px de haut : impossible à viser. Le trait
    reste fin — background-clip le confine à la boîte de contenu — mais la
    zone cliquable fait 19 px grâce au rembourrage. */
@@ -1311,6 +1322,8 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   <div class="prog" id="prog"></div>
   <div class="lbl" id="pied-lbl">Couverture</div>
   <div class="cnt"><span id="cnt-cur">01</span> / <span id="cnt-tot">--</span></div>
+  <button class="chrono" id="chrono" title="Chronomètre — clic pour démarrer, arrêter, remettre à zéro (touche T)"
+          aria-label="Chronomètre de la présentation">00:00</button>
   <div class="nav">
     <a href="index.html" id="accueil" title="Retour à l'accueil" aria-label="Retour à l'accueil">⌂</a>
     <button id="plein" aria-label="Plein écran (F)" title="Plein écran · F">⛶</button>
@@ -1400,6 +1413,7 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     // revenir d'où l'on venait après un saut : un clic manqué sur la barre de
     // progression était sans retour.
     if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); goSlide(precedent); }
+    if (e.key === 't' || e.key === 'T') { e.preventDefault(); basculerChrono(); eveiller(); }
   });
 
   // balayage tactile, pour l'iPad
@@ -1489,6 +1503,33 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
     }
   }
 
+  /* ---------- chronomètre ----------
+     Trois états sur un seul bouton : arrêté à zéro → il démarre ; en marche →
+     il s'arrête ; arrêté avec du temps → il remet à zéro. Il vire à l'or à
+     dix-sept minutes et au rouge après vingt : la soutenance en fait vingt. */
+  const chrono = $('#chrono');
+  let debutChrono = null, ecoule = 0, tictac = null;
+  const CIBLE = 20 * 60;
+  function afficherChrono(){
+    const t = ecoule + (debutChrono ? Math.floor((Date.now() - debutChrono) / 1000) : 0);
+    chrono.textContent = String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
+    chrono.classList.toggle('court', t >= CIBLE - 180 && t < CIBLE);
+    chrono.classList.toggle('depasse', t >= CIBLE);
+  }
+  function basculerChrono(){
+    if (debutChrono) {                       // en marche → on arrête
+      ecoule += Math.floor((Date.now() - debutChrono) / 1000);
+      debutChrono = null; clearInterval(tictac); tictac = null;
+    } else if (ecoule) {                     // arrêté avec du temps → remise à zéro
+      ecoule = 0;
+    } else {                                 // arrêté à zéro → on démarre
+      debutChrono = Date.now();
+      tictac = setInterval(afficherChrono, 1000);
+    }
+    afficherChrono();
+  }
+  chrono.addEventListener('click', e => { e.stopPropagation(); basculerChrono(); });
+
   let sommeil = null;
   function eveiller(){
     document.body.classList.add('eveille');
@@ -1498,7 +1539,12 @@ body.diapo.eveille footer,body.diapo.eveille .nav,body.diapo.eveille #cursor{opa
   function majDiapo(){
     const plein = !!(document.fullscreenElement || document.webkitFullscreenElement);
     document.body.classList.toggle('diapo', plein);
-    if (plein) { aEtePlein = true; eveiller(); tenirEveille(true); }
+    if (plein) {
+      aEtePlein = true; eveiller(); tenirEveille(true);
+      // Entrer en plein écran, c'est commencer à parler : le chronomètre part
+      // tout seul. Personne ne pense à le lancer au moment de commencer.
+      if (!debutChrono && !ecoule) basculerChrono();
+    }
     else {
       clearTimeout(sommeil); document.body.classList.remove('eveille'); tenirEveille(false);
       /* On ne quitte plus au premier Échap : « f », ⌘F, un réflexe, ou un

@@ -87,7 +87,7 @@ body.vign{--rail:250px}
 .vign #list{padding:8px}
 .vign .item{display:block;padding:0;margin-bottom:10px;border-radius:6px;position:relative}
 .vign .item .cadre{position:relative;border:1px solid var(--line);border-radius:5px;overflow:hidden;
-  background:var(--paper);aspect-ratio:16/10}
+  background:var(--bone);aspect-ratio:16/10}
 .vign .item.cur .cadre{border-color:var(--or);box-shadow:0 0 0 1px var(--or)}
 .vign .item:hover .cadre{border-color:var(--grey)}
 .vign .item.hidden .cadre{opacity:.42}
@@ -125,7 +125,7 @@ body.vign{--rail:250px}
 .gab{background:none;border:1px solid var(--line);border-radius:6px;padding:0;cursor:pointer;
   text-align:left;color:inherit;overflow:hidden;display:flex;flex-direction:column}
 .gab:hover{border-color:var(--or)}
-.gab .apercu{position:relative;aspect-ratio:16/10;background:var(--paper);overflow:hidden;
+.gab .apercu{position:relative;aspect-ratio:16/10;background:var(--bone);overflow:hidden;
   border-bottom:1px solid var(--line)}
 .gab .txt{padding:8px 10px 10px}
 .gab .txt b{display:block;font-family:var(--ui);font-size:12.5px;font-weight:600}
@@ -313,7 +313,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
       <div id="veil">
         <div>
           <div style="font-family:var(--display);font-size:26px;color:var(--bone);letter-spacing:.5px">CHARGEMENT DU DECK</div>
-          <div style="margin-top:8px">CONTRE-CHAMP — 18 slides.</div>
+          <div style="margin-top:8px">CONTRE-CHAMP</div>
           <div class="bar"><i></i></div>
         </div>
       </div>
@@ -732,11 +732,27 @@ function setupEdit(){
       t.innerHTML = html;
       // Déballer un <script> garderait son TEXTE : coller depuis une page web
       // déposait du code en clair au milieu du paragraphe. Inerte, mais visible.
-      const JETER = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TITLE','HEAD']);
+      const JETER = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TITLE','HEAD',
+                             'IFRAME','TEXTAREA','XMP','NOEMBED','NOFRAMES','PLAINTEXT','OBJECT','EMBED']);
+      // Les commentaires ne sont pas des éléments : ils traversaient le
+      // déballage intacts. Word en colle systématiquement, avec sa charge XML.
+      const wc = S.doc.createTreeWalker(t.content, NodeFilter.SHOW_COMMENT);
+      const coms = []; let cm; while ((cm = wc.nextNode())) coms.push(cm);
+      coms.forEach(c => c.remove());
       const deballe = n => {
-        if (JETER.has(n.tagName)) { n.remove(); return; }
+        // tagName n'est en majuscules que pour le HTML : un <style> dans le
+        // namespace SVG s'appelle « style » et passait à travers JETER.
+        if (n.namespaceURI !== 'http://www.w3.org/1999/xhtml'
+            || JETER.has((n.tagName || '').toUpperCase())) { n.remove(); return; }
         [...n.children].forEach(deballe);
-        if (!COLLE_OK.has(n.tagName)) { n.replaceWith(...n.childNodes); return; }
+        if (!COLLE_OK.has(n.tagName)) {
+          // Déballer un <p> sans rien mettre à sa place collait « undeux » :
+          // trois paragraphes de Word devenaient un pavé continu.
+          if (/^(P|DIV|LI|TR|H[1-6]|BLOCKQUOTE|PRE|SECTION|ARTICLE)$/.test(n.tagName)
+              && n.nextSibling && n.textContent.trim()) n.after(S.doc.createElement('br'));
+          n.replaceWith(...n.childNodes);
+          return;
+        }
         [...n.attributes].forEach(a => {
           // seul href survit, et seulement s'il mène quelque part de sûr
           if (a.name === 'href' && n.tagName === 'A' && /^(https?:|mailto:|#)/i.test(a.value)) return;
@@ -750,9 +766,24 @@ function setupEdit(){
       frag = t.content;
     } else {
       frag = S.doc.createDocumentFragment();
-      frag.appendChild(S.doc.createTextNode(dt.getData('text/plain') || ''));
+      // Les retours à la ligne se repliaient en espaces : un texte collé sur
+      // trois lignes en faisait une seule.
+      String(dt.getData('text/plain') || '').split(/\r?\n/).forEach((ligne, i) => {
+        if (i) frag.appendChild(S.doc.createElement('br'));
+        if (ligne) frag.appendChild(S.doc.createTextNode(ligne));
+      });
     }
+    // Une capture d'écran dans le presse-papier n'a ni HTML ni texte : on
+    // effaçait la sélection pour n'insérer rien du tout.
+    if (!frag.firstChild) { status('rien de collable dans le presse-papier', 'err'); setTimeout(refreshStatus, 2500); return; }
     const sel = S.doc.getSelection(); if (!sel || !sel.rangeCount) return;
+    // deleteContents traverse la frontière entre deux blocs éditables, mais on
+    // n'enregistre que « cible » : au rechargement le second bloc revenait
+    // intact, et son texte apparaissait en double.
+    if (!cible.contains(sel.anchorNode) || !cible.contains(sel.focusNode)) {
+      status('sélection à cheval sur deux blocs — collage refusé', 'err');
+      setTimeout(refreshStatus, 3000); return;
+    }
     const r = sel.getRangeAt(0); r.deleteContents(); r.insertNode(frag);
     sel.collapseToEnd();
     programmerSaisie(cible);
@@ -786,6 +817,11 @@ function setupEdit(){
     // c/x/v ne sont relayés que si RIEN n'est sélectionné : sur des mots
     // sélectionnés, copier des mots reste le travail du navigateur.
     if ('cxv'.includes(k)) {
+      // ⌘V dans un texte, c'est coller du texte : le gestionnaire « paste »
+      // s'en charge, avec son assainisseur. Le relayer ici le rendait
+      // inatteignable au geste normal, puisqu'un curseur simple n'est pas
+      // une sélection — donc la garde ci-dessous ne se déclenchait jamais.
+      if (k === 'v' && e.target && e.target.isContentEditable) return;
       const sl = S.doc.getSelection();
       if (sl && !sl.isCollapsed && String(sl).trim()) return;
     } else if (['s','r','f','z'].indexOf(k) < 0) return;
@@ -903,17 +939,28 @@ function cssDeck(){
   catch(e){ return ''; }
 }
 function construireFeuille(){
-  const brut = cssDeck(); if (!brut) return null;
+  // Ne pas sortir avant d'avoir posé le bloc de surcharge : sans lui l'hôte
+  // n'a ni largeur ni hauteur, et la vignette n'est plus qu'une bouillie.
+  const brut = cssDeck() || '';
+  // La scène fait 1600x1000 : 1vw = 16px, 1vh = 10px, 1vmin = 10px, 1vmax = 16px.
+  // Une seule passe qui couvre TOUTES les unités de fenêtre — svh, lvh, dvw et
+  // vmin traversaient les trois anciennes règles intacts, et se seraient alors
+  // mesurés sur la fenêtre de l'éditeur.
+  const FACTEUR = { vw:16, dvw:16, svw:16, lvw:16, vh:10, dvh:10, svh:10, lvh:10, vmin:10, vmax:16 };
   const fige = brut
     .replace(/:root\b/g, ':host')
-    .replace(/(\d*\.?\d+)vw\b/g, (m,n) => (parseFloat(n)*16).toFixed(2) + 'px')
-    .replace(/(\d*\.?\d+)dvh\b/g, (m,n) => (parseFloat(n)*10).toFixed(2) + 'px')
-    .replace(/(\d*\.?\d+)vh\b/g, (m,n) => (parseFloat(n)*10).toFixed(2) + 'px')
+    .replace(/(\d*\.?\d+)(dvw|svw|lvw|vw|dvh|svh|lvh|vh|vmin|vmax)\b/g,
+             (m,n,u) => (parseFloat(n) * FACTEUR[u]).toFixed(2) + 'px')
     + `
     :host{display:block;width:1600px;height:1000px;background:var(--paper);overflow:hidden}
     section.slide{opacity:1!important;visibility:visible!important;display:flex!important;
       overflow:hidden!important;transition:none!important;animation:none!important}
-    section.slide *{animation:none!important;transition:none!important}`;
+    section.slide,section.slide *,
+    section.slide::before,section.slide::after,
+    section.slide *::before,section.slide *::after{animation:none!important;transition:none!important}
+    /* Le tracé SVG part masqué et c'est l'animation qui le dessine : figé, il
+       ne montrait rien. Même remède que le mode « mouvement réduit » du deck. */
+    .trace{stroke-dashoffset:0!important}`;
   feuilleMiniTexte = fige;
   if (typeof CSSStyleSheet === 'undefined' || !('replaceSync' in CSSStyleSheet.prototype)) return null;
   try {
@@ -1417,7 +1464,11 @@ addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
     const surRail = !!(e.target.closest && e.target.closest('#list .item'));
     let selTexte = false;
-    try { const sl = S.doc.getSelection(); selTexte = sl && !sl.isCollapsed && String(sl).trim(); } catch(_){}
+    try { const sl = S.doc.getSelection(); selTexte = !!(sl && !sl.isCollapsed && String(sl).trim()); } catch(_){}
+    // La sélection du document PARENT compte aussi : sélectionner un libellé
+    // dans le rail puis ⌘C copiait une slide au lieu du texte sélectionné.
+    const slP = window.getSelection();
+    if (slP && !slP.isCollapsed && String(slP).trim()) selTexte = true;
     if (!selTexte || surRail) {
       if (k === 'c') { e.preventDefault(); surRail ? copierSlide(sections()[+e.target.closest('.item').dataset.i]) : (blocActif ? copierBloc(false) : copierSlide()); }
       if (k === 'x' && !surRail && blocActif) { e.preventDefault(); copierBloc(true); }
@@ -1438,6 +1489,7 @@ addEventListener('keydown', e => {
 let presse = null;   // { quoi:'bloc'|'slide', html, nom }
 
 function copierBloc(couper){
+  viderEnAttente();   // la frappe en cours doit exister avant qu'on remanie
   if (!blocActif || !blocActif.isConnected) return false;
   const u = unite(blocActif);
   presse = { quoi:'bloc', html: propre(u).outerHTML, nom: (u.textContent||'').trim().slice(0,32) || u.tagName.toLowerCase() };
@@ -1465,6 +1517,7 @@ function copierSlide(sec){
   return true;
 }
 function coller(){
+  viderEnAttente();
   if (!presse) { status('rien à coller', 'err'); setTimeout(refreshStatus, 2000); return; }
   if (presse.quoi === 'slide') {
     const apres = curSec();
@@ -1473,6 +1526,8 @@ function coller(){
     const nu = t.content.firstElementChild; if (!nu) return;
     nu.dataset.lbl = uniqLbl(presse.nom);        // deux slides ne peuvent pas porter le même nom
     nu.classList.remove('active');
+    nu.removeAttribute('id');                    // pas de doublon d'identifiant
+    nu.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
     setOp(apres ? { t:'add', after: apres.dataset.lbl, html: nu.outerHTML } : { t:'add', html: nu.outerHTML });
     if (apres) apres.after(nu); else (S.doc.querySelector('main') || S.doc.body).appendChild(nu);
     buildRail(); showSlide(sections().indexOf(nu));
@@ -1485,14 +1540,27 @@ function coller(){
   const t = S.doc.createElement('template'); t.innerHTML = presse.html.trim();
   const nu = t.content.firstElementChild; if (!nu) return;
   const par = ancre ? ancre.parentElement : sec;
+  /* Un <template> conserve un <tr> isolé, donc le collage paraît réussi. Mais
+     l'op enregistre l'innerHTML de la section, et au rechargement le parseur
+     HTML rejette <tr> hors tableau : la ligne était réduite à du texte nu.
+     Symétrique du piège déjà documenté dans cloneVide. */
+  const TABLEAU = /^(TR|TD|TH|TBODY|THEAD|TFOOT|CAPTION|COL|COLGROUP)$/;
+  const dansTable = !!(par.closest && par.closest('table'));
+  if (TABLEAU.test(nu.tagName) !== dansTable) {
+    status(dansTable ? 'ce bloc ne peut pas être collé dans un tableau'
+                     : 'cette ligne ne peut être collée que dans un tableau', 'err');
+    setTimeout(refreshStatus, 3500); return;
+  }
   const avant = par.innerHTML;
   if (ancre) ancre.after(nu); else sec.appendChild(nu);
-  if (!enregistrerParent(nu)) {
-    par.innerHTML = avant;
-    status('collage non enregistré — annulé', 'err'); setTimeout(refreshStatus, 3000); return;
-  }
+  const abouti = enregistrerParent(nu);
+  if (!abouti) par.innerHTML = avant;   // rien n'a été enregistré : rien ne doit rester
+  // Dans les DEUX cas le sous-arbre a été remplacé : tout ce qui pointait
+  // dedans — le bloc actif, le cadre d'image, les marqueurs — doit lâcher.
+  deselectionnerImage();
   delete sec.dataset.cjArmed; sec.removeAttribute('data-cj-armed'); armEditables(sec);
   blocActif = null; majBarre();
+  if (!abouti) { status('collage non enregistré — annulé', 'err'); setTimeout(refreshStatus, 3000); return; }
   status('bloc collé', 'dirty'); setTimeout(refreshStatus, 2600);
 }
 

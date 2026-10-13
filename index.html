@@ -30,8 +30,8 @@ h1{font-family:'Oswald',sans-serif;font-weight:700;line-height:.9;text-transform
 .sous{font-size:clamp(15px,1.7vw,21px);font-weight:300;line-height:1.5;max-width:46ch;color:#D8D2C4}
 .sous em{color:var(--or);font-style:italic}
 main{flex:1;display:flex;align-items:center;padding:clamp(24px,5vh,56px) clamp(24px,5vw,64px);position:relative;z-index:2}
-.grille{display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2.4vw,28px);width:100%;max-width:1060px}
-@media(max-width:760px){.grille{grid-template-columns:1fr;max-width:520px}}
+.grille{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2.4vw,28px);width:100%;max-width:1200px}
+@media(max-width:900px){.grille{grid-template-columns:1fr;max-width:520px}}
 a.carte{display:flex;flex-direction:column;justify-content:space-between;min-height:clamp(180px,26vh,250px);
   padding:clamp(20px,3vw,32px);border:1px solid #2E2B26;border-radius:4px;text-decoration:none;color:inherit;
   transition:border-color .2s,background .2s;background:#171613}
@@ -62,6 +62,11 @@ footer{padding:0 clamp(24px,5vw,64px) clamp(24px,5vh,44px);font-family:'Oswald',
     <a class="carte" href="editeur.html">
       <div><div class="n">L’éditeur</div>
         <div class="d">Modifier les textes, les images, l’ordre et la mise en forme des slides, puis publier en ligne.</div></div>
+      <div class="fl">Ouvrir →</div>
+    </a>
+    <a class="carte" href="etude-graphique.html">
+      <div><div class="n">L’étude graphique</div>
+        <div class="d">Les codes graphiques du marché, et ce que le livre en garde ou en refuse — quatre pages A4 pour le dossier.</div></div>
       <div class="fl">Ouvrir →</div>
     </a>
   </div>

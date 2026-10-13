@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Étude graphique · CONTRE-CHAMP</title>
+<meta name="description" content="CONTRE-CHAMP — étude des codes graphiques du marché : le beau livre de cinéma martial, et ce que le projet en fait.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23121212'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23B9893F'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0E0E0E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<!-- Un seul glyphe : l'idéogramme 武 (« martial ») du spécimen « idéogramme décoratif ». -->
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&text=%E6%AD%A6&display=swap" rel="stylesheet">
+<style>
+/* Étude graphique — quatre pages A4, montées en doubles pages à l'écran,
+   une page par feuille à l'impression. Toutes les mesures internes sont en
+   cqw (1 cqw = 1 % de la largeur de page = 2,1 mm) : la page se met à
+   l'échelle d'un bloc, à l'écran comme sur papier. */
+:root{
+  --paper:#F2EEE4;--ink:#121212;--or:#B9893F;--or-txt:#8A662F;
+  --gris:#8B8578;--gris-txt:#716C61;--trait:#DAD4C6;
+  --table:#0E0E0D;
+  /* palette du marché, pour les relevés */
+  --m-noir:#151413;--m-rouge:#A3201B;--m-or:#C9A24A;--m-jaune:#E8B923;--m-blanc:#ECE7DC;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--table);color:var(--paper);font-family:'Spectral',Georgia,serif;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ---------- chrome écran ---------- */
+.barre{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px clamp(16px,3vw,32px);background:rgba(14,14,13,.92);backdrop-filter:blur(6px);
+  border-bottom:1px solid #26241F;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.barre a,.barre button{color:var(--or);text-decoration:none;background:none;border:1px solid #3A362E;border-radius:3px;
+  padding:7px 12px;font:inherit;letter-spacing:inherit;cursor:pointer}
+.barre a:hover,.barre button:hover{border-color:var(--or)}
+.barre .t{color:#9C9586;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barre a,.barre button{white-space:nowrap;flex:none}
+@media (max-width:560px){.barre .t{display:none}}
+.livre{padding:clamp(16px,4vw,48px) clamp(16px,3vw,40px) 64px;display:flex;flex-direction:column;align-items:center;gap:clamp(28px,5vw,64px)}
+.spread{display:grid;grid-template-columns:1fr 1fr;width:min(100%,1320px);
+  box-shadow:0 30px 70px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.4)}
+.spread .page.g::after,.spread .page.d::after{content:"";position:absolute;top:0;bottom:0;width:7%;pointer-events:none;z-index:20}
+.spread .page.g::after{right:0;background:linear-gradient(to left,rgba(0,0,0,.16),transparent)}
+.spread .page.d::after{left:0;background:linear-gradient(to right,rgba(0,0,0,.12),transparent)}
+.legende-ecran{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#6C665A;margin-top:-34px}
+@media (max-width:820px){
+  .spread{grid-template-columns:1fr;gap:16px;box-shadow:none}
+  .spread .page{box-shadow:0 14px 34px rgba(0,0,0,.5)}
+  .spread .page::after{display:none}
+  .legende-ecran{margin-top:-16px}
+}
+
+/* ---------- la page ---------- */
+.page{position:relative;width:100%;aspect-ratio:210/297;overflow:hidden;contain:paint;background:var(--paper);color:var(--ink);
+  container-type:inline-size;font-weight:400;font-kerning:normal;hyphens:auto;-webkit-hyphens:auto}
+/* le cqw d'un conteneur se mesure sur son parent : la taille de base va donc aux enfants */
+.page > *{font-size:1.55cqw;line-height:1.42}
+.page::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:19;opacity:.06;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.marge{position:absolute;left:7.5cqw;right:7.5cqw}
+.g .marge{left:7cqw;right:9cqw}
+.d .marge{left:9cqw;right:7cqw}
+
+/* titraille commune */
+.oeil{font-family:'Oswald',sans-serif;font-weight:500;font-size:1.25cqw;letter-spacing:.2em;text-transform:uppercase;color:var(--or-txt);
+  display:flex;align-items:center;gap:1.2cqw}
+.oeil::before{content:"";width:.9cqw;height:.9cqw;border-radius:50%;background:var(--or)}
+h3{font-family:'Oswald',sans-serif;font-weight:600;font-size:1.5cqw;letter-spacing:.13em;text-transform:uppercase;color:var(--ink);
+  margin:0 0 .5cqw}
+h3 + p{margin-top:0}
+p{margin:0}
+p + p{margin-top:.6em}
+em{font-style:italic}
+.cap{font-family:'Oswald',sans-serif;font-weight:400;font-size:1.08cqw;letter-spacing:.06em;line-height:1.35;color:var(--gris-txt)}
+.cap b{font-weight:600;color:var(--ink);letter-spacing:.12em;text-transform:uppercase}
+.folio{position:absolute;bottom:4.2cqw;font-family:'Oswald',sans-serif;font-size:1.15cqw;letter-spacing:.16em;color:var(--gris-txt);
+  display:flex;align-items:center;gap:1.4cqw;text-transform:uppercase;z-index:21}
+.g .folio{left:7cqw}
+.d .folio{right:7cqw;flex-direction:row-reverse}
+.folio.sur{background:var(--paper);padding:1cqw 1.4cqw;right:5.6cqw;bottom:3.2cqw;box-shadow:0 .4cqw 1.4cqw rgba(0,0,0,.25)}
+.folio .n{font-weight:600;color:var(--ink);font-size:1.5cqw;letter-spacing:.04em}
+.folio .f{width:5cqw;height:1px;background:var(--gris)}
+
+/* ============ PAGE 1 — ouverture ============ */
+.hero{position:absolute;left:0;right:0;top:0;height:50cqw;background:var(--ink);overflow:hidden}
+.hero svg{position:absolute;inset:0;width:100%;height:100%}
+.hero h1{position:absolute;left:6.5cqw;bottom:3.4cqw;font-family:'Oswald',sans-serif;font-weight:700;color:var(--paper);
+  font-size:12.6cqw;line-height:.86;letter-spacing:-.005em;text-transform:uppercase}
+.hero h1 span{display:block}
+.hero .tc{position:absolute;right:5cqw;bottom:3.6cqw;font-family:'Oswald',sans-serif;font-size:1.05cqw;letter-spacing:.2em;
+  color:#8E877A;text-align:right;line-height:1.6;text-transform:uppercase}
+.soustitre{top:53cqw;display:flex;justify-content:flex-end;align-items:flex-start;gap:2cqw}
+.soustitre .rg{width:7cqw;height:.55cqw;background:var(--or);margin-top:1cqw;flex:none}
+.soustitre h2{font-family:'Oswald',sans-serif;font-weight:400;font-size:2.55cqw;line-height:1.12;letter-spacing:.06em;
+  text-transform:uppercase;text-align:right}
+.corps1{top:62cqw;bottom:10cqw;display:flex;flex-direction:column;justify-content:space-between}
+.duo{display:grid;grid-template-columns:22cqw 1fr;gap:3.6cqw;align-items:start}
+.duo figure{margin:0}
+.duo .cap{margin-top:.7cqw}
+.duo p{text-align:justify;font-size:1.46cqw;line-height:1.4}
+
+/* mini doubles pages (schémas) */
+.ms{position:relative;width:100%;aspect-ratio:420/280;display:grid;grid-template-columns:1fr 1fr;background:#E4DFD2;
+  box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.18);outline:1px solid #CFC8B8}
+.ms > div{position:relative;overflow:hidden}
+.ms > div + div{border-left:1px solid #CFC8B8}
+.ms > .blk{position:absolute}
+.ms > .blk + div,.ms > div + .blk{border-left:none}
+.l{position:absolute;height:.32cqw;background:#B9B2A2;border-radius:1px}
+.blk{position:absolute;background:#2A2825}
+.x{background:
+   linear-gradient(to top right,transparent calc(50% - .5px),rgba(255,255,255,.18) 50%,transparent calc(50% + .5px)),
+   linear-gradient(to bottom right,transparent calc(50% - .5px),rgba(255,255,255,.18) 50%,transparent calc(50% + .5px)),
+   linear-gradient(160deg,#4A453D,#1F1D1A)}
+.x.clair{background:
+   linear-gradient(to top right,transparent calc(50% - .5px),rgba(0,0,0,.18) 50%,transparent calc(50% + .5px)),
+   linear-gradient(to bottom right,transparent calc(50% - .5px),rgba(0,0,0,.18) 50%,transparent calc(50% + .5px)),
+   #C9C2B2}
+
+/* spécimen typo */
+.spec{position:relative;width:100%;aspect-ratio:420/280;background:var(--m-noir);color:var(--m-blanc);display:grid;
+  grid-template-columns:1.25fr 1fr;box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.18)}
+.spec .a{padding:1.1cqw 1cqw;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid #3A3631}
+.spec .k{font-family:'Oswald',sans-serif;font-weight:700;font-size:4.1cqw;line-height:.85;text-transform:uppercase;transform:skewX(-8deg);transform-origin:left bottom}
+.spec .r{font-family:'Spectral',serif;font-size:2.7cqw;line-height:1}
+.spec .b{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--m-rouge)}
+.spec .ideo{font-family:'Ma Shan Zheng','STKaiti','KaiTi',serif;font-size:7.6cqw;line-height:1;color:var(--m-or)}
+.spec .mini{font-family:'Oswald',sans-serif;font-size:.78cqw;letter-spacing:.14em;text-transform:uppercase;color:#A39C8D}
+.spec .b .mini{color:#F0C9A8;margin-top:.4cqw}
+
+/* nuancier du marché */
+.nuancier{display:grid;grid-template-columns:repeat(5,1fr);width:100%;aspect-ratio:420/280;box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.18)}
+.nuancier div{display:flex;align-items:flex-end;padding:.7cqw .5cqw;font-family:'Oswald',sans-serif;font-size:.8cqw;letter-spacing:.1em;
+  text-transform:uppercase;line-height:1.2}
+.nuancier div:nth-child(1){background:var(--m-noir);color:#9C9586;flex:2}
+.nuancier div:nth-child(2){background:var(--m-rouge);color:#F3D0C0}
+.nuancier div:nth-child(3){background:var(--m-or);color:#3D2F12}
+.nuancier div:nth-child(4){background:var(--m-jaune);color:#3D3110}
+.nuancier div:nth-child(5){background:var(--m-blanc);color:#6E685C}
+
+/* barres texte / image */
+.ratio{display:flex;flex-direction:column;gap:.8cqw;padding:1cqw 1.1cqw .9cqw;background:#E4DFD2;outline:1px solid #CFC8B8;
+  box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.12);width:100%;aspect-ratio:420/280;justify-content:center}
+.ratio .row{display:grid;grid-template-columns:6.6cqw 1fr;align-items:center;gap:.7cqw}
+.ratio .lab{font-family:'Oswald',sans-serif;font-size:.8cqw;letter-spacing:.08em;text-transform:uppercase;line-height:1.15;color:#4A463F}
+.ratio .bar{position:relative;height:1.3cqw;background:#BDB6A6;display:flex}
+.ratio .bar i{display:block;height:100%;background:#2A2825}
+.ratio .row.nous .lab{color:var(--or-txt);font-weight:600}
+.ratio .row.nous .bar i{background:var(--or)}
+.ratio .leg{display:flex;gap:1.4cqw;font-family:'Oswald',sans-serif;font-size:.76cqw;letter-spacing:.1em;text-transform:uppercase;color:#6E685C;margin-top:.2cqw}
+.ratio .leg span::before{content:"";display:inline-block;width:1cqw;height:1cqw;margin-right:.5cqw;vertical-align:-.15cqw;background:#2A2825}
+.ratio .leg span + span::before{background:#BDB6A6}
+
+/* ============ PAGE 2 — couvertures ============ */
+.haut2{top:8cqw;height:70cqw;display:grid;grid-template-columns:1fr 24cqw;gap:4cqw}
+.haut2 h2{font-family:'Oswald',sans-serif;font-weight:500;font-size:3.4cqw;line-height:1.04;letter-spacing:.02em;text-transform:uppercase;margin:1.4cqw 0 2.4cqw}
+.haut2 h2 small{display:block;font-size:.62em;font-weight:400;letter-spacing:.06em;color:var(--gris-txt);margin-top:.9cqw}
+.crit{display:flex;flex-direction:column;gap:1.5cqw;text-align:justify}
+.reperes{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4cqw;margin-top:1cqw;padding-top:1.4cqw;border-top:1px solid var(--trait)}
+.reperes b{display:block;font-family:'Oswald',sans-serif;font-weight:500;font-size:2.05cqw;line-height:1.05;letter-spacing:.01em;color:var(--ink)}
+.reperes span{display:block;font-family:'Oswald',sans-serif;font-size:.95cqw;letter-spacing:.14em;text-transform:uppercase;color:var(--gris-txt);margin-top:.4cqw}
+.reperes .src{grid-column:1/-1;font-style:italic;font-size:1.15cqw;color:var(--gris-txt)}
+.crit .intro{font-style:italic;font-weight:300;font-size:1.62cqw;line-height:1.42;text-align:left}
+.pile{display:flex;flex-direction:column;justify-content:space-between;height:100%}
+.pile figure{margin:0;display:grid;grid-template-columns:11.2cqw 1fr;gap:1.2cqw;align-items:end}
+.pile .cap{padding-bottom:.2cqw}
+.pile .cap b{display:block;margin-bottom:.3cqw}
+
+/* couverture-relevé générique */
+.cv{position:relative;aspect-ratio:210/280;overflow:hidden;box-shadow:.25cqw .6cqw 1.4cqw rgba(0,0,0,.28);container-type:inline-size;
+  font-family:'Oswald',sans-serif;color:var(--m-blanc)}
+.cv *{position:absolute}
+.cv .ed{bottom:4.5cqw;left:0;right:0;text-align:center;font-size:4.2cqw;letter-spacing:.3em;text-transform:uppercase;opacity:.7}
+.cv .img{overflow:hidden}
+/* 1. l'icône */
+.cv.icone{background:var(--m-noir)}
+.cv.icone .img{left:0;right:0;top:0;height:74%;background:radial-gradient(ellipse 60% 70% at 50% 38%,#5B544A 0%,#2B2723 55%,var(--m-noir) 100%)}
+.cv.icone .corps{left:50%;top:18%;width:34%;height:58%;transform:translateX(-50%);
+  background:radial-gradient(ellipse 50% 20% at 50% 12%,#8B8170 0 60%,transparent 62%),
+             linear-gradient(to bottom,transparent 22%,#6E6556 22%,#3B3631 100%);
+  clip-path:polygon(35% 0,65% 0,66% 22%,100% 34%,92% 60%,72% 46%,70% 100%,30% 100%,28% 46%,8% 60%,0 34%,34% 22%)}
+.cv.icone .t{left:7%;right:7%;bottom:16.5%;font-weight:700;font-size:21cqw;line-height:.86;text-transform:uppercase;color:var(--m-jaune)}
+.cv.icone .s{left:7%;bottom:9%;font-size:4.6cqw;letter-spacing:.2em;text-transform:uppercase}
+.cv.icone .band{left:0;right:0;top:0;height:3%;background:var(--m-jaune)}
+/* 2. l'exotique */
+.cv.exo{background:var(--m-rouge)}
+.cv.exo .cadre{inset:4.5%;border:1.2cqw solid var(--m-or);outline:.5cqw solid var(--m-or);outline-offset:-3.4cqw}
+.cv.exo .i{left:0;right:0;top:12%;text-align:center;font-family:'Ma Shan Zheng','KaiTi',serif;font-size:62cqw;line-height:1;color:rgba(0,0,0,.28)}
+.cv.exo .t{left:0;right:0;top:56%;text-align:center;font-weight:700;font-size:15cqw;line-height:.9;text-transform:uppercase;color:var(--m-or);letter-spacing:.04em}
+.cv.exo .s{left:0;right:0;top:75%;text-align:center;font-size:4.4cqw;letter-spacing:.24em;text-transform:uppercase;color:#F1D9A6}
+.cv.exo .ed{color:#F1D9A6}
+/* 3. l'essai */
+.cv.essai{background:var(--m-blanc);color:var(--m-noir)}
+.cv.essai .au{left:10%;top:9%;font-family:'Spectral',serif;font-size:6cqw;letter-spacing:.02em}
+.cv.essai .t{left:10%;right:10%;top:15.5%;font-family:'Spectral',serif;font-weight:400;font-size:10.5cqw;line-height:1.02}
+.cv.essai .img{left:10%;right:10%;top:47%;height:31%;background:linear-gradient(170deg,#6F6A61,#2E2B27)}
+.cv.essai .img::after{content:"";position:absolute;inset:0;background:
+   linear-gradient(to top right,transparent calc(50% - .5px),rgba(255,255,255,.16) 50%,transparent calc(50% + .5px)),
+   linear-gradient(to bottom right,transparent calc(50% - .5px),rgba(255,255,255,.16) 50%,transparent calc(50% + .5px))}
+.cv.essai .ed{color:var(--m-noir);opacity:.55;letter-spacing:.14em;font-size:4.6cqw}
+/* 4. le catalogue */
+.cv.cat{background:#F6F4EF;color:#2D2B28}
+.cv.cat .lame{left:-6%;top:47%;width:112%;height:2.3%;transform:rotate(-24deg);background:linear-gradient(to bottom,#E7E4DE,#9A9790 55%,#6D6A64)}
+.cv.cat .tsuba{left:30%;top:57%;width:9%;height:13%;transform:rotate(-24deg);border-radius:45%;background:#2E2A25}
+.cv.cat .poignee{left:4%;top:63%;width:28%;height:4.4%;transform:rotate(-24deg);background:repeating-linear-gradient(90deg,#3B342C 0 2.5cqw,#B7A988 2.5cqw 3.5cqw)}
+.cv.cat .t{left:9%;top:8%;font-weight:300;font-size:9cqw;line-height:1.02;letter-spacing:.16em;text-transform:uppercase}
+.cv.cat .s{left:9%;top:29%;font-size:4.2cqw;letter-spacing:.18em;text-transform:uppercase;color:#7E7A72}
+.cv.cat .ed{color:#2D2B28;opacity:.6}
+/* 5. le beau livre de licence */
+.cv.lic{background:linear-gradient(185deg,#F2A541 0%,#C8461F 46%,#5B1410 100%)}
+.cv.lic .soleil{left:50%;top:22%;width:46%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#FBE3A1;opacity:.9}
+.cv.lic .ombre{left:18%;right:18%;bottom:24%;height:38%;background:#1B0F0C;clip-path:polygon(44% 0,56% 0,58% 20%,96% 36%,90% 46%,62% 40%,66% 100%,52% 100%,50% 62%,46% 100%,32% 100%,38% 40%,10% 48%,4% 38%,42% 20%)}
+.cv.lic .t{left:0;right:0;top:6%;text-align:center;font-weight:700;font-size:17cqw;line-height:.9;letter-spacing:.02em;text-transform:uppercase;color:#FFF3D6;text-shadow:0 1cqw 0 rgba(0,0,0,.35)}
+.cv.lic .s{left:0;right:0;bottom:15%;text-align:center;font-size:4.8cqw;letter-spacing:.28em;text-transform:uppercase;color:#FBE3A1}
+.cv.lic .logo{right:7%;top:83%;width:12%;aspect-ratio:1;border-radius:50%;border:.8cqw solid var(--m-or)}
+/* 6. l'encyclopédique */
+.cv.ency{background:var(--m-noir)}
+.cv.ency .grille{left:7%;right:7%;top:32%;bottom:16%;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:1.8cqw;position:absolute}
+.cv.ency .grille i{position:static;display:block;background:linear-gradient(160deg,#5E574C,#2A2622)}
+.cv.ency .grille i:nth-child(3n){background:linear-gradient(160deg,#7A2A20,#3A1612)}
+.cv.ency .grille i:nth-child(5n){background:linear-gradient(160deg,#8C7340,#3E321B)}
+.cv.ency .t{left:7%;right:7%;top:7%;font-weight:700;font-size:10cqw;line-height:.9;text-transform:uppercase}
+.cv.ency .t b{color:var(--m-rouge);font-weight:700}
+.cv.ency .ed{color:#8E877A}
+/* 7. l'album de tournage */
+.cv.album{background:#2B2018}
+.cv.album .img{inset:0;background:radial-gradient(ellipse 80% 60% at 40% 45%,#B08A5E 0%,#6E5238 45%,#2B2018 100%);filter:saturate(.8)}
+.cv.album .img::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.06) 0 2px,transparent 2px 4px)}
+.cv.album .t{left:8%;right:8%;bottom:15%;font-family:'Spectral',serif;font-style:italic;font-weight:300;font-size:11cqw;line-height:1;color:#F7EBD6}
+.cv.album .s{left:8%;top:7%;font-size:4.4cqw;letter-spacing:.24em;text-transform:uppercase;color:#F7EBD6}
+
+/* planche inclinée */
+.planche{position:absolute;left:0;right:0;bottom:0;height:61.5cqw;overflow:hidden;background:#D9D3C5;
+  contain:paint;clip-path:inset(0)} /* clip-path : sans lui, Chrome laisse déborder la planche inclinée à l'impression */
+.planche .grid{position:absolute;left:-16cqw;top:-25cqw;width:136cqw;display:grid;grid-template-columns:repeat(5,1fr);gap:3.4cqw;
+  transform:rotate(-14deg);transform-origin:50% 50%}
+.planche .grid .cv{box-shadow:.6cqw 1.6cqw 2.4cqw rgba(0,0,0,.35)}
+.planche .etiq{position:absolute;left:7cqw;bottom:8.3cqw;z-index:22;background:var(--paper);padding:1.1cqw 1.5cqw;max-width:52cqw;
+  box-shadow:0 .4cqw 1.4cqw rgba(0,0,0,.25)}
+.planche .etiq .cap{color:#4A463F}
+
+/* ============ PAGE 3 — le projet face aux codes ============ */
+.tete3{top:8cqw}
+.tete3 h2{font-family:'Oswald',sans-serif;font-weight:700;font-size:8cqw;line-height:.9;text-transform:uppercase;margin:1.8cqw 0 2.2cqw}
+.tete3 .rg{width:9cqw;height:.55cqw;background:var(--or);margin-bottom:2.2cqw}
+.tete3 .lead{font-weight:300;font-size:1.95cqw;line-height:1.38;max-width:66cqw}
+.tete3 .lead em{color:var(--or-txt)}
+.crible{top:44cqw;bottom:19.5cqw;display:flex;flex-direction:column}
+.crible .th,.crible .row{display:grid;grid-template-columns:24cqw 13cqw 1fr;gap:2cqw;align-items:baseline}
+.crible .th{font-family:'Oswald',sans-serif;font-size:1.05cqw;letter-spacing:.18em;text-transform:uppercase;color:var(--gris-txt);
+  padding-bottom:1cqw;border-bottom:1.5px solid var(--ink)}
+.crible .rows{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.crible .row{padding:1.05cqw 0;border-bottom:1px solid var(--trait);font-size:1.45cqw;line-height:1.36}
+.crible .row:last-child{border-bottom:none}
+.crible .code{font-family:'Oswald',sans-serif;font-weight:500;font-size:1.5cqw;line-height:1.22;letter-spacing:.02em}
+.v{display:inline-block;font-family:'Oswald',sans-serif;font-weight:600;font-size:1.05cqw;letter-spacing:.16em;text-transform:uppercase;
+  padding:.35cqw .9cqw .3cqw;border-radius:.3cqw;white-space:nowrap;transform:translateY(-.15cqw)}
+.v.rep{background:var(--ink);color:var(--paper)}
+.v.det{border:1.5px solid var(--or);color:var(--or-txt)}
+.v.ref{color:#5E594F;background:#DED8CA;border:1.5px solid #DED8CA}
+.bilan{bottom:9.6cqw;display:grid;grid-template-columns:auto 1fr;gap:3cqw;align-items:center;padding-top:2cqw;border-top:1.5px solid var(--ink)}
+.bilan .cpt{display:flex;gap:2.4cqw;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:1.05cqw;color:var(--gris-txt)}
+.bilan .cpt b{display:block;font-size:3.6cqw;line-height:1;color:var(--ink);letter-spacing:0;font-weight:600}
+.bilan .cpt div:nth-child(2) b{color:var(--or-txt)}
+.bilan .cpt div:nth-child(3) b{color:#A39C8D}
+.bilan p{font-style:italic;font-weight:300;font-size:2.1cqw;line-height:1.3}
+
+/* ============ PAGE 4 — la charte ============ */
+.flux4{top:8cqw;bottom:10.5cqw;display:flex;flex-direction:column;justify-content:space-between}
+.flux4 > header h2{font-family:'Oswald',sans-serif;font-weight:700;font-size:5.6cqw;line-height:.92;text-transform:uppercase;margin-top:1.6cqw}
+.bloc > h3{display:flex;align-items:center;gap:1.4cqw;padding-bottom:.8cqw;border-bottom:1px solid var(--trait);margin-bottom:1.5cqw}
+.bloc > h3 .lt{font-weight:700;color:var(--or-txt)}
+.couleurs{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw}
+.sw .p{height:7.4cqw;position:relative;outline:1px solid rgba(0,0,0,.12);outline-offset:-1px}
+.sw.papier .p{background:var(--paper);outline-color:#C9C2B2}
+.sw.noir .p{background:var(--ink)}
+.sw.or .p{background:linear-gradient(135deg,#D8B56A 0%,#B9893F 45%,#8C6526 100%)}
+.sw.gris .p{background:var(--gris)}
+.sw .p span{position:absolute;left:.9cqw;bottom:.8cqw;font-family:'Oswald',sans-serif;font-size:.88cqw;letter-spacing:.12em;text-transform:uppercase}
+.sw.papier .p span{color:#8B8578}
+.sw.noir .p span,.sw.gris .p span{color:#E8E2D4}
+.sw.or .p span{color:#3D2C10}
+.sw .nm{font-family:'Oswald',sans-serif;font-weight:600;font-size:1.3cqw;letter-spacing:.1em;text-transform:uppercase;margin-top:.9cqw}
+.sw .rl{font-size:1.2cqw;line-height:1.35;color:#3E3B35;margin-top:.2cqw}
+.typos{display:grid;grid-template-columns:1.25fr 1fr;gap:3.5cqw;align-items:end}
+.typos .sp + .sp{margin-top:1.3cqw}
+.typos .ech1{font-family:'Oswald',sans-serif;font-weight:700;font-size:5.4cqw;line-height:.9;text-transform:uppercase}
+.typos .ech2{font-family:'Spectral',serif;font-size:1.6cqw;line-height:1.38}
+.typos .ech3{font-family:'Oswald',sans-serif;font-weight:400;font-size:1.15cqw;letter-spacing:.18em;text-transform:uppercase;color:var(--or-txt)}
+.typos .cap{margin-top:.5cqw}
+.typos .note{font-size:1.25cqw;line-height:1.4;color:#3E3B35;border-left:2px solid var(--or);padding-left:1.4cqw}
+.dispo{display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw}
+.dispo figure{margin:0}
+.dispo .cap{margin-top:.7cqw}
+.dispo .cap b{display:block}
+.couv{display:grid;grid-template-columns:auto 1fr;gap:3.5cqw;align-items:end}
+/* couverture à plat, au 1/12 environ : 4e · dos · 1re */
+.plat{display:grid;grid-template-columns:17.4cqw 2.6cqw 17.4cqw;height:23.2cqw;box-shadow:0 .7cqw 1.8cqw rgba(0,0,0,.25)}
+.plat > div{position:relative;overflow:hidden}
+.plat .q4,.plat .q1{background:var(--paper)}
+.plat .q4::after,.plat .q1::before{content:"";position:absolute;top:0;bottom:0;width:1.25cqw;background:#1A1918;z-index:2}
+.plat .q4::after{right:0}
+.plat .q1::before{left:0}
+.plat .dos{background:#1A1918;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px);
+  display:flex;align-items:center;justify-content:center}
+.plat .dos span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:'Oswald',sans-serif;font-weight:600;font-size:1.2cqw;letter-spacing:.24em;
+  color:#C9A35A;background:linear-gradient(180deg,#E3C47E,#A9782F 50%,#D9B46A);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.plat .q1 .tt{position:absolute;left:2.8cqw;right:1.4cqw;top:2cqw;font-family:'Oswald',sans-serif;font-weight:700;font-size:3.2cqw;line-height:.88;text-transform:uppercase}
+.plat .q1 .st{position:absolute;left:2.8cqw;right:1.8cqw;top:8.1cqw;font-family:'Spectral',serif;font-style:italic;font-size:.9cqw;line-height:1.3;color:#3E3B35}
+.plat .q1 .seq{position:absolute;left:1.25cqw;right:0;top:11.6cqw;height:5.4cqw;background:#1A1918;display:grid;grid-template-columns:repeat(4,1fr);gap:.4cqw;padding:.7cqw .4cqw}
+.plat .q1 .seq i{display:block;background:linear-gradient(165deg,#4C473F,#22201C)}
+.plat .q1 .seq svg{position:absolute;inset:0;width:100%;height:100%}
+.plat .q1 .au{position:absolute;left:2.8cqw;bottom:1.5cqw;font-family:'Oswald',sans-serif;font-size:.95cqw;letter-spacing:.24em;text-transform:uppercase}
+.plat .q4 .acc{position:absolute;left:1.6cqw;right:2.6cqw;top:1.8cqw;font-family:'Spectral',serif;font-size:.95cqw;font-style:italic;color:#3E3B35;line-height:1.3}
+.plat .q4 .tx{position:absolute;left:1.6cqw;right:2.6cqw;top:6.4cqw}
+.plat .q4 .tx .l{position:static;display:block;margin-bottom:.6cqw;height:.24cqw;background:#BDB6A6}
+.plat .q4 .ean{position:absolute;left:1.6cqw;bottom:1.6cqw;width:6.4cqw;height:3.4cqw;background:#fff;padding:.45cqw;
+  background-image:repeating-linear-gradient(90deg,#222 0 1px,transparent 1px 2px,#222 2px 4px,transparent 4px 5px,#222 5px 6px,transparent 6px 8px);background-origin:content-box;background-clip:content-box}
+.plat .q4 .px{position:absolute;right:2.8cqw;bottom:1.6cqw;font-family:'Oswald',sans-serif;font-size:.95cqw;letter-spacing:.12em}
+.couv .txt p{font-size:1.36cqw;line-height:1.42}
+.couv .txt .cap{margin-top:1cqw}
+
+/* ---------- impression : une page A4 par feuille ---------- */
+@page{size:A4 portrait;margin:0}
+@media print{
+  body{background:#fff}
+  .barre,.legende-ecran{display:none}
+  .livre{display:block;padding:0}
+  .spread{display:block;width:auto;box-shadow:none}
+  .page{width:210mm;height:297mm;aspect-ratio:auto;break-after:page;page-break-after:always}
+  .page::after{display:none}
+  .spread:last-child .page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="barre">
+  <a href="index.html">← Accueil</a>
+  <span class="t">CONTRE-CHAMP · Étude graphique · 4 pages A4</span>
+  <button type="button" onclick="window.print()">Imprimer / PDF</button>
+</div>
+
+<main class="livre">
+
+<!-- ============================ DOUBLE PAGE 1 ============================ -->
+<div class="spread">
+
+  <!-- PAGE 1 : ouverture, codes intérieurs -->
+  <article class="page g" aria-label="Page 1 — Les codes graphiques">
+    <div class="hero">
+      <!-- Visuel d'ouverture : une trajectoire décomposée en cinq images,
+           le dispositif même du livre (schéma de trajectoire original, aucun droit). -->
+      <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <radialGradient id="h-halo" cx="72%" cy="30%" r="62%">
+            <stop offset="0" stop-color="#3A352D"/><stop offset="1" stop-color="#121212"/>
+          </radialGradient>
+          <linearGradient id="h-img" x1="0" y1="0" x2=".3" y2="1">
+            <stop offset="0" stop-color="#3B3731"/><stop offset="1" stop-color="#191816"/>
+          </linearGradient>
+          <pattern id="h-perfo" width="34" height="22" patternUnits="userSpaceOnUse">
+            <rect x="9" y="6" width="16" height="10" rx="2.5" fill="#F2EEE4" opacity=".14"/>
+          </pattern>
+        </defs>
+        <rect width="1000" height="500" fill="url(#h-halo)"/>
+        <!-- pellicule -->
+        <g transform="translate(0 24)">
+          <rect x="-10" y="0" width="1020" height="212" fill="#0B0B0A"/>
+          <rect x="-10" y="2" width="1020" height="22" fill="url(#h-perfo)"/>
+          <rect x="-10" y="188" width="1020" height="22" fill="url(#h-perfo)"/>
+          <g fill="url(#h-img)">
+            <rect x="12"  y="28" width="186" height="156"/>
+            <rect x="210" y="28" width="186" height="156"/>
+            <rect x="408" y="28" width="186" height="156"/>
+            <rect x="606" y="28" width="186" height="156"/>
+            <rect x="804" y="28" width="186" height="156"/>
+          </g>
+          <!-- trajectoire : pointillés = le tracé complet, or = le geste ; un point par image -->
+          <path d="M40 168 C 230 168, 330 58, 520 54 S 800 96, 900 70" fill="none" stroke="#F2EEE4" stroke-opacity=".28" stroke-width="2.4" stroke-dasharray="3 7"/>
+          <path d="M40 168 C 230 168, 330 58, 520 54 S 800 96, 900 70" fill="none" stroke="#B9893F" stroke-width="4.5" stroke-linecap="round"/>
+          <g fill="#B9893F">
+            <circle cx="105" cy="163.6" r="6"/>
+            <circle cx="303" cy="103.6" r="6"/>
+            <circle cx="501" cy="54.8" r="6"/>
+            <circle cx="699" cy="64.4" r="6"/>
+          </g>
+          <circle cx="900" cy="70" r="11" fill="#B9893F"/>
+          <circle cx="900" cy="70" r="24" fill="none" stroke="#B9893F" stroke-width="2"/>
+          <circle cx="900" cy="70" r="40" fill="none" stroke="#B9893F" stroke-opacity=".45" stroke-width="1.5"/>
+          <g font-family="Oswald, sans-serif" font-size="13" letter-spacing="2.5" fill="#F2EEE4" fill-opacity=".5">
+            <text x="186" y="176" text-anchor="end">01</text><text x="384" y="176" text-anchor="end">02</text><text x="582" y="176" text-anchor="end">03</text>
+            <text x="780" y="176" text-anchor="end">04</text><text x="978" y="176" text-anchor="end" fill="#B9893F" fill-opacity="1">05 · ARRÊT</text>
+          </g>
+        </g>
+      </svg>
+      <h1><span>Les codes</span><span>graphiques</span></h1>
+      <div class="tc">Schéma de trajectoire<br>5 images · 0,2 s</div>
+    </div>
+
+    <div class="marge soustitre">
+      <div class="rg"></div>
+      <h2>Étude des codes graphiques du marché&nbsp;:<br>le beau livre de cinéma martial</h2>
+    </div>
+
+    <div class="marge corps1">
+      <div class="duo">
+        <figure>
+          <div class="ms">
+            <div><div class="blk x" style="inset:0"></div></div>
+            <div>
+              <div class="blk" style="left:12%;top:12%;width:62%;height:16%;background:#2A2825"></div>
+              <div class="blk" style="left:12%;top:31%;width:40%;height:6%;background:#8C8576"></div>
+              <span class="l" style="left:12%;top:48%;width:76%"></span><span class="l" style="left:12%;top:54%;width:76%"></span>
+              <span class="l" style="left:12%;top:60%;width:70%"></span><span class="l" style="left:12%;top:66%;width:76%"></span>
+              <span class="l" style="left:12%;top:72%;width:52%"></span>
+            </div>
+          </div>
+          <figcaption class="cap">Ouverture&nbsp;: fond perdu, titre en vis-à-vis.</figcaption>
+        </figure>
+        <section>
+          <h3>Les mises en pages</h3>
+          <p>Le rayon oscille entre deux modèles. L’<em>album</em> sert l’image&nbsp;: photogrammes et photos de plateau à fond perdu, texte réduit à des blocs courts et à des légendes. L’<em>essai</em> sert le texte&nbsp;: une ou deux colonnes, marges larges, images en vignettes. Entre les deux, des dispositifs récurrents&nbsp;: frises chronologiques, encadrés de filmographie, pages noires entre les chapitres.</p>
+        </section>
+      </div>
+
+      <div class="duo">
+        <figure>
+          <div class="spec">
+            <div class="a">
+              <span class="k">Kung-fu</span>
+              <span class="r">Aa <em>Aa</em></span>
+              <span class="mini">Condensée · labeur</span>
+            </div>
+            <div class="b"><span class="ideo">武</span><span class="mini">Décor</span></div>
+          </div>
+          <figcaption class="cap">Titrage, labeur, et le cliché exotique.</figcaption>
+        </figure>
+        <section>
+          <h3>Typographie</h3>
+          <p>Le titrage emprunte à l’affiche de film d’action&nbsp;: capitales condensées et grasses, très gros corps, parfois inclinées pour dire la vitesse. Le texte courant reste un romain classique dans l’essai, une linéale dans le beau livre grand public. Code propre au genre&nbsp;: les fontes pseudo-asiatiques, dites «&nbsp;chop suey&nbsp;», et l’idéogramme posé en décor, rarement traduit — un exotisme hérité des affiches d’exploitation des années 1970.</p>
+        </section>
+      </div>
+
+      <div class="duo">
+        <figure>
+          <div class="nuancier">
+            <div>Noir</div><div>Rouge</div><div>Or</div><div>Jaune</div><div>Clair</div>
+          </div>
+          <figcaption class="cap">Le trio, et le jaune devenu signe.</figcaption>
+        </figure>
+        <section>
+          <h3>Gammes couleurs</h3>
+          <p>Un trio domine&nbsp;: noir, rouge, or. Le noir de la salle et du drame, le rouge laqué et l’or des chinoiseries, plus le jaune — celui du survêtement de Bruce Lee dans <em>Le Jeu de la mort</em>, devenu un signe à lui seul. L’essai de cinéma fait exception&nbsp;: fond blanc ou uni, la couleur laissée au photogramme.</p>
+        </section>
+      </div>
+
+      <div class="duo">
+        <figure>
+          <div class="ratio">
+            <div class="row"><span class="lab">Livre de studio</span><span class="bar"><i style="width:78%"></i></span></div>
+            <div class="row"><span class="lab">Album</span><span class="bar"><i style="width:65%"></i></span></div>
+            <div class="row"><span class="lab">Essai</span><span class="bar"><i style="width:20%"></i></span></div>
+            <div class="row nous"><span class="lab">Contre-champ</span><span class="bar"><i style="width:55%"></i></span></div>
+            <div class="leg"><span>Image</span><span>Texte</span></div>
+          </div>
+          <figcaption class="cap">Part de l’image · ordres de grandeur estimés.</figcaption>
+        </figure>
+        <section>
+          <h3>Le visuel et le texte</h3>
+          <p>L’image est reine, mais rarement argument. Le photogramme est isolé, recadré, parfois tiré d’une source vidéo médiocre&nbsp;; l’affiche d’époque est reproduite pour elle-même. Les images s’alignent sans se répondre — la <em>mise en page muette</em> — et le texte raconte à côté, sans renvoyer au plan qu’on a sous les yeux.</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="folio"><span class="n">1</span><span class="f"></span><span>Contre-champ · Étude graphique</span></div>
+  </article>
+
+  <!-- PAGE 2 : les couvertures -->
+  <article class="page d" aria-label="Page 2 — Caractéristiques des couvertures">
+    <div class="marge haut2">
+      <div>
+        <div class="oeil">Étude des codes · le rayon</div>
+        <h2>Caractéristiques des couvertures&nbsp;:<small>le rayon cinéma martial</small></h2>
+        <div class="crit">
+          <p class="intro">Quatre familles de couvertures se partagent la table du libraire&nbsp;: l’icône, l’exotique, l’essai et le catalogue.</p>
+          <section>
+            <h3>Titre</h3>
+            <p>En gros, en capitales condensées. Le nom de la star pèse souvent plus lourd que le titre. Vocabulaire attendu&nbsp;: dragon, tigre, kung-fu, Hong Kong, sabre.</p>
+          </section>
+          <section>
+            <h3>Couleur</h3>
+            <p>Fond noir majoritaire, ou image à fond perdu. Accents rouge, or ou jaune. L’essai fait exception&nbsp;: fond clair, la couleur réservée à l’image.</p>
+          </section>
+          <section>
+            <h3>Images</h3>
+            <p>Un corps, presque toujours&nbsp;: garde basse, coup de pied sauté, sabre levé, regard caméra. Un seul instant figé — <em>jamais la séquence</em>, alors que le sujet est le mouvement.</p>
+          </section>
+          <section>
+            <h3>Ce sont souvent des reliés</h3>
+            <p>Cartonnage, jaquette, dorure sur le haut de gamme. L’essai reste broché, souvent à rabats.</p>
+          </section>
+          <div class="reperes">
+            <div><b>29 — 45 €</b><span>Prix public</span></div>
+            <div><b>160 — 240 p.</b><span>Pagination</span></div>
+            <div><b>2 500 — 5 000</b><span>Tirage courant</span></div>
+            <div><b>Grand format</b><span>À la française</span></div>
+            <p class="src">Ordres de grandeur du segment — hypothèses de l’étude de marché, à consolider.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pile">
+        <figure>
+          <div class="cv icone"><div class="img"></div><div class="corps"></div><div class="band"></div><div class="t">Le dragon</div><div class="s">La légende</div></div>
+          <figcaption class="cap"><b>01 · L’icône</b>La star en pose, fond noir, titre-choc.</figcaption>
+        </figure>
+        <figure>
+          <div class="cv exo"><div class="cadre"></div><div class="i">武</div><div class="t">Kung-fu</div><div class="s">Les maîtres</div><div class="ed">Éditeur</div></div>
+          <figcaption class="cap"><b>02 · L’exotique</b>Rouge, or, cadre, idéogramme.</figcaption>
+        </figure>
+        <figure>
+          <div class="cv essai"><div class="au">Auteur</div><div class="t">Le cinéma de Hong Kong</div><div class="img"></div><div class="ed">Éditeur</div></div>
+          <figcaption class="cap"><b>03 · L’essai</b>Fond clair, un photogramme, titre en romain.</figcaption>
+        </figure>
+        <figure>
+          <div class="cv cat"><div class="t">Arts<br>martiaux</div><div class="s">Catalogue d’exposition</div><div class="lame"></div><div class="poignee"></div><div class="tsuba"></div><div class="ed">Musée</div></div>
+          <figcaption class="cap"><b>04 · Le catalogue</b>L’objet sur fond neutre, typographie muséale.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="planche" aria-hidden="true">
+      <div class="grid">
+        <div class="cv lic"><div class="soleil"></div><div class="ombre"></div><div class="t">Kung-fu<br>saga</div><div class="s">Le livre officiel</div><div class="logo"></div></div>
+        <div class="cv ency"><div class="t">Le cinéma <b>d’arts martiaux</b></div><div class="grille"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ed">De A à Z</div></div>
+        <div class="cv icone"><div class="img"></div><div class="corps"></div><div class="band"></div><div class="t">Fureur</div><div class="s">La légende</div></div>
+        <div class="cv album"><div class="img"></div><div class="s">Sur le tournage</div><div class="t">Les années Hong Kong</div></div>
+        <div class="cv exo"><div class="cadre"></div><div class="i">武</div><div class="t">Shaolin</div><div class="s">Les maîtres</div><div class="ed">Éditeur</div></div>
+
+        <div class="cv essai"><div class="au">Auteur</div><div class="t">Le sabre et la caméra</div><div class="img"></div><div class="ed">Éditeur</div></div>
+        <div class="cv exo"><div class="cadre"></div><div class="i">武</div><div class="t">Dragon</div><div class="s">Le cinéma</div><div class="ed">Éditeur</div></div>
+        <div class="cv lic"><div class="soleil"></div><div class="ombre"></div><div class="t">Le tigre</div><div class="s">L’album du film</div><div class="logo"></div></div>
+        <div class="cv cat"><div class="t">Combats</div><div class="s">Catalogue d’exposition</div><div class="lame"></div><div class="poignee"></div><div class="tsuba"></div><div class="ed">Musée</div></div>
+        <div class="cv icone"><div class="img"></div><div class="corps"></div><div class="band"></div><div class="t">L’icône</div><div class="s">1940 — 1973</div></div>
+
+        <div class="cv album"><div class="img"></div><div class="s">Sur le tournage</div><div class="t">Studio fermé</div></div>
+        <div class="cv icone"><div class="img"></div><div class="corps"></div><div class="band"></div><div class="t">Le maître</div><div class="s">La légende</div></div>
+        <div class="cv ency"><div class="t">Hong Kong <b>de A à Z</b></div><div class="grille"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ed">Encyclopédie</div></div>
+        <div class="cv exo"><div class="cadre"></div><div class="i">武</div><div class="t">Wu xia</div><div class="s">Chevaliers</div><div class="ed">Éditeur</div></div>
+        <div class="cv essai"><div class="au">Auteur</div><div class="t">Chorégraphies</div><div class="img"></div><div class="ed">Éditeur</div></div>
+
+        <div class="cv exo"><div class="cadre"></div><div class="i">武</div><div class="t">Tigres</div><div class="s">Les maîtres</div><div class="ed">Éditeur</div></div>
+        <div class="cv cat"><div class="t">Arts<br>martiaux</div><div class="s">Catalogue d’exposition</div><div class="lame"></div><div class="poignee"></div><div class="tsuba"></div><div class="ed">Musée</div></div>
+        <div class="cv icone"><div class="img"></div><div class="corps"></div><div class="band"></div><div class="t">Le dragon</div><div class="s">La légende</div></div>
+        <div class="cv lic"><div class="soleil"></div><div class="ombre"></div><div class="t">Combat<br>final</div><div class="s">Le livre officiel</div><div class="logo"></div></div>
+        <div class="cv album"><div class="img"></div><div class="s">Sur le tournage</div><div class="t">Cascades</div></div>
+      </div>
+      <div class="etiq">
+        <p class="cap"><b>La table du libraire</b> — relevés schématiques des familles de couvertures, reconstitués d’après les codes observés. Ce ne sont pas des reproductions&nbsp;: pour le dossier, les doubler de la planche des douze couvertures réelles.</p>
+      </div>
+    </div>
+
+    <div class="folio sur"><span class="n">2</span><span class="f"></span><span>Contre-champ · Étude graphique</span></div>
+  </article>
+</div>
+<p class="legende-ecran">Double page 1 · Le marché</p>
+
+<!-- ============================ DOUBLE PAGE 2 ============================ -->
+<div class="spread">
+
+  <!-- PAGE 3 : le projet passé au crible -->
+  <article class="page g" aria-label="Page 3 — Ce qu’on garde, ce qu’on refuse">
+    <div class="marge tete3">
+      <div class="oeil">Étude graphique · application au projet</div>
+      <h2>Ce qu’on garde,<br>ce qu’on refuse</h2>
+      <div class="rg"></div>
+      <p class="lead">Sur une table de libraire, le livre doit être reconnu comme un livre du rayon cinéma en deux secondes — puis s’en distinguer par la <em>méthode</em>. Chaque code du marché est passé au crible&nbsp;: repris, détourné ou refusé.</p>
+    </div>
+
+    <div class="marge crible">
+      <div class="th"><span>Code du marché</span><span>Verdict</span><span>Ce que fait Contre-champ</span></div>
+      <div class="rows">
+        <div class="row"><span class="code">Capitales condensées au titrage</span><span><span class="v rep">Repris</span></span>
+          <p>Le code du genre, lisible à trois mètres. Mais une seule graisse, sans inclinaison ni effet&nbsp;: la vitesse est dans les images, pas dans la lettre.</p></div>
+        <div class="row"><span class="code">Fond noir intégral</span><span><span class="v det">Détourné</span></span>
+          <p>Le noir est réservé aux douze doubles pages des temps d’arrêt. Partout ailleurs, fond papier crème&nbsp;: la lecture prime.</p></div>
+        <div class="row"><span class="code">Trio rouge, or, jaune</span><span><span class="v det">Détourné</span></span>
+          <p>Rouge et jaune écartés. L’or seul, en cinquième ton Pantone, sur les six ouvertures de partie et le dos — hérité des cartons-titres de la Shaw Brothers.</p></div>
+        <div class="row"><span class="code">Fontes «&nbsp;chop suey&nbsp;», idéogrammes décor</span><span><span class="v ref">Refusé</span></span>
+          <p>C’est l’exotisme que le livre démonte&nbsp;: le chapitre Bruce Lee raconte comment le kung-fu a cessé d’être un folklore. Aucun caractère chinois sans traduction ni fonction.</p></div>
+        <div class="row"><span class="code">La star en pose en couverture</span><span><span class="v det">Détourné</span></span>
+          <p>La pose devient une séquence&nbsp;: une bande d’images et le schéma de trajectoire original. La couverture annonce la méthode — et ne dépend d’aucun droit de portrait.</p></div>
+        <div class="row"><span class="code">Photogramme isolé, pleine page</span><span><span class="v det">Détourné</span></span>
+          <p>La bande remplace l’image unique&nbsp;: soixante séquences décomposées. La pleine page est gardée pour les ouvertures et les portraits.</p></div>
+        <div class="row"><span class="code">Mise en page muette</span><span><span class="v ref">Refusé</span></span>
+          <p>Chaque visuel porte une légende analytique et un appel dans le texte. L’image argumente, elle ne décore pas.</p></div>
+        <div class="row"><span class="code">Relié, jaquette, dorure</span><span><span class="v det">Détourné</span></span>
+          <p>Cousu collé, dos toilé noir, pas de jaquette. Un seul embellissement&nbsp;: le titre or au marquage à chaud, sur le dos.</p></div>
+        <div class="row"><span class="code">Brillant, vernis sélectif</span><span><span class="v ref">Refusé</span></span>
+          <p>Contredit le parti mat. Papier non couché crème, qui absorbe la lumière comme l’écran de projection.</p></div>
+        <div class="row"><span class="code">Effet de collection</span><span><span class="v ref">Refusé</span></span>
+          <p>Une maquette propre au titre, pas un gabarit d’éditeur&nbsp;: le livre doit se reconnaître seul sur la table.</p></div>
+      </div>
+    </div>
+
+    <div class="marge bilan">
+      <div class="cpt">
+        <div><b>1</b>repris</div><div><b>5</b>détournés</div><div><b>4</b>refusés</div>
+      </div>
+      <p>Les codes du genre pour être trouvé&nbsp;; la méthode pour être choisi.</p>
+    </div>
+
+    <div class="folio"><span class="n">3</span><span class="f"></span><span>Contre-champ · Étude graphique</span></div>
+  </article>
+
+  <!-- PAGE 4 : la charte qui en découle -->
+  <article class="page d" aria-label="Page 4 — La charte qui en découle">
+    <div class="marge flux4">
+      <header>
+        <div class="oeil">Étude graphique · piste retenue</div>
+        <h2>La charte qui en découle</h2>
+      </header>
+
+      <section class="bloc">
+        <h3><span class="lt">A</span>Couleurs — trois tons et un gris</h3>
+        <div class="couleurs">
+          <div class="sw papier"><div class="p"><span>Munken Print Cream</span></div>
+            <div class="nm">Papier</div><div class="rl">Le fond de lecture, partout sauf aux temps d’arrêt. Mat, chaud, non couché.</div></div>
+          <div class="sw noir"><div class="p"><span>Quadri · toile</span></div>
+            <div class="nm">Noir</div><div class="rl">Photogrammes, doubles pages des temps d’arrêt, dos toilé.</div></div>
+          <div class="sw or"><div class="p"><span>5<sup>e</sup> ton</span></div>
+            <div class="nm">Or</div><div class="rl">Pantone or&nbsp;: six ouvertures, marquage du dos. Rien d’autre.</div></div>
+          <div class="sw gris"><div class="p"><span>Gris chaud</span></div>
+            <div class="nm">Gris</div><div class="rl">Légendes, crédits, filets, schémas secondaires.</div></div>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h3><span class="lt">B</span>Typographie — deux familles, trois usages</h3>
+        <div class="typos">
+          <div>
+            <div class="sp"><div class="ech1">Contre-champ</div><div class="cap">Titrage · capitales condensées, une seule graisse, jamais inclinées</div></div>
+            <div class="sp"><div class="ech2">En 1973, un homme torse nu s’arrête net face à la caméra. Le plan dure deux secondes.</div><div class="cap">Texte courant · romain de labeur, pour 336&nbsp;000 signes</div></div>
+            <div class="sp"><div class="ech3">Plan 19 · Le temps d’arrêt de Lee · 3&nbsp;s</div><div class="cap">Légendes et repères · capitales espacées</div></div>
+          </div>
+          <p class="note">Oswald et Spectral sont les polices de travail, celles de la présentation. Elles fixent l’intention&nbsp;: un titrage du genre, un texte de livre. Le choix définitif se fera aux recherches typographiques de novembre, sur épreuve papier.</p>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h3><span class="lt">C</span>Quatre dispositifs de maquette</h3>
+        <div class="dispo">
+          <figure>
+            <div class="ms" style="background:#1D1C1A;outline-color:#1D1C1A"><div><div class="blk x" style="inset:0"></div></div><div><div class="blk x" style="inset:0"></div></div>
+              <div class="blk" style="left:6%;bottom:9%;width:22%;height:4%;background:#8B8578"></div></div>
+            <figcaption class="cap"><b>A · Temps d’arrêt</b>Double page pleine · 12</figcaption>
+          </figure>
+          <figure>
+            <div class="ms"><div><div class="blk x" style="inset:0"></div></div>
+              <div><div class="blk" style="left:12%;top:16%;width:60%;height:15%;background:#B9893F"></div>
+                <span class="l" style="left:12%;top:42%;width:74%"></span><span class="l" style="left:12%;top:49%;width:74%"></span><span class="l" style="left:12%;top:56%;width:60%"></span></div></div>
+            <figcaption class="cap"><b>B · Ouverture</b>Pleine page, partie ou portrait · 28</figcaption>
+          </figure>
+          <figure>
+            <div class="ms"><div>
+                <span class="l" style="left:14%;top:12%;width:72%"></span><span class="l" style="left:14%;top:18%;width:72%"></span><span class="l" style="left:14%;top:24%;width:60%"></span></div>
+              <div><span class="l" style="left:14%;top:12%;width:72%"></span><span class="l" style="left:14%;top:18%;width:72%"></span><span class="l" style="left:14%;top:24%;width:50%"></span></div>
+              <div class="blk" style="left:0;right:0;top:38%;height:34%;background:#1D1C1A;display:grid;grid-template-columns:repeat(6,1fr);gap:3%;padding:2.2% 1.5%">
+                <i class="x" style="display:block"></i><i class="x" style="display:block"></i><i class="x" style="display:block"></i><i class="x" style="display:block"></i><i class="x" style="display:block"></i><i class="x" style="display:block"></i></div>
+              <span class="l" style="left:4%;top:80%;width:40%;background:#8B8578"></span></div>
+            <figcaption class="cap"><b>C · Séquence</b>Bande continue sur la double · 60</figcaption>
+          </figure>
+          <figure>
+            <div class="ms"><div>
+                <span class="l" style="left:12%;top:12%;width:76%"></span><span class="l" style="left:12%;top:18%;width:76%"></span><span class="l" style="left:12%;top:24%;width:76%"></span><span class="l" style="left:12%;top:30%;width:76%"></span><span class="l" style="left:12%;top:36%;width:60%"></span>
+                <span class="l" style="left:12%;top:48%;width:76%"></span><span class="l" style="left:12%;top:54%;width:76%"></span><span class="l" style="left:12%;top:60%;width:70%"></span></div>
+              <div><div class="blk x" style="left:12%;top:12%;width:36%;height:30%"></div><div class="blk x" style="left:52%;top:12%;width:36%;height:30%"></div>
+                <div class="blk x" style="left:12%;top:48%;width:36%;height:30%"></div>
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:52%;top:48%;width:36%;height:30%"><rect width="100" height="100" fill="#EDE8DC"/><path d="M8 85 C 35 85, 45 20, 70 18 S 90 30, 94 26" fill="none" stroke="#121212" stroke-width="6"/></svg></div></div>
+            <figcaption class="cap"><b>D · Lexique</b>Quarts de page, schémas originaux · 140</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h3><span class="lt">D</span>Piste de couverture</h3>
+        <div class="couv">
+          <div class="plat" role="img" aria-label="Couverture à plat : quatrième, dos toilé, première">
+            <div class="q4">
+              <div class="acc">En 1973, un homme torse nu s’arrête net face à la caméra. Le plan dure deux secondes.</div>
+              <div class="tx"><span class="l"></span><span class="l"></span><span class="l"></span><span class="l" style="width:80%"></span><span class="l"></span><span class="l" style="width:62%"></span></div>
+              <div class="ean"></div><div class="px">35 €</div>
+            </div>
+            <div class="dos"><span>CONTRE-CHAMP</span></div>
+            <div class="q1">
+              <div class="tt">Contre<br>champ</div>
+              <div class="st">Arts martiaux et cinéma&nbsp;: un siècle d’influences croisées</div>
+              <div class="seq"><i></i><i></i><i></i><i></i>
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M6 33 C 26 33, 36 9, 56 8 S 84 14, 95 11" fill="none" stroke="#F2EEE4" stroke-width=".8" stroke-opacity=".9"/></svg></div>
+              <div class="au">Clovis</div>
+            </div>
+          </div>
+          <div class="txt">
+            <p>La couverture montre une <em>séquence</em>, pas une pose&nbsp;: quatre images en bande et la trajectoire qui les traverse. Fond papier, titre noir. Dos toilé noir reporté de 15&nbsp;mm sur les plats, titre or au marquage à chaud — l’unique embellissement.</p>
+            <p class="cap">Piste à développer — maquette de couverture prévue en décembre. Dos sans échelle.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="folio"><span class="n">4</span><span class="f"></span><span>Contre-champ · Étude graphique</span></div>
+  </article>
+</div>
+<p class="legende-ecran">Double page 2 · Le projet</p>
+
+</main>
+</body>
+</html>

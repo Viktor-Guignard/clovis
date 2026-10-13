@@ -7,6 +7,8 @@ Ouvrir : https://viktor-guignard.github.io/clovis/
 
 - `contre-champ.html` — la présentation du projet (18 slides)
 - `editeur.html` — l'éditeur du deck
+- `etude-graphique.html` — l'étude des codes graphiques du marché (4 pages A4,
+  imprimables en PDF depuis le navigateur)
 - `index.html` — page d'accueil
 
 ## Éditer le deck

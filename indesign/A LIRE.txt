@@ -1,0 +1,42 @@
+CONTRE-CHAMP — Étude graphique — fichier InDesign
+==================================================
+
+Dans ce dossier
+  CONTRE-CHAMP_etude-graphique.idml   le document : 4 pages A4 en 2 doubles pages,
+                                      fond perdu 3 mm
+  Links/                              les 15 visuels, liés, à environ 300 ppi
+  Document fonts/                     Oswald et Spectral (licence libre OFL)
+
+
+Ouvrir
+  1. Dézipper, et garder le dossier entier : l'.idml, Links et Document fonts
+     restent côte à côte.
+  2. Installer les polices de Document fonts : double-clic sur chaque .ttf,
+     puis « Installer ».
+  3. InDesign > Fichier > Ouvrir > CONTRE-CHAMP_etude-graphique.idml
+  4. Fichier > Enregistrer sous… : un .indd, dans ce même dossier.
+
+Si des images sont signalées manquantes
+  Fenêtre > Liens. Sélectionner une image manquante > Relier… > choisir son
+  fichier dans Links, avec la case « Rechercher les liens manquants dans ce
+  dossier » cochée : toutes les autres suivent.
+
+
+Ce qu'il y a dedans
+  Textes      blocs de texte modifiables. Styles de paragraphe et de
+              caractère préfixés « CC », pour ne pas se mélanger à ceux du
+              dossier si on copie ces pages ailleurs.
+  Couleurs    nuances CMJN préfixées « CC ». Ce sont des valeurs de départ, à
+              vérifier sur épreuve. L'or est en quadri : le remplacer par le
+              Pantone retenu.
+  Pages       numérotées 2 à 5 dans InDesign, pour que la première double page
+              s'ouvre à gauche. Les folios imprimés (1 à 4) sont du texte :
+              à adapter à la pagination du dossier.
+  Images      l'ouverture, les vignettes, les quatre familles de couvertures,
+              la table inclinée, les quatre dispositifs et la piste de
+              couverture sont des images (non modifiables dans InDesign).
+              Elles viennent de etude-graphique.html.
+
+Les couvertures de la page 2 sont des relevés schématiques, pas des
+reproductions. Pour le dossier final, remplacer p2-table-du-libraire.png par
+la planche des couvertures réelles (panneau Liens > Relier).

@@ -9,6 +9,8 @@ Ouvrir : https://viktor-guignard.github.io/clovis/
 - `editeur.html` — l'éditeur du deck
 - `etude-graphique.html` — l'étude des codes graphiques du marché (4 pages A4,
   imprimables en PDF depuis le navigateur)
+- `etude-graphique-indesign.zip` — la même étude en fichier InDesign (IDML) :
+  textes modifiables, styles et nuances « CC », visuels liés, polices fournies
 - `index.html` — page d'accueil
 
 ## Éditer le deck
@@ -31,6 +33,20 @@ et de révoquer une modification une par une.
   (espaces insécables, apostrophes courbes)
 - `bake.py` — fabrique `contre-champ-figee.html`, fichier unique et autonome
 - `clovis-project.applescript` — source de l'app « Clovis Project »
+
+## L'étude graphique en InDesign
+
+`etude-graphique-indesign.zip` se régénère depuis la page HTML, après toute
+modification de l'étude :
+
+```sh
+python3 indesign/build.py
+```
+
+Il faut Node avec Playwright (Chromium) et Pillow. Le script mesure la page,
+exporte les visuels à ~300 ppi, et écrit l'IDML sur un squelette exporté par
+InDesign (`indesign/squelette/`, licence BSD de SimpleIDML). Mode d'emploi pour
+l'ouverture : `indesign/A LIRE.txt`, copié dans le zip.
 
 ## Clovis Project (l'app à deux fenêtres)
 

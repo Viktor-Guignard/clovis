@@ -38,6 +38,7 @@ body{background:var(--table);color:var(--paper);font-family:'Spectral',Georgia,s
 .barre a:hover,.barre button:hover{border-color:var(--or)}
 .barre .t{color:#9C9586;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .barre a,.barre button{white-space:nowrap;flex:none}
+.barre .act{display:flex;gap:8px;flex:none}
 @media (max-width:560px){.barre .t{display:none}}
 .livre{padding:clamp(16px,4vw,48px) clamp(16px,3vw,40px) 64px;display:flex;flex-direction:column;align-items:center;gap:clamp(28px,5vw,64px)}
 .spread{display:grid;grid-template-columns:1fr 1fr;width:min(100%,1320px);
@@ -341,7 +342,10 @@ em{font-style:italic}
 <div class="barre">
   <a href="index.html">← Accueil</a>
   <span class="t">CONTRE-CHAMP · Étude graphique · 4 pages A4</span>
-  <button type="button" onclick="window.print()">Imprimer / PDF</button>
+  <span class="act">
+    <a href="etude-graphique-indesign.zip" download title="Fichier InDesign (IDML), liens et polices">InDesign</a>
+    <button type="button" onclick="window.print()">Imprimer / PDF</button>
+  </span>
 </div>
 
 <main class="livre">
